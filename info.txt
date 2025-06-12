@@ -1,0 +1,175 @@
+🧑‍💼 User & Roles
+        User
+        name, email, mobile, password, role (admin, customer, business_owner)
+
+        OTP-related fields
+
+        subscriptionId (if business_owner)
+
+        isVerified, createdAt, updatedAt
+
+        SubscriptionPlan
+        name, price, duration (days), listingLimit, type (product, service, food), features
+
+        UserSubscription
+        userId, subscriptionPlanId, startDate, endDate, status
+
+
+
+
+
+
+
+🛒 Listings
+        Product
+        title, description, categoryId, subcategoryId, ownerId, isPublished, variantOptions (ProductVariant id)
+
+        ProductVariant
+        productId, color, size, price, stock, sku, images, videos
+
+        Service
+        title, description, price (optional), duration, categoryId, ownerId, availability, isPublished, images, videos
+
+        Food
+        title, description, price, foodType (farm, restaurant, shop), images, ownerId, isPublished, videos
+
+
+
+
+
+
+🗂️ Category Management
+        Category
+        name, type (product, service, food)
+
+        Subcategory
+        name, parentCategoryId (only for products)
+
+
+
+
+
+📦 Order & Booking
+        Order
+        customerId, items[] (with productVariantId, quantity), totalAmount, status, paymentStatus, createdAt
+
+        Booking (for services)
+        serviceId, customerId, date, timeSlot, status
+
+
+
+
+
+💬 Communication & Feedback
+        Review
+        listingType, listingId (product/service/food), userId, rating, comment, createdAt
+
+        Message (optional)
+        senderId, receiverId, content, timestamp
+
+
+
+
+
+
+📍 Location & Storefront
+        BusinessProfile
+        userId, businessName, description, address, contactInfo, profileImage
+
+        Address
+        userId, type (home, work, business), street, city, state, pincode
+
+
+
+
+
+
+
+📊 Analytics / Admin Tools
+        ViewTracking
+        listingType, listingId, userId, timestamp
+
+        SearchAnalytics
+        keyword, userId (optional), timestamp, type (product, service, food)
+
+
+
+
+
+
+
+📑 CMS Content
+        Blog
+        title, content, coverImage, categoryId, featured, createdBy, createdAt
+
+        BlogCategory
+        name
+
+        FAQ
+        question, answer
+
+        Testimonial
+        name, content, image
+
+
+
+
+
+
+1. 🛒 Cart
+        Fields: userId, items[] (each with productVariantId, quantity)
+
+        Purpose: Temporarily store selected items before placing an order
+
+
+
+
+
+2. 🧾 Payment
+        Fields: orderId, paymentMethod, transactionId, status, paidAt
+
+        Purpose: Track payment status & info
+
+
+
+
+
+
+
+3. 📢 Notification (Optional but useful)
+        Fields: userId, message, read, createdAt
+
+        Purpose: Notify users about bookings, order status, etc.
+
+
+
+
+
+
+
+4. 📋 Report / Complaint (Optional for moderation)
+        Fields: reporterId, targetUserId, listingId, reason, status
+
+
+
+
+
+
+
+5. 💼 SavedListings / Wishlist
+        Fields: userId, listingType, listingId
+
+        Purpose: Allow users to bookmark listings
+
+
+
+
+
+
+
+
+6. 🎁 Offer
+        Fields: title, ownerId, discountType, discountValue, productIds, applyToAllProducts, validFrom, validTill
+            
+        Purpose: Allow vendors to create reusable time-bound discounts for selected or all of their products.
+
