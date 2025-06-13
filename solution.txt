@@ -1,0 +1,68 @@
+const updatedVariant = await ProductVariant.findOneAndUpdate(
+  {
+    _id: variantId,
+    stock: { $gt: 0 }
+  },
+  {
+    $inc: { stock: -1 }
+  },
+  { new: true }
+);
+
+if (!updatedVariant) {
+  throw new Error("Out of stock");
+}
+
+
+const updatedOffer = await Offer.findOneAndUpdate(
+  {
+    _id: offerId,
+    currentUsage: { $lt: offer.usageLimit }
+  },
+  {
+    $inc: { currentUsage: 1 }
+  },
+  { new: true }
+);
+
+if (!updatedOffer) {
+  throw new Error("Offer usage limit reached");
+}
+
+// If update succeeded, record redemption
+await OfferRedemption.create({ offerId, userId });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------ work add
+
+1. rate limiting done and soft listing of api for understanding and soft listing of database models with schema for better understanding

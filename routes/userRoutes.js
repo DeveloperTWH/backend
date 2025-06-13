@@ -19,8 +19,9 @@ router.post(
     body('name').notEmpty().trim().withMessage('Name is required'),
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('mobile').isMobilePhone('any').withMessage('Valid mobile number is required'),
+    body('mobile').trim().notEmpty().withMessage('Mobile number is required').isMobilePhone('any').withMessage('Enter a valid mobile number'),
     body('role').isIn(['admin', 'customer', 'business_owner']).withMessage('Invalid role'),
+    body('gender').notEmpty().withMessage('Gender is required').isIn(['male', 'female', 'other']).withMessage('Invalid gender'),
   ],
   userController.registerUser
 );

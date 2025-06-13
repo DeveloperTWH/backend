@@ -1,0 +1,21 @@
+problem 1 => If two users try to use an offer that's already been used 999 out of 1000 times ?
+problem 2 => same problem in inventory Management there is only 1 stock left 2 people trying to get it ?
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                           |-----------|
+-----------------------------------------------------------|   Doubt   |----------------------------------------------------------------------
+                                                           |-----------|
+
+
+doubt 1 => Does Business Owner will have an option to decline any order ?

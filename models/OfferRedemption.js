@@ -13,10 +13,15 @@ const offerRedemptionSchema = new mongoose.Schema({
     required: true,
   },
 
+  orderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order', // Optional: link redemption to a specific order
+  },
+
   usedAt: {
     type: Date,
     default: Date.now,
   }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.models.OfferRedemption || mongoose.model('OfferRedemption', offerRedemptionSchema);

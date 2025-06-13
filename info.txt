@@ -173,3 +173,24 @@
             
         Purpose: Allow vendors to create reusable time-bound discounts for selected or all of their products.
 
+
+
+
+
+
+
+{
+
+
+
+
+        backorder 
+        thresold stock 
+
+
+        should we add this in product 
+
+
+
+
+}

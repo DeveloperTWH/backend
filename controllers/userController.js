@@ -11,7 +11,7 @@ exports.registerUser = async (req, res) => {
     }
 
     try {
-        const { name, email, password, role, mobile } = req.body;
+        const { name, email, password, role, mobile, gender } = req.body;
 
         const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
         if (existingUser) {
@@ -31,6 +31,7 @@ exports.registerUser = async (req, res) => {
             passwordHash,
             mobile,
             role,
+            gender,
             otp: otpHash,
             otpExpiry,
             isOtpVerified: false,
@@ -96,6 +97,7 @@ exports.verifyOtp = async (req, res) => {
                 email: user.email,
                 mobile: user.mobile,
                 role: user.role,
+                gender: user.gender,
             },
         });
     } catch (err) {
@@ -182,6 +184,7 @@ exports.loginUser = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                gender: user.gender,
             },
         });
     } catch (err) {

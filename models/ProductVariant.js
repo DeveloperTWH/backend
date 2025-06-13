@@ -11,12 +11,14 @@ const productVariantSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
+    lowercase: true,
   },
 
   size: {
     type: String,
     required: true,
     trim: true,
+    uppercase: true, 
   },
 
   price: {
@@ -43,7 +45,7 @@ const productVariantSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: function (val) {
-        return val.length > 0;
+        return Array.isArray(val) && val.length > 0;
       },
       message: 'At least one image is required.',
     },
@@ -54,10 +56,6 @@ const productVariantSchema = new mongoose.Schema({
     default: [],
   },
 
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.models.ProductVariant || mongoose.model('ProductVariant', productVariantSchema);

@@ -1,0 +1,28 @@
+business apis
+    Public
+        /Get                        = list all the Business in or Platform  (Vendor Listing page)
+        /Get/:businessId            = list Business Detail (vendor deatil page)
+
+    Private
+        /Get/:ownerId               = list all the Business of an owner
+        /Post                       = Create New Business
+        /Put/:businessId            = Update business Detail
+        Aprove/:businessId          = Admin Accept/Reject Business. 
+        /Delete/:businessId         = Delete Business
+        
+        /Get/AllOrder/:businessId   = Get all the order under the business
+        /Get/:OrderId               = Get all the order under the business
+
+
+product apis
+    Public
+        /Get                        = List Product  (recomendation Product listing, Search Product Listing, Category Product Listing, Subcategory Product Listing, Business Product listing)
+        /Get/:productId             = List Product Detail (Product Detail page)
+
+    Private
+        /Post                       = Create new product under any Business
+        /put/:productId             = Update product(name, description, photos etc)
+        /Inventory/put/:productId   = stock update, backorder, thresold stock 
+        /Delete/:productId          = Delete product
+
+
