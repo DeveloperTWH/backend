@@ -160,13 +160,32 @@ exports.loginUser = async (req, res) => {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        if (!user.isOtpVerified) {
-            return res.status(403).json({ success: false, message: 'OTP not verified' });
-        }
-
         const isMatch = await bcrypt.compare(password, user.passwordHash);
         if (!isMatch) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        if (!user.isOtpVerified) {
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const otpHash = await bcrypt.hash(otp, 10);
+            const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+            user.otp = otpHash;
+            user.otpExpiry = otpExpiry;
+            await user.save();
+
+            console.log(`🔐 OTP re-sent for ${email}: ${otp}`);
+            // await sendOtpEmail(user.email, otp);
+
+            return res.status(403).json({
+                success: false,
+                otpPending: true,
+                message: 'OTP not verified. A new OTP has been sent.',
+                user: {
+                    email: user.email,
+                    role: user.role,
+                },
+            });
         }
 
         const token = jwt.sign(
