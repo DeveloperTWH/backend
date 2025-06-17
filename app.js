@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes')
+const businessRoutes = require('./routes/businessRoutes');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
 
 const app = express();
 app.use(cors({
@@ -10,7 +13,11 @@ app.use(cors({
 
 app.use(express.json());
 
+
+
+
 app.use('/api/users', userRoutes);
+app.use('/api/business', businessRoutes);
 
 // Test route
 app.get('/api/test', (req, res) => {

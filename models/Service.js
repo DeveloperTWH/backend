@@ -1,10 +1,16 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 
 const serviceSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
     trim: true,
+  },
+  slug: {
+    type: String,
+    unique: true,
+    lowercase: true,
   },
   description: {
     type: String,
@@ -19,6 +25,11 @@ const serviceSchema = new mongoose.Schema({
     type: String, // Example: '1 hour', '30 minutes'
     required: true,
   },
+  services: [
+    {
+      name: { type: String, required: true },
+    },
+  ],
   categories: [
     {
       categoryId: {
@@ -44,8 +55,12 @@ const serviceSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  coverImage: {
+    type: String,
+    required: true,
+  },
   images: {
-    type: [String], // Array of image URLs
+    type: [String],
     required: true,
     validate: {
       validator: function (val) {
@@ -54,20 +69,23 @@ const serviceSchema = new mongoose.Schema({
       message: 'At least one image is required.',
     },
   },
+  maxBookingsPerSlot: {
+    type: Number,
+    default: 1, // Default = only one person can book per slot
+  },
   videos: {
-    type: [String], // Array of video URLs (optional)
+    type: [String],
     default: [],
   },
-  availableSlots: [
-    {
-      date: { type: Date, required: true },
-      startTime: { type: String, required: true },
-      endTime: { type: String, required: true },
-    },
-  ],
   features: {
-    type: [String], // Array of service features
+    type: [String],
     required: true,
+    validate: {
+      validator: function (val) {
+        return val.length > 0;
+      },
+      message: 'At least one feature is required.',
+    },
   },
   amenities: [
     {
@@ -108,15 +126,33 @@ const serviceSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+// Generate slug before save
+serviceSchema.pre('save', function (next) {
+  if (!this.slug) {
+    this.slug = slugify(this.title, { lower: true, strict: true });
+  }
+  next();
+});
+
 // Method to calculate total reviews and average rating
 serviceSchema.methods.calculateRatings = async function () {
-  const reviews = await mongoose.model('Review').find({ listingId: this._id, listingType: 'service' });
+  const reviews = await mongoose.model('Review').find({
+    listingId: this._id,
+    listingType: 'service',
+  });
   this.totalReviews = reviews.length;
 
   const totalRating = reviews.reduce((acc, review) => acc + review.rating, 0);
-  this.averageRating = totalRating / this.totalReviews;
+  this.averageRating = this.totalReviews > 0
+    ? Math.round((totalRating / this.totalReviews) * 10) / 10
+    : 0;
 
   await this.save();
 };
+
+// Indexes for faster queries
+serviceSchema.index({ ownerId: 1 });
+serviceSchema.index({ 'categories.categoryId': 1 });
+serviceSchema.index({ slug: 1 });
 
 module.exports = mongoose.model('Service', serviceSchema);

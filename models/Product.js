@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 
 const productSchema = new mongoose.Schema({
   title: {
@@ -7,9 +8,20 @@ const productSchema = new mongoose.Schema({
     trim: true,
   },
 
+  slug: {
+    type: String,
+    unique: true,
+    lowercase: true,
+  },
+
   description: {
     type: String,
     required: true,
+  },
+
+  brand: {
+    type: String,
+    trim: true,
   },
 
   categoryId: {
@@ -33,6 +45,10 @@ const productSchema = new mongoose.Schema({
   isPublished: {
     type: Boolean,
     default: false,
+  },
+
+  coverImage: {
+    type: String,
   },
 
   variantOptions: {
@@ -64,5 +80,22 @@ const productSchema = new mongoose.Schema({
   }
 
 }, { timestamps: true });
+
+productSchema.pre('save', async function (next) {
+  if (!this.slug && this.title) {
+    let baseSlug = slugify(this.title, { lower: true, strict: true });
+    let slug = baseSlug;
+    let counter = 1;
+
+    while (await mongoose.models.Product.findOne({ slug })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    this.slug = slug;
+  }
+  next();
+});
+
 
 module.exports = mongoose.models.Product || mongoose.model('Product', productSchema);

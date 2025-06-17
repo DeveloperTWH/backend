@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 
 const businessSchema = new mongoose.Schema(
   {
@@ -12,6 +13,12 @@ const businessSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    slug: {
+      type: String,
+      unique: true,
+      lowercase: true,
+    },
+
     description: {
       type: String,
       trim: true,
@@ -34,11 +41,11 @@ const businessSchema = new mongoose.Schema(
       type: String,
     },
     address: {
-      street: { type: String },
-      city: { type: String },
-      state: { type: String },
+      street: { type: String, required: true },
+      city: { type: String, required: true },
+      state: { type: String, required: true },
       zipCode: { type: String },
-      country: { type: String },
+      country: { type: String, required: true },
     },
     socialLinks: {
       facebook: { type: String },
@@ -70,8 +77,29 @@ const businessSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    }
+
   },
   { timestamps: true }
 );
+
+businessSchema.pre('save', async function (next) {
+  if (!this.slug && this.businessName) {
+    let baseSlug = slugify(this.businessName, { lower: true, strict: true });
+    let slug = baseSlug;
+    let counter = 1;
+
+    while (await mongoose.models.Business.findOne({ slug })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    this.slug = slug;
+  }
+  next();
+});
 
 module.exports = mongoose.models.Business || mongoose.model('Business', businessSchema);

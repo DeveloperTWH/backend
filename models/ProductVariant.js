@@ -18,7 +18,7 @@ const productVariantSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    uppercase: true, 
+    uppercase: true,
   },
 
   price: {
@@ -38,6 +38,16 @@ const productVariantSchema = new mongoose.Schema({
     required: true,
     unique: true,
     trim: true,
+  },
+
+  isPublished: {
+    type: Boolean,
+    default: false,
+  },
+
+  salePrice: {
+    type: Number,
+    min: 0,
   },
 
   images: {

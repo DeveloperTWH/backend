@@ -19,3 +19,5 @@ problem 2 => same problem in inventory Management there is only 1 stock left 2 p
 
 
 doubt 1 => Does Business Owner will have an option to decline any order ?
+
+doubt 2 => will Business Owner Sell / List there own product or can list different brand Product's ?
