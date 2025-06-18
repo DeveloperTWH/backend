@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes')
 const businessRoutes = require('./routes/businessRoutes');
+const subscriptionPlanRoutes = require('./routes/subscriptionPlanRoutes')
+const productRoutes = require('./routes/productRoutes');
+
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 
@@ -18,6 +21,8 @@ app.use(express.json());
 
 app.use('/api/users', userRoutes);
 app.use('/api/business', businessRoutes);
+app.use('/api/subscription-plans', subscriptionPlanRoutes);
+app.use('/api/product', productRoutes);
 
 // Test route
 app.get('/api/test', (req, res) => {

@@ -11,21 +11,15 @@ const subscriptionPlanSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  maxBusinesses: {
-    type: Number,
-    required: true,
-    min: 1,
-  },
   durationInDays: {
     type: Number,
     default: 365, // Annual by default
   },
   limits: {
-    maxBusinesses: { type: Number, required: true, min: 1},
     productListings: { type: Number, default: 1 },
     serviceListings: { type: Number, default: 1 },
-    foodListings: { type: Number, default: 0 },
-    imageLimit: { type: Number, default: 2 },
+    foodListings: { type: Number, default: 1 },
+    imageLimit: { type: Number, default: 3 },
     videoLimit: { type: Number, default: 0 },
   },
   features: {

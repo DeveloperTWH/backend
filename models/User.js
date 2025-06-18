@@ -52,10 +52,6 @@ const userSchema = new mongoose.Schema(
     isOtpVerified: {
       type: Boolean,
       default: false,
-    },
-    subscriptionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'UserSubscription',
     }
   },
   { timestamps: true }

@@ -65,4 +65,4 @@ await OfferRedemption.create({ offerId, userId });
 
 ------------------------ work add
 
-1. rate limiting done and soft listing of api for understanding and soft listing of database models with schema for better understanding
+1. Created the subscription creation API

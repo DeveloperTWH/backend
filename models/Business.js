@@ -60,17 +60,20 @@ const businessSchema = new mongoose.Schema(
     },
     productCategories: [
       {
-        category: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductCategory' },
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ProductCategory'
       }
     ],
     serviceCategories: [
       {
-        category: { type: mongoose.Schema.Types.ObjectId, ref: 'ServiceCategory' },
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ServiceCategory'
       }
     ],
     foodCategories: [
       {
-        category: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodCategory' },
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'FoodCategory'
       }
     ],
     isApproved: {
@@ -80,6 +83,11 @@ const businessSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    subscriptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subscription',
+      required: true,
     }
 
   },

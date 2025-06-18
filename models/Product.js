@@ -42,7 +42,18 @@ const productSchema = new mongoose.Schema({
     required: true,
   },
 
+  businessId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Business',
+    required: true,
+  },
+
   isPublished: {
+    type: Boolean,
+    default: false,
+  },
+
+  isDeleted: {
     type: Boolean,
     default: false,
   },
@@ -52,14 +63,8 @@ const productSchema = new mongoose.Schema({
   },
 
   variantOptions: {
-    color: {
-      type: [String],
-      default: [],
-    },
-    size: {
-      type: [String],
-      default: [],
-    },
+    type: [String],
+    default: [],
   },
 
   specifications: [
@@ -67,17 +72,7 @@ const productSchema = new mongoose.Schema({
       key: { type: String, required: true },
       value: { type: String, required: true },
     }
-  ],
-
-  averageRating: {
-    type: Number,
-    default: 0,
-  },
-
-  totalReviews: {
-    type: Number,
-    default: 0,
-  }
+  ]
 
 }, { timestamps: true });
 
@@ -96,6 +91,9 @@ productSchema.pre('save', async function (next) {
   }
   next();
 });
+
+productSchema.index({ businessId: 1 });
+productSchema.index({ categoryId: 1, subcategoryId: 1 });
 
 
 module.exports = mongoose.models.Product || mongoose.model('Product', productSchema);

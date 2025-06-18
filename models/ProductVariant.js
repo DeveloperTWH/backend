@@ -7,6 +7,11 @@ const productVariantSchema = new mongoose.Schema({
     required: true,
   },
 
+  businessId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Business',
+  },
+
   color: {
     type: String,
     required: true,
@@ -22,7 +27,7 @@ const productVariantSchema = new mongoose.Schema({
   },
 
   price: {
-    type: Number,
+    type: mongoose.Schema.Types.Decimal128,
     required: true,
     min: 0,
   },
@@ -44,10 +49,29 @@ const productVariantSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
   salePrice: {
-    type: Number,
+    type: mongoose.Schema.Types.Decimal128,
     min: 0,
+    validate: {
+      validator: function (v) {
+        return !v || v < this.price;
+      },
+      message: 'Sale price must be less than original price',
+    },
+  },
+
+  discountEndDate: Date,
+
+  weightInKg: mongoose.Schema.Types.Decimal128,
+
+  dimensions: {
+    length: Number,
+    width: Number,
+    height: Number,
   },
 
   images: {
@@ -60,12 +84,38 @@ const productVariantSchema = new mongoose.Schema({
       message: 'At least one image is required.',
     },
   },
+  allowBackorder: {
+    type: Boolean,
+    default: false,
+  },
 
   videos: {
     type: [String],
     default: [],
   },
+  averageRating: {
+    type: Number,
+    default: 0,
+  },
+
+  totalReviews: {
+    type: Number,
+    default: 0,
+  }
 
 }, { timestamps: true });
+
+productVariantSchema.set('toJSON', {
+  transform: (doc, ret) => {
+    ret.price = parseFloat(ret.price?.toString() || '0');
+    ret.salePrice = parseFloat(ret.salePrice?.toString() || '0');
+    ret.weightInKg = parseFloat(ret.weightInKg?.toString() || '0');
+    return ret;
+  }
+});
+
+// Indexing
+productVariantSchema.index({ productId: 1 });
+productVariantSchema.index({ businessId: 1 });
 
 module.exports = mongoose.models.ProductVariant || mongoose.model('ProductVariant', productVariantSchema);
