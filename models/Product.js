@@ -63,8 +63,9 @@ const productSchema = new mongoose.Schema({
   },
 
   variantOptions: {
-    type: [String],
-    default: [],
+    type: Map,
+    of: [String],
+    default: {},
   },
 
   specifications: [

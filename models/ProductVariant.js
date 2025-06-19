@@ -19,31 +19,45 @@ const productVariantSchema = new mongoose.Schema({
     lowercase: true,
   },
 
-  size: {
-    type: String,
-    required: true,
-    trim: true,
-    uppercase: true,
-  },
-
-  price: {
-    type: mongoose.Schema.Types.Decimal128,
-    required: true,
-    min: 0,
-  },
-
-  stock: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-
-  sku: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-  },
+  sizes: [
+    {
+      size: {
+        type: String,
+        required: true,
+        trim: true,
+        uppercase: true,
+      },
+      stock: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+      price: {
+        type: mongoose.Schema.Types.Decimal128,
+        required: true,
+        min: 0,
+      },
+      salePrice: {
+        type: mongoose.Schema.Types.Decimal128,
+        min: 0,
+        validate: {
+          validator: function (v) {
+            return !v || v < this.price;
+          },
+          message: 'Sale price must be less than original price',
+        },
+      },
+      discountEndDate: {
+        type: Date,
+      },
+      sku: {
+        type: String,
+        required: true,
+        trim: true,
+        unique: true,
+      }
+    }
+  ],
 
   isPublished: {
     type: Boolean,
@@ -53,18 +67,6 @@ const productVariantSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  salePrice: {
-    type: mongoose.Schema.Types.Decimal128,
-    min: 0,
-    validate: {
-      validator: function (v) {
-        return !v || v < this.price;
-      },
-      message: 'Sale price must be less than original price',
-    },
-  },
-
-  discountEndDate: Date,
 
   weightInKg: mongoose.Schema.Types.Decimal128,
 
@@ -97,7 +99,6 @@ const productVariantSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-
   totalReviews: {
     type: Number,
     default: 0,
@@ -107,14 +108,16 @@ const productVariantSchema = new mongoose.Schema({
 
 productVariantSchema.set('toJSON', {
   transform: (doc, ret) => {
-    ret.price = parseFloat(ret.price?.toString() || '0');
-    ret.salePrice = parseFloat(ret.salePrice?.toString() || '0');
+    ret.sizes = ret.sizes.map(s => ({
+      ...s,
+      price: parseFloat(s.price?.toString() || '0'),
+      salePrice: parseFloat(s.salePrice?.toString() || '0')
+    }));
     ret.weightInKg = parseFloat(ret.weightInKg?.toString() || '0');
     return ret;
   }
 });
 
-// Indexing
 productVariantSchema.index({ productId: 1 });
 productVariantSchema.index({ businessId: 1 });
 
