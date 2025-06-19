@@ -38,7 +38,7 @@ await OfferRedemption.create({ offerId, userId });
 
 
 
-
+have to devlope th corn job to delete the image in evry 10 mint have it but for now jump over it.
 
 
 
@@ -65,4 +65,4 @@ await OfferRedemption.create({ offerId, userId });
 
 ------------------------ work add
 
-1. Created the subscription creation API
+1. Created the subscription creation API 

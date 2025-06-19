@@ -4,6 +4,7 @@ const userRoutes = require('./routes/userRoutes')
 const businessRoutes = require('./routes/businessRoutes');
 const subscriptionPlanRoutes = require('./routes/subscriptionPlanRoutes')
 const productRoutes = require('./routes/productRoutes');
+const uploadImageRoute = require('./routes/uploadImage')
 
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
@@ -23,10 +24,13 @@ app.use('/api/users', userRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/subscription-plans', subscriptionPlanRoutes);
 app.use('/api/product', productRoutes);
+app.use('/api', uploadImageRoute);
 
 // Test route
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Mosaic Biz Hub API is working' });
 });
+
+// require('./jobs/cleanupImages');
 
 module.exports = app;

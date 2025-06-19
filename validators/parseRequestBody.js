@@ -1,7 +1,6 @@
 const parseRequestBody = (req, res, next) => { 
 
   try {
-    // Only parse if the value is a string
     if (typeof req.body.variantOptions === 'string') {
       req.body.variantOptions = JSON.parse(req.body.variantOptions);
     }
@@ -14,7 +13,6 @@ const parseRequestBody = (req, res, next) => {
       req.body.variants = JSON.parse(req.body.variants);
     }
 
-    // After parsing, move to the next middleware
      console.log('After parsing:', req.body);
     next();
   } catch (error) {
