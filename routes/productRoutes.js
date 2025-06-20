@@ -1,5 +1,5 @@
 const express = require('express');
-const { createProductWithVariants, addVariants  } = require('../controllers/productController');
+const { createProductWithVariants, addVariants, updateVariant, deleteVariant, deleteProduct  } = require('../controllers/productController');
 const authenticate = require('../middlewares/authenticate');
 const isBusinessOwner = require('../middlewares/isBusinessOwner');
 const { validateProductInput, validateVariantInput  } = require('../validators/productValidators');
@@ -22,6 +22,33 @@ router.post(
   validateVariantInput, // Validation for variant fields
   addVariants // Controller to handle adding variants
 );
+
+
+router.put(
+  '/update-variant/:productId/:variantId',
+  authenticate,
+  isBusinessOwner,
+  validateVariantInput, 
+  updateVariant 
+);
+
+
+router.delete(
+  '/delete-variant/:productId/:variantId', // productId and variantId in URL
+  authenticate,
+  isBusinessOwner,
+  deleteVariant // Controller to handle variant deletion
+);
+
+
+
+router.delete(
+  '/delete-product/:productId', // productId in URL
+  authenticate,
+  isBusinessOwner,
+  deleteProduct // Controller to handle product deletion
+);
+
 
 
 
