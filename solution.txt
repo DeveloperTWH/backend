@@ -60,9 +60,17 @@ have to devlope th corn job to delete the image in evry 10 mint have it but for 
 
 
 
-
+mosaic-biz-hub Variant creation Route , Variant updation Route and Variant Deletion Route Configured, Developed Variant Creation API, Developed Variant Updation API, Developed Variant Deletion API, Postman Testing Under Process
 
 
 ------------------------ work add
 
-1. devloped ProductVariant creation api, ProductVariant Updation API
+1. developed Product Deletion and Variant associated with product Deletion api tested Variant Creation API, Variant Updation API, and Variant Deletion API in Postman
+
+
+
+
+-------------------- TODO : ----------------------
+
+1. Get Product
+2. Product update
