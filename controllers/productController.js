@@ -103,6 +103,7 @@ exports.createProductWithVariants = async (req, res) => {
             coverImage,
             isDeleted: false,
             isPublished: false,
+            minorityType: business.minorityType,
         });
 
         await product.save();

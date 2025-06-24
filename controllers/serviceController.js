@@ -9,113 +9,114 @@ require('../models/ServiceCategory');
 require('../models/ServiceSubcategory');
 
 exports.createService = async (req, res) => {
-    const session = await Service.startSession();
-    session.startTransaction();
-    try {
-        const {
-            title,
-            description,
-            price,
-            duration,
-            services,
-            categories,
-            coverImage,
-            images,
-            features,
-            amenities,
-            businessHours,
-            locationMapEmbedUrl,
-            contact,
-            faq,
-            videos,
-            maxBookingsPerSlot,
-            businessId, // Sent from frontend
-        } = req.body;
+  const session = await Service.startSession();
+  session.startTransaction();
+  try {
+    const {
+      title,
+      description,
+      price,
+      duration,
+      services,
+      categories,
+      coverImage,
+      images,
+      features,
+      amenities,
+      businessHours,
+      locationMapEmbedUrl,
+      contact,
+      faq,
+      videos,
+      maxBookingsPerSlot,
+      businessId, // Sent from frontend
+    } = req.body;
 
-        const userId = req.user._id;
+    const userId = req.user._id;
 
-        // 🛡️ Step 1: Verify ownership
-        const business = await Business.findOne({ _id: businessId, owner: userId });
-        if (!business)
-            return res.status(403).json({ error: 'You do not own this business.' });
+    // 🛡️ Step 1: Verify ownership
+    const business = await Business.findOne({ _id: businessId, owner: userId });
+    if (!business)
+      return res.status(403).json({ error: 'You do not own this business.' });
 
-        if (!business.isApproved)
-            return res.status(400).json({ error: 'Business is not approved yet.' });
+    if (!business.isApproved)
+      return res.status(400).json({ error: 'Business is not approved yet.' });
 
-        if (business.listingType !== 'service')
-            return res.status(400).json({ error: 'This business is not allowed to list services.' });
+    if (business.listingType !== 'service')
+      return res.status(400).json({ error: 'This business is not allowed to list services.' });
 
-        // 📅 Step 2: Subscription check
-        const subscription = await Subscription.findOne({
-            _id: business.subscriptionId,
-            businessId,
-            status: 'active',
-            paymentStatus: 'COMPLETED',
-            endDate: { $gte: new Date() },
-        });
+    // 📅 Step 2: Subscription check
+    const subscription = await Subscription.findOne({
+      _id: business.subscriptionId,
+      businessId,
+      status: 'active',
+      paymentStatus: 'COMPLETED',
+      endDate: { $gte: new Date() },
+    });
 
-        if (!subscription)
-            return res.status(403).json({ error: 'Valid subscription not found.' });
+    if (!subscription)
+      return res.status(403).json({ error: 'Valid subscription not found.' });
 
-        const subscriptionPlan = await SubscriptionPlan.findById(subscription.subscriptionPlanId);
-        const serviceLimit = subscriptionPlan?.limits?.serviceListings || 0;
+    const subscriptionPlan = await SubscriptionPlan.findById(subscription.subscriptionPlanId);
+    const serviceLimit = subscriptionPlan?.limits?.serviceListings || 0;
 
-        const existingServiceCount = await Service.countDocuments({ ownerId: userId });
+    const existingServiceCount = await Service.countDocuments({ ownerId: userId });
 
-        if (existingServiceCount >= serviceLimit) {
-            return res.status(403).json({
-                error: `Service listing limit reached for your subscription. You can add up to ${serviceLimit} services.`,
-            });
-        }
-
-        // ✅ Step 3: Save service
-        const service = new Service({
-            title,
-            description,
-            price,
-            duration,
-            services,
-            categories,
-            coverImage,
-            images,
-            features,
-            amenities,
-            businessHours,
-            locationMapEmbedUrl,
-            contact,
-            faq,
-            videos,
-            maxBookingsPerSlot,
-            ownerId: userId,
-        });
-
-        await service.save();
-
-        // ✅ Cleanup: remove from PendingImage
-        const usedImages = [coverImage, ...images];
-        await PendingImage.deleteMany({ url: { $in: usedImages } });
-
-        await session.commitTransaction();
-        session.endSession();
-
-        res.status(201).json({
-            message: 'Service created successfully.',
-            service,
-        });
-    } catch (err) {
-        await session.abortTransaction();
-        session.endSession();
-
-        // Cleanup Cloudinary + PendingImage
-        const usedImages = [req.body.coverImage, ...(req.body.images || [])];
-        for (const image of usedImages) {
-            await deleteCloudinaryFile(image);
-            await PendingImage.deleteOne({ url: image });
-        }
-
-        console.error('Service creation failed:', err.message);
-        return res.status(400).json({ error: err.message || 'Failed to create service' });
+    if (existingServiceCount >= serviceLimit) {
+      return res.status(403).json({
+        error: `Service listing limit reached for your subscription. You can add up to ${serviceLimit} services.`,
+      });
     }
+
+    // ✅ Step 3: Save service
+    const service = new Service({
+      title,
+      description,
+      price,
+      duration,
+      services,
+      categories,
+      coverImage,
+      images,
+      features,
+      amenities,
+      businessHours,
+      locationMapEmbedUrl,
+      contact,
+      faq,
+      videos,
+      maxBookingsPerSlot,
+      ownerId: userId,
+      minorityType: business.minorityType,
+    });
+
+    await service.save();
+
+    // ✅ Cleanup: remove from PendingImage
+    const usedImages = [coverImage, ...images];
+    await PendingImage.deleteMany({ url: { $in: usedImages } });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({
+      message: 'Service created successfully.',
+      service,
+    });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+
+    // Cleanup Cloudinary + PendingImage
+    const usedImages = [req.body.coverImage, ...(req.body.images || [])];
+    for (const image of usedImages) {
+      await deleteCloudinaryFile(image);
+      await PendingImage.deleteOne({ url: image });
+    }
+
+    console.error('Service creation failed:', err.message);
+    return res.status(400).json({ error: err.message || 'Failed to create service' });
+  }
 };
 
 
@@ -166,7 +167,6 @@ exports.getMyServices = async (req, res) => {
 
 
 
-
 exports.deleteService = async (req, res) => {
   try {
     const serviceId = req.params.id;
@@ -189,5 +189,53 @@ exports.deleteService = async (req, res) => {
   } catch (err) {
     console.error('Failed to delete service:', err.message);
     res.status(500).json({ error: 'Failed to delete service.' });
+  }
+};
+
+
+
+
+exports.updateService = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const serviceId = req.params.id;
+
+    const service = await Service.findOne({ _id: serviceId, ownerId: userId });
+
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+
+    const updatableFields = [
+      'title', 'description', 'price', 'duration', 'services',
+      'categories', 'coverImage', 'images', 'features', 'amenities',
+      'businessHours', 'locationMapEmbedUrl', 'contact', 'faq',
+      'videos', 'maxBookingsPerSlot'
+    ];
+
+    updatableFields.forEach(field => {
+      if (req.body[field] !== undefined) service[field] = req.body[field];
+    });
+
+    // Regenerate slug if title changes
+    if (req.body.title && req.body.title !== service.title) {
+      const baseSlug = slugify(req.body.title, { lower: true, strict: true });
+      let slug = baseSlug;
+      let counter = 1;
+      while (await Service.findOne({ slug, _id: { $ne: service._id } })) {
+        slug = `${baseSlug}-${counter++}`;
+      }
+      service.slug = slug;
+    }
+
+    await service.save();
+
+    return res.status(200).json({
+      message: 'Service updated successfully',
+      service
+    });
+  } catch (error) {
+    console.error('Service update error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };

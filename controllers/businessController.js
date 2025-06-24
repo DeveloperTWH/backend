@@ -100,6 +100,7 @@ exports.createBusiness = async (req, res) => {
       productCategories,
       serviceCategories,
       foodCategories,
+      minorityType
     } = req.body;
 
 
@@ -134,6 +135,7 @@ exports.createBusiness = async (req, res) => {
       owner: user._id,
       isApproved: false,
       subscriptionId: subscription._id,
+      minorityType
     });
 
     await newBusiness.save();

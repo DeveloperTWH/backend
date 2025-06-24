@@ -37,6 +37,11 @@ const businessSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
+    minorityType: {
+      type: String,
+      trim: true,
+      required: true,
+    },
     phone: {
       type: String,
     },

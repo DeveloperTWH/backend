@@ -51,6 +51,11 @@ const serviceSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  minorityType: {
+    type: String,
+    trim: true,
+    required: true,
+  },
   isPublished: {
     type: Boolean,
     default: false,

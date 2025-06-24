@@ -48,6 +48,12 @@ const productSchema = new mongoose.Schema({
     required: true,
   },
 
+  minorityType: {
+    type: String,
+    trim: true,
+    required: true,
+  },
+
   isPublished: {
     type: Boolean,
     default: false,

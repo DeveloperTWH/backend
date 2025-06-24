@@ -5,6 +5,7 @@ const businessRoutes = require('./routes/businessRoutes');
 const subscriptionPlanRoutes = require('./routes/subscriptionPlanRoutes')
 const productRoutes = require('./routes/productRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
+const minorityTypeRoutes = require('./routes/minorityTypeRoutes');
 const uploadImageRoute = require('./routes/uploadImage')
 
 const mongoSanitize = require('express-mongo-sanitize');
@@ -26,6 +27,7 @@ app.use('/api/business', businessRoutes);
 app.use('/api/subscription-plans', subscriptionPlanRoutes);
 app.use('/api/product', productRoutes);
 app.use('/api/service',serviceRoutes );
+app.use('/api/minority-types', minorityTypeRoutes);
 app.use('/api', uploadImageRoute);
 
 // Test route

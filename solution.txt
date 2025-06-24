@@ -65,8 +65,13 @@ mosaic-biz-hub Variant creation Route , Variant updation Route and Variant Delet
 
 ------------------------ work add
 
-1. developed Product Deletion and Variant associated with product Deletion api tested Variant Creation API, Variant Updation API, and Variant Deletion API in Postman
+1. Developed Service creation api, Developed Service Updation api, Developed Service Deletion api, Developed Service Listing Api, Configured routes for all of the above api, Tested All the Api's with the Postman
 
+
+Connected Minority Type Api with the frontend dropdown list in index page added Loading state,Developed And Build Minority Model, Developed Minority Type Creation Api, Developed minority Listing api for public (Only isActive type Visible), developed minority Updation APi, Developed Minority type Deletion api, Postman Testing under Process
+
+
+Integrated resend Otp Module with frontend.
 
 
 
@@ -74,3 +79,7 @@ mosaic-biz-hub Variant creation Route , Variant updation Route and Variant Delet
 
 1. Get Product
 2. Product update
+
+
+
+in Business There is no Social Category 
