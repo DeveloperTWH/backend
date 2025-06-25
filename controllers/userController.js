@@ -65,6 +65,15 @@ exports.verifyOtp = async (req, res) => {
             return res.status(400).json({ success: false, message: 'OTP not generated or user not found' });
         }
 
+        if (user.isDeleted) {
+            return res.status(403).json({ success: false, message: 'Account has been deleted' });
+        }
+
+        if (user.isBlocked) {
+            return res.status(403).json({ success: false, message: 'Account is blocked by admin' });
+        }
+
+
         if (user.otpExpiry < Date.now()) {
             return res.status(400).json({ success: false, message: 'OTP has expired' });
         }
@@ -118,6 +127,14 @@ exports.resendOtp = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
+        if (user.isDeleted) {
+            return res.status(403).json({ success: false, message: 'Account has been deleted' });
+        }
+
+        if (user.isBlocked) {
+            return res.status(403).json({ success: false, message: 'Account is blocked by admin' });
+        }
+
         if (user.isOtpVerified) {
             return res.status(400).json({ success: false, message: 'User already verified' });
         }
@@ -159,6 +176,15 @@ exports.loginUser = async (req, res) => {
         if (!user || !user.passwordHash) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
+
+        if (user.isDeleted) {
+            return res.status(403).json({ success: false, message: 'Account has been deleted' });
+        }
+
+        if (user.isBlocked) {
+            return res.status(403).json({ success: false, message: 'Account is blocked by admin' });
+        }
+
 
         const isMatch = await bcrypt.compare(password, user.passwordHash);
         if (!isMatch) {

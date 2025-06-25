@@ -65,13 +65,23 @@ mosaic-biz-hub Variant creation Route , Variant updation Route and Variant Delet
 
 ------------------------ work add
 
-1. Developed Service creation api, Developed Service Updation api, Developed Service Deletion api, Developed Service Listing Api, Configured routes for all of the above api, Tested All the Api's with the Postman
-
 
 Connected Minority Type Api with the frontend dropdown list in index page added Loading state,Developed And Build Minority Model, Developed Minority Type Creation Api, Developed minority Listing api for public (Only isActive type Visible), developed minority Updation APi, Developed Minority type Deletion api, Postman Testing under Process
 
 
-Integrated resend Otp Module with frontend.
+Integrated resend Otp Module with frontend and Add coolDown Timer to get Rid off OTP Spamming .
+
+
+today:
+
+User Mangement Module:
+Integrated Minority type Api With The frontend dropdown list in Service and food page, Developed User Mangement Module, Developed Listing api (public percpctive),Developed Listing api (Admin percpctive), Developed User Updation api, Developed User Deletion api, developed api to block and unblock user from the platform.
+
+FAQs Module
+Developed FAQs model, Configured FAQ specific routes, Developed FAQ listing Api (Admin percpctive), Developed FAQ Creation api, developed FAQ Updation Api, Developed FAQ Deletion api, Configured CMS Routes to Get FAQs from the db
+
+ // TODO: testimonial Module, blog Module
+
 
 
 

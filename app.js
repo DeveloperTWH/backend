@@ -8,6 +8,17 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const minorityTypeRoutes = require('./routes/minorityTypeRoutes');
 const uploadImageRoute = require('./routes/uploadImage')
 
+
+// Content Management Route - FAQ / BLOG / TESTIMONIALS
+
+const cmsRoutes = require('./routes/cms/cmsRoutes');
+
+
+// admin Routes
+
+const adminUserRoutes =require('./routes/admin/userRoutes')
+const adminFaqRoutes = require('./routes/admin/faqRoutes');
+
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 
@@ -29,6 +40,16 @@ app.use('/api/product', productRoutes);
 app.use('/api/service',serviceRoutes );
 app.use('/api/minority-types', minorityTypeRoutes);
 app.use('/api', uploadImageRoute);
+
+
+//CMS Route's
+app.use('/cms', cmsRoutes);
+
+
+// Admin Routes
+app.use('/admin/users', adminUserRoutes);
+app.use('/admin/faqs', adminFaqRoutes);
+
 
 // Test route
 app.get('/api/test', (req, res) => {
