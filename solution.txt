@@ -66,10 +66,10 @@ mosaic-biz-hub Variant creation Route , Variant updation Route and Variant Delet
 ------------------------ work add
 
 
-Connected Minority Type Api with the frontend dropdown list in index page added Loading state,Developed And Build Minority Model, Developed Minority Type Creation Api, Developed minority Listing api for public (Only isActive type Visible), developed minority Updation APi, Developed Minority type Deletion api, Postman Testing under Process
+Connected Minority Type Api with the frontend dropdown list in index page added Loading state,Developed And Build Minority Model, Developed Minority Type Creation Api, Developed minority Listing api for public (Only isActive type Visible), developed minority Updation APi, Developed Minority type Deletion api, 
 
 
-Integrated resend Otp Module with frontend and Add coolDown Timer to get Rid off OTP Spamming .
+Integrate resend Otp Module with frontend and Add coolDown Timer to get Rid off OTP Spamming .
 
 
 today:
@@ -80,7 +80,16 @@ Integrated Minority type Api With The frontend dropdown list in Service and food
 FAQs Module
 Developed FAQs model, Configured FAQ specific routes, Developed FAQ listing Api (Admin percpctive), Developed FAQ Creation api, developed FAQ Updation Api, Developed FAQ Deletion api, Configured CMS Routes to Get FAQs from the db
 
- // TODO: testimonial Module, blog Module
+testimonial Module
+Developed testimonial model, Configured testimonial specific routes, Developed testimonial listing Api (Admin percepctive), Developed testimonial Creation api, developed testimonial Updation Api, Developed testimonial Deletion api, Configured CMS Routes to Get testimonial from the db
+
+
+wishlist Module
+Developed wishlist model, Configured wishlist specific routes, Developed wishlist listing Api (Only Authenticated Customer), Developed wishlist Creation api, Developed product removing api from the wishlist.
+
+
+
+ // TODO: blog Module
 
 
 

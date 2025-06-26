@@ -10,14 +10,19 @@ const uploadImageRoute = require('./routes/uploadImage')
 
 
 // Content Management Route - FAQ / BLOG / TESTIMONIALS
-
 const cmsRoutes = require('./routes/cms/cmsRoutes');
 
 
 // admin Routes
-
 const adminUserRoutes =require('./routes/admin/userRoutes')
 const adminFaqRoutes = require('./routes/admin/faqRoutes');
+const testimonialRoutes = require('./routes/admin/testimonialRoutes');
+
+
+// User Routes
+const wishlistRoutes = require('./routes/customer/wishlistRoutes');
+
+
 
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
@@ -49,6 +54,11 @@ app.use('/cms', cmsRoutes);
 // Admin Routes
 app.use('/admin/users', adminUserRoutes);
 app.use('/admin/faqs', adminFaqRoutes);
+app.use('/api/admin/testimonials', testimonialRoutes);
+
+
+// User Routes
+app.use('/api/wishlist', wishlistRoutes);
 
 
 // Test route
