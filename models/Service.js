@@ -158,6 +158,5 @@ serviceSchema.methods.calculateRatings = async function () {
 // Indexes for faster queries
 serviceSchema.index({ ownerId: 1 });
 serviceSchema.index({ 'categories.categoryId': 1 });
-serviceSchema.index({ slug: 1 });
 
 module.exports = mongoose.model('Service', serviceSchema);

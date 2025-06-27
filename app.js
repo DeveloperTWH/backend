@@ -17,6 +17,7 @@ const cmsRoutes = require('./routes/cms/cmsRoutes');
 const adminUserRoutes =require('./routes/admin/userRoutes')
 const adminFaqRoutes = require('./routes/admin/faqRoutes');
 const testimonialRoutes = require('./routes/admin/testimonialRoutes');
+const blogRoutes = require('./routes/admin/Blog/blogRoutes');
 
 
 // User Routes
@@ -55,6 +56,7 @@ app.use('/cms', cmsRoutes);
 app.use('/admin/users', adminUserRoutes);
 app.use('/admin/faqs', adminFaqRoutes);
 app.use('/api/admin/testimonials', testimonialRoutes);
+app.use('/admin/api/blogs', blogRoutes);
 
 
 // User Routes
