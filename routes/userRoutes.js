@@ -37,6 +37,8 @@ router.post(
   userController.loginUser
 );
 
+router.post('/logout', userController.logout);
+
 router.post(
   '/verify-otp',
   [

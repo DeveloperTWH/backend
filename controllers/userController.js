@@ -42,6 +42,13 @@ exports.registerUser = async (req, res) => {
         console.log(`🔐 OTP for ${email} is: ${otp}`); // Simulate sending OTP
         // await sendOtpEmail(email, otp);
 
+        res.cookie('otpPending', 'true', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 10 * 60 * 1000, // 10 minutes
+        });
+
         res.status(201).json({
             success: true,
             message: 'User registered successfully. OTP sent to mobile.',
@@ -96,10 +103,32 @@ exports.verifyOtp = async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        res.cookie('user_session', 'true', {
+            httpOnly: false,
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.cookie('user_gender', user.gender || '', {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.clearCookie('otpPending');
+
         res.status(200).json({
             success: true,
             message: 'OTP verified and login successful',
-            token,
             user: {
                 id: user._id,
                 name: user.name,
@@ -109,6 +138,7 @@ exports.verifyOtp = async (req, res) => {
                 gender: user.gender,
             },
         });
+
     } catch (err) {
         console.error('OTP verify error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
@@ -150,7 +180,18 @@ exports.resendOtp = async (req, res) => {
         // await sendOtpEmail(user.email, otp);
         console.log(`🔐 OTP for ${email} is: ${otp}`); // Simulate sending OTP
 
-        res.status(200).json({ success: true, message: 'OTP re-sent to your email' });
+        res.cookie('otpPending', 'true', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 10 * 60 * 1000,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'OTP resent successfully.',
+        });
+
     } catch (err) {
         console.error('Resend OTP error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
@@ -170,11 +211,15 @@ exports.loginUser = async (req, res) => {
     }
 
     try {
-        const { email, password } = req.body;
+        const { email, password, role } = req.body;
 
         const user = await User.findOne({ email });
         if (!user || !user.passwordHash) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        if (role && user.role !== role) {
+            return res.status(401).json({ success: false, message: 'Invalid role for this account' });
         }
 
         if (user.isDeleted) {
@@ -203,6 +248,13 @@ exports.loginUser = async (req, res) => {
             console.log(`🔐 OTP re-sent for ${email}: ${otp}`);
             // await sendOtpEmail(user.email, otp);
 
+            res.cookie('otpPending', 'true', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 10 * 60 * 1000, // 10 minutes
+            });
+
             return res.status(403).json({
                 success: false,
                 otpPending: true,
@@ -220,10 +272,30 @@ exports.loginUser = async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.cookie('user_session', 'true', {
+            httpOnly: false,
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.cookie('user_gender', user.gender || '', {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
         res.status(200).json({
             success: true,
             message: 'Login successful',
-            token,
             user: {
                 id: user._id,
                 name: user.name,
@@ -232,8 +304,22 @@ exports.loginUser = async (req, res) => {
                 gender: user.gender,
             },
         });
+
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+
+
+
+exports.logout = (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: true, // use true in production with HTTPS
+    sameSite: 'lax',
+    path: '/'
+  });
+  res.status(200).json({ message: 'Logged out successfully' });
+};
+

@@ -93,6 +93,42 @@ Blog Module:
 Developed Blog Model, Configured Blog specific Routes, Developed Blog Listing Api (Admin percepctive), Developed Get Specific Blog Api (Admin percepctive), Developed Blog Listing Api (public percepctive), Developed Get Specific Blog Api (Public percepctive), Developed Blog Creation Api, Developed Blog Updation Api, Developed Blog Deletion Api, Developed Blog Feature/UnFeature Toggle Api, Developed Blog Publish/UnPublish Toggle Api
 
 
+1. Navbar Enhancements
+
+    Integrated gender-based avatar rendering (male/female) based on user cookies.
+
+    Implemented a dropdown menu with Dashboard, Profile, and Logout options for logged-in users.
+
+    Added a pulse (breathing) animation to login buttons while cookie-based login status is being verified to prevent UI flicker.
+
+2. Authentication & Logout Flow
+
+    Developed a robust Logout API that clears all session cookies, including HttpOnly tokens.
+
+    Integrated client-side cookie cleanup and redirection upon logout.
+
+    Ensured seamless logout experience across roles.
+
+3. Middleware & Role-Based Access Control
+
+    Updated middleware to support role-based redirection (e.g., customer, vendor).
+
+    Enforced access restrictions for protected routes based on user roles.
+
+    Maintained a unified Profile page accessible to all authenticated users.
+
+4. Business Registration Page
+
+    Designed and developed the complete Business Registration form with labels, validation, and clean layout.
+
+    Connected the form to the backend API for business submission.
+
+    Ensured full responsiveness and accessibility across devices.
+
+
+
+
+
 
 
 -------------------- TODO : ----------------------
