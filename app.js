@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
+
 const userRoutes = require('./routes/userRoutes')
 const businessRoutes = require('./routes/businessRoutes');
 const subscriptionPlanRoutes = require('./routes/subscriptionPlanRoutes')
@@ -35,6 +37,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 
 
 

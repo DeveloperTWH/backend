@@ -60,19 +60,18 @@ have to devlope th corn job to delete the image in evry 10 mint have it but for 
 
 
 
+
+
+
+------------------------ work Added
+
 mosaic-biz-hub Variant creation Route , Variant updation Route and Variant Deletion Route Configured, Developed Variant Creation API, Developed Variant Updation API, Developed Variant Deletion API, Postman Testing Under Process
-
-
------------------------- work add
-
 
 Connected Minority Type Api with the frontend dropdown list in index page added Loading state,Developed And Build Minority Model, Developed Minority Type Creation Api, Developed minority Listing api for public (Only isActive type Visible), developed minority Updation APi, Developed Minority type Deletion api, 
 
 
 Integrate resend Otp Module with frontend and Add coolDown Timer to get Rid off OTP Spamming .
 
-
-today:
 
 User Mangement Module:
 Developed User Mangement Module, Developed Listing api (Admin percpctive), Developed User Updation api, Developed User Deletion api, developed api to block and unblock user from the platform.
@@ -82,6 +81,16 @@ developed FAQ Updation Api, Developed FAQ Deletion api, Configured CMS Routes to
 
 testimonial Module
 Developed testimonial model, Configured testimonial specific routes, Developed testimonial listing Api (Admin percepctive), Developed testimonial Creation api, developed testimonial Updation Api, Developed testimonial Deletion api, Configured CMS Routes to Get testimonial from the db
+
+
+
+
+
+
+
+
+------------------------ work Done
+
 
 
 wishlist Module
@@ -127,6 +136,17 @@ Developed Blog Model, Configured Blog specific Routes, Developed Blog Listing Ap
 
 
 
+
+
+
+
+
+
+I enhanced the Navbar by adding gender-based avatars with a dropdown menu for logged-in users, including Dashboard, Profile, and Logout options. I implemented a breathing animation on login buttons to avoid flicker while checking cookies. Additionally, I developed a logout API that clears all cookies, including HttpOnly tokens, and updated middleware to handle role-based redirection and access control. A shared Profile page was maintained for all roles. Lastly, I designed and implemented a fully responsive Business Registration page with labeled fields, validations, and API integration.
+
+
+
+developed and styled the complete business registration form with dynamic plan selection, file uploads (logo and cover image), and integrated form submission with loading and feedback handling, structured the routing to redirect users to `/partners` (Business Owner Dashboard) after registration and created the `/partners/[businessid]/setup` page to handle bank details.Developed the bank details UI based on the provided figma Design, fixed a TypeScript warning
 
 
 

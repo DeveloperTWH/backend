@@ -61,6 +61,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    minorityType: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'MinorityType',
+      required: true, // if mandatory
+    }
 
   },
   { timestamps: true }

@@ -38,8 +38,8 @@ const businessSchema = new mongoose.Schema(
       lowercase: true,
     },
     minorityType: {
-      type: String,
-      trim: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'MinorityType',
       required: true,
     },
     phone: {

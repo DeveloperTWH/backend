@@ -22,6 +22,7 @@ router.post(
     body('mobile').trim().notEmpty().withMessage('Mobile number is required').isMobilePhone('any').withMessage('Enter a valid mobile number'),
     body('role').isIn(['admin', 'customer', 'business_owner']).withMessage('Invalid role'),
     body('gender').notEmpty().withMessage('Gender is required').isIn(['male', 'female', 'other']).withMessage('Invalid gender'),
+    body('minorityType').notEmpty().withMessage('Minority type is required'),
   ],
   userController.registerUser
 );

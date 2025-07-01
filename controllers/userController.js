@@ -11,7 +11,7 @@ exports.registerUser = async (req, res) => {
     }
 
     try {
-        const { name, email, password, role, mobile, gender } = req.body;
+        const { name, email, password, role, mobile, gender, minorityType  } = req.body;
 
         const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
         if (existingUser) {
@@ -32,6 +32,7 @@ exports.registerUser = async (req, res) => {
             mobile,
             role,
             gender,
+            minorityType,
             otp: otpHash,
             otpExpiry,
             isOtpVerified: false,
