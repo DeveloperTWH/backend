@@ -149,7 +149,8 @@ I enhanced the Navbar by adding gender-based avatars with a dropdown menu for lo
 developed and styled the complete business registration form with dynamic plan selection, file uploads (logo and cover image), and integrated form submission with loading and feedback handling, structured the routing to redirect users to `/partners` (Business Owner Dashboard) after registration and created the `/partners/[businessid]/setup` page to handle bank details.Developed the bank details UI based on the provided figma Design, fixed a TypeScript warning
 
 
-
+service module : 
+implemented slug generation, location support (address + coordinates), and verifying all core APIs including create, update, delete, and get my services, Developed new get service by ID Api.tested everything on Postman with sample data.planned the complete structure for the food module, deciding to use a unified model with a foodType field to differentiate between food from Shop, Farm (both delivery-based), and Restaurant (table booking only).
 
 -------------------- TODO : ----------------------
 
@@ -159,3 +160,39 @@ developed and styled the complete business registration form with dynamic plan s
 
 
 in Business There is no Social Category 
+
+
+
+// ---------------APIS
+
+Google Maps Geocoding API
+Google Maps Reverse Geocoding API
+Google Maps JavaScript API
+
+
+Google Maps Geocoding API
+
+    Use: Convert manually entered address → coordinates
+
+    Free tier: 40,000 requests/month
+
+    Beyond: ~$5 per 1,000 requests
+
+Google Maps Reverse Geocoding API
+
+    Use: Convert coordinates (from GPS) → human-readable address
+
+    Free tier: Included in geocoding quota
+
+    Beyond: Same rate as above
+
+Google Maps JavaScript API
+
+    Use: Show interactive map, draw markers, radius filters, etc.
+
+    Free tier: $200/month free (~28,000 map loads)
+
+    Beyond: ~$7 per 1,000 map loads
+
+
+

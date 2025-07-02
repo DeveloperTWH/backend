@@ -104,8 +104,17 @@ const serviceSchema = new mongoose.Schema({
       hours: { type: String, required: true },
     },
   ],
-  locationMapEmbedUrl: {
-    type: String,
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      required: true,
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: true
+    }
   },
   contact: {
     phone: { type: String, required: true },
@@ -132,12 +141,24 @@ const serviceSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Generate slug before save
-serviceSchema.pre('save', function (next) {
-  if (!this.slug) {
-    this.slug = slugify(this.title, { lower: true, strict: true });
+serviceSchema.pre('save', async function (next) {
+  if (!this.isModified('title')) return next();
+
+  const baseSlug = slugify(this.title, { lower: true, strict: true });
+  let slug = baseSlug;
+  let counter = 1;
+
+  // Use mongoose.models to avoid circular reference
+  const ServiceModel = mongoose.models.Service || this.constructor;
+
+  while (await ServiceModel.exists({ slug })) {
+    slug = `${baseSlug}-${counter++}`;
   }
+
+  this.slug = slug;
   next();
 });
+
 
 // Method to calculate total reviews and average rating
 serviceSchema.methods.calculateRatings = async function () {
@@ -157,6 +178,7 @@ serviceSchema.methods.calculateRatings = async function () {
 
 // Indexes for faster queries
 serviceSchema.index({ ownerId: 1 });
+serviceSchema.index({ location: '2dsphere' });
 serviceSchema.index({ 'categories.categoryId': 1 });
 
 module.exports = mongoose.model('Service', serviceSchema);

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createService, getMyServices, deleteService, updateService } = require('../controllers/serviceController');
+const { createService, getMyServices, deleteService, updateService, getServiceById } = require('../controllers/serviceController');
 const authenticate = require('../middlewares/authenticate');
 const isBusinessOwner = require('../middlewares/isBusinessOwner');
 
@@ -17,6 +17,13 @@ router.get(
   authenticate,
   isBusinessOwner,
   getMyServices
+);
+
+router.get(
+  '/:id',
+  authenticate,
+  isBusinessOwner,
+  getServiceById
 );
 
 router.delete(

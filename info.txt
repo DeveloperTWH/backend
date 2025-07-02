@@ -194,3 +194,52 @@
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ✅ Food Feature Preparation Checklist
+
+We'll build the Food module later, but for now:
+
+---
+
+ 📦 What We’ll Need When You’re Ready:
+
+1. Food Mongoose Model
+
+   * `title`, `description`, `price`
+   * `slug` (unique, auto-generated)
+   * `images`, `coverImage`, `categoryId`, `subcategoryIds`
+   * `ownerId`, `isPublished`, `location`, `contact`, etc.
+   * `availability` (optional: for timing or stock)
+   * `reviews`, `averageRating`, `totalReviews`
+   * GeoJSON: `location` + `contact.address`
+
+2. APIs to Build
+
+   * `POST /api/foods` → Create food listing
+   * `GET /api/foods/my` → Get foods listed by vendor
+   * `PUT /api/foods/:id` → Update food
+   * `DELETE /api/foods/:id` → Delete food
+   * (Optional) `GET /api/foods/nearby` → For customers, based on location
+
+3. Utilities to Reuse
+
+   * `generateUniqueSlug()` logic (same as Service)
+   * `geocodeAddress()` from address → \[lng, lat]
+
+

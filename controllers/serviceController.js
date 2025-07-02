@@ -7,6 +7,9 @@ const deleteCloudinaryFile = require('../utils/deleteCloudinaryFile');
 
 require('../models/ServiceCategory');
 require('../models/ServiceSubcategory');
+const { geocodeAddress } = require('../utils/geocode'); // You must create this helper
+
+
 
 exports.createService = async (req, res) => {
   const session = await Service.startSession();
@@ -24,7 +27,7 @@ exports.createService = async (req, res) => {
       features,
       amenities,
       businessHours,
-      locationMapEmbedUrl,
+      location,
       contact,
       faq,
       videos,
@@ -68,7 +71,19 @@ exports.createService = async (req, res) => {
       });
     }
 
-    // ✅ Step 3: Save service
+    // 📍 Step 3: Prepare coordinates
+    let finalCoordinates;
+
+    if (location?.coordinates && Array.isArray(location.coordinates) && location.coordinates.length === 2) {
+      finalCoordinates = location.coordinates;
+    } else if (contact?.address) {
+      const geo = await geocodeAddress(contact.address);
+      finalCoordinates = [geo.lng, geo.lat];
+    } else {
+      return res.status(400).json({ error: 'Either location coordinates or contact address is required.' });
+    }
+
+    // ✅ Step 4: Save service
     const service = new Service({
       title,
       description,
@@ -81,18 +96,20 @@ exports.createService = async (req, res) => {
       features,
       amenities,
       businessHours,
-      locationMapEmbedUrl,
       contact,
       faq,
       videos,
       maxBookingsPerSlot,
       ownerId: userId,
       minorityType: business.minorityType,
+      location: {
+        type: 'Point',
+        coordinates: finalCoordinates,
+      },
     });
 
     await service.save();
 
-    // ✅ Cleanup: remove from PendingImage
     const usedImages = [coverImage, ...images];
     await PendingImage.deleteMany({ url: { $in: usedImages } });
 
@@ -107,7 +124,6 @@ exports.createService = async (req, res) => {
     await session.abortTransaction();
     session.endSession();
 
-    // Cleanup Cloudinary + PendingImage
     const usedImages = [req.body.coverImage, ...(req.body.images || [])];
     for (const image of usedImages) {
       await deleteCloudinaryFile(image);
@@ -201,7 +217,6 @@ exports.updateService = async (req, res) => {
     const serviceId = req.params.id;
 
     const service = await Service.findOne({ _id: serviceId, ownerId: userId });
-
     if (!service) {
       return res.status(404).json({ message: 'Service not found' });
     }
@@ -209,15 +224,38 @@ exports.updateService = async (req, res) => {
     const updatableFields = [
       'title', 'description', 'price', 'duration', 'services',
       'categories', 'coverImage', 'images', 'features', 'amenities',
-      'businessHours', 'locationMapEmbedUrl', 'contact', 'faq',
-      'videos', 'maxBookingsPerSlot'
+      'businessHours', 'contact', 'faq', 'videos', 'maxBookingsPerSlot'
     ];
 
+    // Update basic fields
     updatableFields.forEach(field => {
-      if (req.body[field] !== undefined) service[field] = req.body[field];
+      if (req.body[field] !== undefined) {
+        service[field] = req.body[field];
+      }
     });
 
-    // Regenerate slug if title changes
+    // 📍 Handle location update (coordinates or address)
+    if (
+      req.body.location?.coordinates &&
+      Array.isArray(req.body.location.coordinates) &&
+      req.body.location.coordinates.length === 2
+    ) {
+      service.location = {
+        type: 'Point',
+        coordinates: req.body.location.coordinates,
+      };
+    } else if (
+      req.body.contact?.address &&
+      req.body.contact.address !== service.contact.address
+    ) {
+      const geo = await geocodeAddress(req.body.contact.address);
+      service.location = {
+        type: 'Point',
+        coordinates: [geo.lng, geo.lat],
+      };
+    }
+
+    // 🔁 Regenerate slug if title changed
     if (req.body.title && req.body.title !== service.title) {
       const baseSlug = slugify(req.body.title, { lower: true, strict: true });
       let slug = baseSlug;
@@ -230,12 +268,36 @@ exports.updateService = async (req, res) => {
 
     await service.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       message: 'Service updated successfully',
       service
     });
   } catch (error) {
     console.error('Service update error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+
+exports.getServiceById = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const serviceId = req.params.id;
+
+    const service = await Service.findOne({ _id: serviceId, ownerId: userId })
+      .populate('categories.categoryId', 'name')
+      .populate('categories.subcategoryIds', 'name')
+      .populate('ownerId', 'name email');
+
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found or unauthorized.' });
+    }
+
+    res.status(200).json({ service });
+  } catch (err) {
+    console.error('Failed to fetch service:', err.message);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
