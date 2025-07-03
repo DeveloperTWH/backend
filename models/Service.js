@@ -176,6 +176,14 @@ serviceSchema.methods.calculateRatings = async function () {
   await this.save();
 };
 
+// Post-save hook to automatically update ratings when a Review is added/updated
+serviceSchema.post('save', async function(doc, next) {
+  if (doc.isModified('totalReviews') || doc.isModified('averageRating')) {
+    await doc.calculateRatings();
+  }
+  next();
+});
+
 // Indexes for faster queries
 serviceSchema.index({ ownerId: 1 });
 serviceSchema.index({ location: '2dsphere' });

@@ -152,6 +152,12 @@ developed and styled the complete business registration form with dynamic plan s
 service module : 
 implemented slug generation, location support (address + coordinates), and verifying all core APIs including create, update, delete, and get my services, Developed new get service by ID Api.tested everything on Postman with sample data.planned the complete structure for the food module, deciding to use a unified model with a foodType field to differentiate between food from Shop, Farm (both delivery-based), and Restaurant (table booking only).
 
+
+
+Service model automated total Review and Average rating update on any chnges in the rating and review model.
+
+
+
 -------------------- TODO : ----------------------
 
 1. Get Product
@@ -196,3 +202,33 @@ Google Maps JavaScript API
 
 
 
+
+
+
+------------------------------ ## Deployment ## --------------------------------
+
+
+
+
+👉 All-in-EC2 if you're comfortable managing a server (cheaper, more control).
+
+👉 Amplify + Beanstalk if you prefer ease, no server headaches, and built-in CI/CD.
+
+
+| AWS Service                     | Estimated Monthly Cost |
+| ------------------------------- | ---------------------- |
+| Amplify Hosting (Frontend)      | $5 – $10               |
+| Elastic Beanstalk (Backend)     | $10 – $20              |
+| Amazon S3 (Images/Files)        | $1 – $5                |
+| Total (AWS only):               | $16 – $35/month        |
+
+
+ If Within Free Tier (First Year):
+
+
+| AWS Service                   | Monthly Cost                           |
+| ----------------------------- | -------------------------------------- |
+| Amplify (Free Tier)           | $0                                     |
+| Elastic Beanstalk (Free Tier) | $0                                     |
+| Amazon S3 (Free Tier)         | $0                                     |
+| Total (AWS only):             | $0 – $5/month (depends on usage)       |
