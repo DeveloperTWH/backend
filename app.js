@@ -27,6 +27,12 @@ const wishlistRoutes = require('./routes/customer/wishlistRoutes');
 
 
 
+// Import Payment and Order Routes
+const paymentRoutes = require('./routes/paymentRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const webhookRoutes = require('./routes/webhookRoutes');
+
+
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 
@@ -64,6 +70,13 @@ app.use('/admin/api/blogs', blogRoutes);
 
 // User Routes
 app.use('/api/wishlist', wishlistRoutes);
+
+
+
+
+app.use('/api/payments', paymentRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 
 // Test route

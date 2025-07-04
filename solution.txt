@@ -158,6 +158,15 @@ Service model automated total Review and Average rating update on any chnges in 
 
 
 
+
+
+Product Order payment Module:
+Created Address Model to Store the saved address, Created Order model To store the orders done by the user with products, quantity and total price ..etc, Created Refund Model, Developed orderController to creted order on sucessfull payment, Developed Webhook to chcek the Payment Status. configured routes for the Product Order, Payment, Webhook's.
+
+
+
+
+utils/paymentGatway
 -------------------- TODO : ----------------------
 
 1. Get Product
