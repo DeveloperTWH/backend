@@ -93,7 +93,11 @@ const businessSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Subscription',
       required: true,
-    }
+    },
+    stripeSubscriptionId: {
+      type: String,
+      required: true,
+    },
 
   },
   { timestamps: true }

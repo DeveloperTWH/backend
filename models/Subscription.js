@@ -16,9 +16,12 @@ const SubscriptionSchema = new mongoose.Schema({
     ref: 'SubscriptionPlan',
     required: true,
   },
-  paymentId: {
+  stripeSubscriptionId: {
     type: String,
     required: true,
+  },
+  stripeCustomerId: { // Optional, helps with customer lookup
+    type: String,
   },
   paymentStatus: {
     type: String,
@@ -26,9 +29,6 @@ const SubscriptionSchema = new mongoose.Schema({
     required: true,
   },
   payerEmail: {
-    type: String,
-  },
-  payerId: {
     type: String,
   },
   startDate: {

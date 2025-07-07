@@ -19,7 +19,7 @@ paymentRouter.post(
   [
     body('amount').isInt({ min: 1 }).withMessage('Amount must be a positive integer'),
     body('currency').isString().isLength({ min: 3, max: 3 }).withMessage('Currency code must be 3 characters'),
-    body('paymentMethodId').notEmpty().withMessage('Payment method is required'),
+    // body('paymentMethodId').notEmpty().withMessage('Payment method is required'),
     body('orderId').isMongoId().withMessage('Invalid Order ID format'),
   ],
   createPaymentIntent

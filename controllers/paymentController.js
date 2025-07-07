@@ -15,12 +15,17 @@ const createPaymentIntent = async (req, res) => {
   try {
     // Create payment intent with Stripe API
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount * 100, // Amount in cents
-      currency: currency,
-      payment_method: paymentMethodId,
-      confirm: true, // Automatically confirm the payment
-      metadata: { orderId }, // Attach the orderId to the payment intent
+      amount: amount * 100,
+      currency,
+      // payment_method: paymentMethodId,
+      // confirm: true,
+      metadata: { orderId },
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'always',
+      },
     });
+
 
     // Send the client secret to the frontend to complete the payment
     res.status(200).json({ clientSecret: paymentIntent.client_secret });

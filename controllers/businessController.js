@@ -310,3 +310,60 @@ exports.deleteBusiness = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+
+
+
+// draft model;
+
+
+
+const BusinessDraft = require('../models/BusinessDraft');
+
+exports.createBusinessDraft = async (req, res) => {
+  try {
+    const {
+      businessName,
+      email,
+      subscriptionPlanId,
+      ...formData
+    } = req.body;
+
+    const user = req.user;
+
+    // Check if business name already exists as a draft
+    const existingDraft = await BusinessDraft.findOne({ businessName });
+    if (existingDraft) {
+      return res.status(409).json({ message: 'Business name already reserved. Please choose another.' });
+    }
+
+
+    // Check in live businesses
+    const existingBusiness = await Business.findOne({ businessName });
+    if (existingBusiness) {
+      return res.status(409).json({ message: 'Business name already in use. Please choose another.' });
+    }
+
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min TTL
+
+    const draft = await BusinessDraft.create({
+      businessName,
+      email,
+      owner: user._id,
+      subscriptionPlanId,
+      formData,
+      expiresAt,
+    });
+
+    res.status(201).json({
+      message: 'Draft created. Please complete payment within 15 minutes.',
+      draftId: draft._id,
+      businessName: draft.businessName,
+      expiresAt,
+      subscriptionPlanId,
+    });
+  } catch (error) {
+    console.error('Error creating business draft:', error);
+    res.status(500).json({ message: 'Failed to create draft' });
+  }
+};

@@ -33,6 +33,8 @@ const orderRoutes = require('./routes/orderRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
 
 
+
+
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 
@@ -42,8 +44,15 @@ app.use(cors({
   credentials: true                 // optional, only if using cookies or auth headers
 }));
 
-app.use(express.json());
+
+
+// Subscrption
 app.use(cookieParser());
+const stripeRoutes = require('./routes/stripeRoutes');
+
+
+app.use('/api/stripe', stripeRoutes);
+app.use(express.json());
 
 
 
@@ -77,6 +86,10 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/webhooks', webhookRoutes);
+
+
+// subscription 
+
 
 
 // Test route

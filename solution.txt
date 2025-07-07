@@ -166,6 +166,11 @@ Created Address Model to Store the saved address, Created Order model To store t
 
 
 
+Today, you worked on implementing and debugging the Stripe webhook to handle events like `checkout.session.completed`. You ensured signature verification by using `express.raw()` for the webhook route and added detailed debugging logs to track the raw request and identify any errors. You created a Stripe Checkout session, processed it by retrieving the BusinessDraft, and used its data to create a Subscription and Business. Additionally, you handled the 500 error by logging the process step-by-step and ensured proper error handling, all while testing the webhook with Stripe CLI to simulate events.
+
+
+
+
 utils/paymentGatway
 -------------------- TODO : ----------------------
 

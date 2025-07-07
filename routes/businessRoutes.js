@@ -60,6 +60,12 @@ router.delete(
 );
 
 
+///
+
+
+router.post('/draft', authenticate, isBusinessOwner, businessController.createBusinessDraft);
+
+
 
 
 // Test route
