@@ -51,3 +51,18 @@ exports.createSubscriptionPlan = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+// Controller to fetch all subscription plans
+exports.getAllSubscriptionPlans = async (req, res) => {
+  try {
+    const subscriptionPlans = await SubscriptionPlan.find();
+    if (!subscriptionPlans.length) {
+      return res.status(404).json({ success: false, message: 'No subscription plans found.' });
+    }
+    return res.status(200).json({ success: true, data: subscriptionPlans });
+  } catch (error) {
+    console.error('Error fetching subscription plans:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch subscription plans' });
+  }
+};
+

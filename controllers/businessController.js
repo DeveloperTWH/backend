@@ -4,6 +4,7 @@ const { uploadFile } = require('../utils/uploadFile');
 const cleanupUploads = require('../utils/cleanupUploads');
 const deleteCloudinaryFile = require('../utils/deleteCloudinaryFile');
 const { verifyPayPalPayment } = require('../utils/paypalVerification');
+const SubscriptionPlan =require('../models/SubscriptionPlan')
 
 
 exports.createBusiness = async (req, res) => {
@@ -12,14 +13,14 @@ exports.createBusiness = async (req, res) => {
     const {
       businessName,
       subscriptionPlanId,
-      paymentId,
+      stripeSubscriptionId,
       paymentStatus,
       payerEmail,
       payerId,
     } = req.body;
 
     // Required fields check
-    if (!subscriptionPlanId || !paymentId || !paymentStatus) {
+    if (!subscriptionPlanId || !stripeSubscriptionId || !paymentStatus) {
       cleanupUploads(req.files);
       return res.status(400).json({ message: 'Missing subscription or payment info.' });
     }
@@ -30,14 +31,8 @@ exports.createBusiness = async (req, res) => {
       return res.status(400).json({ message: 'Payment not completed. Try again after confirmation.' });
     }
 
-    const isVerified = await verifyPayPalPayment(paymentId, payerId);
-    if (!isVerified) {
-      cleanupUploads(req.files);
-      return res.status(400).json({ message: 'Failed to verify PayPal payment.' });
-    }
-
-    // Check if subscription already exists for this paymentId
-    let subscription = await Subscription.findOne({ paymentId });
+    // Check if subscription already exists for this stripeSubscriptionId
+    let subscription = await Subscription.findOne({ stripeSubscriptionId });
 
     if (!subscription) {
       const now = new Date();
@@ -47,7 +42,7 @@ exports.createBusiness = async (req, res) => {
       subscription = new Subscription({
         userId: user._id,
         subscriptionPlanId,
-        paymentId,
+        stripeSubscriptionId,
         paymentStatus,
         payerEmail,
         payerId,
@@ -139,6 +134,7 @@ exports.createBusiness = async (req, res) => {
       owner: user._id,
       isApproved: false,
       subscriptionId: subscription._id,
+      stripeSubscriptionId,
       minorityType: user.minorityType
     });
 
@@ -317,19 +313,54 @@ exports.deleteBusiness = async (req, res) => {
 // draft model;
 
 
-
+const { body, validationResult } = require('express-validator');
 const BusinessDraft = require('../models/BusinessDraft');
 
-exports.createBusinessDraft = async (req, res) => {
-  try {
-    const {
-      businessName,
-      email,
-      subscriptionPlanId,
-      ...formData
-    } = req.body;
+// Validation middleware for formData
+const validateBusinessDraft = [
+  body('businessName').notEmpty().withMessage('Business name is required'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('subscriptionPlanId').notEmpty().withMessage('Subscription Plan ID is required'),
+  body('formData.address').notEmpty().withMessage('Address is required'),
+  body('formData.city').notEmpty().withMessage('City is required'),
+  body('formData.state').notEmpty().withMessage('State is required'),
+  body('formData.country').notEmpty().withMessage('Country is required'),
+  body('formData.listingType').isIn(['product', 'service', 'food']).withMessage('Listing type must be one of product, service, or food'),
+  // Add other form fields validation as necessary
+];
 
+// Controller to create business draft
+exports.createBusinessDraft = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const { businessName, email, subscriptionPlanId, formData } = req.body;
     const user = req.user;
+
+    // Validate required fields
+    if (!businessName || !email || !subscriptionPlanId || !formData) {
+      return res.status(400).json({ message: 'Missing required fields.' });
+    }
+
+    if (!formData.address || !formData.city || !formData.state || !formData.country) {
+      return res.status(400).json({ message: 'Incomplete address fields in formData.' });
+    }
+
+    // Category validation: Only one category (Product, Service, or Food) allowed
+    const { productCategories, serviceCategories, foodCategories } = formData;
+    const hasProduct = Array.isArray(productCategories) && productCategories.length > 0;
+    const hasService = Array.isArray(serviceCategories) && serviceCategories.length > 0;
+    const hasFood = Array.isArray(foodCategories) && foodCategories.length > 0;
+    const typeCount = [hasProduct, hasService, hasFood].filter(Boolean).length;
+
+    // if (typeCount !== 1) {
+    //   return res.status(400).json({
+    //     message: 'A business must list exactly one type: either Product, Service, or Food.',
+    //   });
+    // }
 
     // Check if business name already exists as a draft
     const existingDraft = await BusinessDraft.findOne({ businessName });
@@ -337,19 +368,27 @@ exports.createBusinessDraft = async (req, res) => {
       return res.status(409).json({ message: 'Business name already reserved. Please choose another.' });
     }
 
-
     // Check in live businesses
     const existingBusiness = await Business.findOne({ businessName });
     if (existingBusiness) {
       return res.status(409).json({ message: 'Business name already in use. Please choose another.' });
     }
 
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min TTL
+    // Validate subscription plan
+    const subscriptionPlan = await SubscriptionPlan.findById(subscriptionPlanId);
+    if (!subscriptionPlan) {
+      return res.status(400).json({ message: 'Invalid subscription plan.' });
+    }
 
+    // Set expiration time for the draft (15 minutes TTL)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    // Create the business draft
     const draft = await BusinessDraft.create({
       businessName,
       email,
       owner: user._id,
+      minorityType: user.minorityType,
       subscriptionPlanId,
       formData,
       expiresAt,
@@ -364,6 +403,135 @@ exports.createBusinessDraft = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating business draft:', error);
-    res.status(500).json({ message: 'Failed to create draft' });
+    res.status(500).json({ message: 'Failed to create business draft. Please try again later.' });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+/////////////////////////                   Retry Business Cretion 
+
+
+
+
+
+exports.retryCreateBusiness = async (req, res) => {
+  const { subscriptionId, businessName, formData } = req.body;  // Get subscriptionId and business data from the request
+  
+  try {
+    // Find the subscription using the provided subscriptionId
+    const subscription = await Subscription.findById(subscriptionId).populate('userId');
+    if (!subscription) {
+      return res.status(404).json({ message: 'Subscription not found.' });
+    }
+
+    // Check if the userId from the request matches the subscription's userId
+    if (req.user.id !== subscription.userId._id.toString()) {
+      return res.status(403).json({ message: 'You are not authorized to access this subscription.' });
+    }
+
+    // If subscription already has a business linked, prevent retry
+    if (subscription.businessId) {
+      return res.status(400).json({ message: 'This subscription is already linked to a business.' });
+    }
+
+    // Check if the payment status is 'COMPLETED'
+    if (subscription.paymentStatus !== 'COMPLETED') {
+      return res.status(400).json({ message: 'Payment is not completed. Please ensure payment has been made.' });
+    }
+
+    // Validate the business name (avoid duplicates)
+    let businessNameToCheck = businessName.trim();
+    let existingBusiness = await Business.findOne({ businessName: { $regex: new RegExp(`^${businessNameToCheck}$`, 'i') } });
+    
+    let counter = 1;
+    while (existingBusiness) {
+      businessNameToCheck = `${businessName}-${counter}`;
+      existingBusiness = await Business.findOne({ businessName: { $regex: new RegExp(`^${businessNameToCheck}$`, 'i') } });
+      counter++;
+    }
+
+    // Extract business data from the request body
+    const {
+      description,
+      email,
+      phone,
+      website,
+      address,
+      socialLinks,
+      listingType,
+      productCategories,
+      serviceCategories,
+      foodCategories,
+    } = formData;
+
+    // Check if exactly one listing type is provided (Product, Service, or Food)
+    const hasProduct = Array.isArray(productCategories) && productCategories.length > 0;
+    const hasService = Array.isArray(serviceCategories) && serviceCategories.length > 0;
+    const hasFood = Array.isArray(foodCategories) && foodCategories.length > 0;
+
+    const typeCount = [hasProduct, hasService, hasFood].filter(Boolean).length;
+    if (typeCount !== 1) {
+      return res.status(400).json({
+        message: 'A business must list exactly one type: either Product, Service, or Food.',
+      });
+    }
+
+    
+
+    // Create the new business using the existing subscription
+    const business = new Business({
+      owner: subscription.userId._id,
+      businessName: businessNameToCheck,
+      email: formData.email,
+      description: formData.description,
+      phone: formData.phoneNumber,
+      listingType: formData.listingType,
+      address: {
+        street: formData.address || '',
+        city: formData.city || '',
+        state: formData.state || '',
+        country: formData.country || '',
+      },
+      socialLinks: formData.socialLinks || {},
+      productCategories: formData.productCategories || [],
+      serviceCategories: formData.serviceCategories || [],
+      foodCategories: formData.foodCategories || [],
+      logo: formData.logo || '',  // Assuming logo is passed in formData, if no logo, set it to an empty string
+      coverImage: formData.coverImage || '',  // Same for coverImage
+      minorityType: subscription.userId.minorityType,
+      isApproved: false,  // Not active until admin approval
+      isActive: false,    // Mark as active after admin approval
+      subscriptionId: subscription._id,
+      stripeSubscriptionId: subscription.stripeSubscriptionId,
+    });
+
+    // Save the new business
+    await business.save();
+
+    // Link the business to the subscription
+    subscription.businessId = business._id;
+    await subscription.save();
+
+    res.status(200).json({
+      message: 'Business created successfully.',
+      business,
+      subscription,
+    });
+  } catch (error) {
+    console.error('Error retrying business creation:', error);
+    res.status(500).json({ message: 'Error retrying business creation. Please try again later.' });
+  }
+};
+
+

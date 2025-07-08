@@ -4,6 +4,11 @@ const BusinessDraftSchema = new mongoose.Schema({
   businessName: { type: String, required: true, unique: true, trim: true },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   email: { type: String, required: true, lowercase: true, trim: true },
+  minorityType: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'MinorityType',
+    required: true,
+  },
   formData: { type: mongoose.Schema.Types.Mixed },  // Save other form fields here (address, phone, etc.)
   subscriptionPlanId: { type: mongoose.Schema.Types.ObjectId, ref: 'SubscriptionPlan', required: true },
   createdAt: { type: Date, default: Date.now },

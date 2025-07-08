@@ -29,6 +29,17 @@ router.post(
   validateBusiness,
   businessController.createBusiness
 );
+router.post(
+  '/retry-create',
+  authenticate,
+  isBusinessOwner,
+  upload.fields([
+    { name: 'logo', maxCount: 1 },
+    { name: 'coverImage', maxCount: 1 },
+  ]),
+  validateBusiness,
+  businessController.retryCreateBusiness
+);
 
 // Get businesses for current user
 router.get(

@@ -16,9 +16,9 @@ exports.createCheckoutSession = async (req, res) => {
 
     // ✅ 2. Validate Stripe Price ID
     const priceMap = {
-      '685281f61e1de765d6b297c0': 'price_1RiBujCe8NK5w7I0HICqEpOw',
-      '685281f61e1de765d6b297c01': 'price_1RiBujCe8NK5w7I0nKgWkLhu',
-      '685281f61e1de765d6b297c02': 'price_1RiBujCe8NK5w7I0nGiysSCh',
+      '686cf1174000a9f8efd5842c': 'price_1RiBujCe8NK5w7I0HICqEpOw',
+      '685281f61e1de765d6b297c0': 'price_1RiBujCe8NK5w7I0nKgWkLhu',
+      '686cf2144000a9f8efd58433': 'price_1RiBujCe8NK5w7I0nGiysSCh',
     };
     const stripePriceId = priceMap[draft.subscriptionPlanId.toString()];
 
@@ -29,7 +29,6 @@ exports.createCheckoutSession = async (req, res) => {
     // ✅ 3. Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      payment_method_types: ['card'],
       customer_email: draft.email,
       line_items: [
         { price: stripePriceId, quantity: 1 },
@@ -52,6 +51,7 @@ exports.createCheckoutSession = async (req, res) => {
 
 
 
+
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 exports.handleStripeWebhook = async (req, res) => {
@@ -65,6 +65,7 @@ exports.handleStripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  // Handle successful checkout session completion
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
 
@@ -72,9 +73,20 @@ exports.handleStripeWebhook = async (req, res) => {
     const ownerId = session.metadata.ownerId;
     const stripeSubscriptionId = session.subscription;
     const stripeCustomerId = session.customer;
+
     console.log("Processing checkout.session.completed for Draft ID:", draftId);
 
+    let newSubscription;
+    let business;
+
     try {
+
+      const existingSubscription = await Subscription.findOne({ stripeSubscriptionId });
+      if (existingSubscription && existingSubscription.businessId) {
+        console.error('This subscription is already linked to a business.');
+        return res.status(400).send('This subscription is already linked to a business.');
+      }
+
       // Find the draft
       const draft = await BusinessDraft.findById(draftId);
       if (!draft) {
@@ -84,14 +96,15 @@ exports.handleStripeWebhook = async (req, res) => {
 
       console.log('Draft found:', draft);
 
+      // Set subscription start and end dates
       const startDate = new Date();
       const endDate = new Date();
-      endDate.setFullYear(startDate.getFullYear() + 1); // 1 year duration
+      endDate.setFullYear(startDate.getFullYear() + 1); // 1-year duration
 
-      // Create subscription
-      const newSubscription = await Subscription.create({
+      // Create the subscription
+      newSubscription = await Subscription.create({
         userId: ownerId,
-        businessId: null, // will be updated later
+        businessId: null, // This will be updated later
         subscriptionPlanId: draft.subscriptionPlanId,
         stripeSubscriptionId,
         stripeCustomerId,
@@ -104,17 +117,46 @@ exports.handleStripeWebhook = async (req, res) => {
 
       console.log('New Subscription created:', newSubscription);
 
+      // Check for business name conflict
+      let businessName = draft.businessName;
+      let existingBusiness = await Business.findOne({ businessName: { $regex: new RegExp(`^${businessName}$`, 'i') } });
+
+      let counter = 1;
+      while (existingBusiness) {
+        businessName = `${draft.businessName}-${counter}`;
+        existingBusiness = await Business.findOne({ businessName: { $regex: new RegExp(`^${businessName}$`, 'i') } });
+        counter++;
+      }
+
       // Create the business
-      const business = await Business.create({
+      business = new Business({
         owner: ownerId,
-        businessName: draft.businessName,
+        businessName,
         email: draft.email,
-        ...draft.formData, // Ensure this matches your Business schema fields
-        isActive: false, // Not active until admin approval
-        isApproved: false, // Pending admin approval
+        description: draft.formData.description,
+        phone: draft.formData.phoneNumber,
+        listingType: draft.formData.listingType,
+        address: {
+          street: draft.formData.address || '',
+          city: draft.formData.city || '',
+          state: draft.formData.state || '',
+          country: draft.formData.country || ''
+        },
+        socialLinks: draft.formData.socialLinks || {},
+        productCategories: draft.formData.productCategories || [],
+        serviceCategories: draft.formData.serviceCategories || [],
+        foodCategories: draft.formData.foodCategories || [],
+        logo: draft.formData.logo || '',
+        coverImage: draft.formData.coverImage || '',
+        minorityType: draft.minorityType, // Use minorityType from the draft
+        isApproved: false, // Not active until admin approval
+        isActive: false, // Mark as active
         subscriptionId: newSubscription._id,
-        stripeSubscriptionId,
+        stripeSubscriptionId
       });
+
+      // Save the business
+      await business.save();
 
       console.log('Business created:', business);
 
@@ -127,12 +169,30 @@ exports.handleStripeWebhook = async (req, res) => {
 
       console.log(`Business ${business.businessName} created from draft`);
 
+      const responseMessage = businessName !== draft.businessName
+        ? `Business name was already in use, so we have assigned you a new name: ${business.businessName}. You can change it later.`
+        : `Business created successfully.`;
+
+      return res.status(200).json({
+        message: responseMessage,
+        business
+      });
+
     } catch (error) {
       console.error('Error creating business from draft:', error);
-      return res.status(500).send('Webhook processing failed');
+
+      // Handle rollback if necessary
+      if (newSubscription) {
+        newSubscription.businessId = null;
+        await newSubscription.save();  // Save the updated subscription with businessId as null
+      }
+      if (business) await business.deleteOne();
+
+      if (!res.headersSent) {
+        return res.status(500).send('Webhook processing failed');
+      }
     }
   }
 
-  // Acknowledge receipt of the event
-  res.status(200).json({ received: true });
+  return res.status(400).send(`Unhandled event type: ${event.type}`);
 };

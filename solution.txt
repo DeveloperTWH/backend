@@ -166,7 +166,35 @@ Created Address Model to Store the saved address, Created Order model To store t
 
 
 
-Today, you worked on implementing and debugging the Stripe webhook to handle events like `checkout.session.completed`. You ensured signature verification by using `express.raw()` for the webhook route and added detailed debugging logs to track the raw request and identify any errors. You created a Stripe Checkout session, processed it by retrieving the BusinessDraft, and used its data to create a Subscription and Business. Additionally, you handled the 500 error by logging the process step-by-step and ensured proper error handling, all while testing the webhook with Stripe CLI to simulate events.
+Today, you worked on implementing and debugging the **Stripe webhook** to handle events like `checkout.session.completed`. You ensured **signature verification** by using `express.raw()` for the webhook route and added detailed **debugging logs** to track the raw request and identify any errors. You created a **Stripe Checkout session**, processed it by retrieving the **BusinessDraft**, and used its data to create a **Subscription** and **Business**. You also created a new **BusinessDraft** model to store business-related drafts. Additionally, you handled the **500 error** by logging the process step-by-step and ensured proper error handling, all while testing the webhook with **Stripe CLI** to simulate events.
+
+
+
+
+
+
+08-07-2025
+
+Created retryCreateBusiness API to create a business from an existing subscription.
+
+Integrated frontend to select existing subscription and create a business.
+
+Fixed TypeScript errors related to subscription types.
+
+Implemented Stripe Checkout and payment validation.
+
+Set up and tested Stripe webhook using the CLI.
+
+Displayed new and existing subscription plans in the frontend with tab functionality.
+
+Added redirection to /partners on successful business creation.
+
+Handled subscription checks and ensured successful business creation only for completed payments.
+
+
+in paragraph
+Today, we implemented the `retryCreateBusiness` API to allow business creation from an existing subscription, integrated Stripe Checkout and payment validation, and tested the Stripe webhook using the CLI. We also fixed TypeScript errors related to subscription types, displayed both new and existing subscription plans in the frontend with tab functionality, and ensured redirection to `/partners` on successful business creation. Additionally, we added subscription checks to ensure business creation only for completed payments.
+In the frontend, we created a tab to toggle between new and existing subscription plans, displaying the existing plans if available. We added a form for business creation, where the selected subscription plan (new or existing) is used to submit the business data. On successful business creation, the user is redirected to /partners. We handled the payment and subscription selection logic, ensuring that users can either retry business creation using an existing subscription or create a new one, with proper handling of subscription and payment status checks.
 
 
 
