@@ -356,11 +356,11 @@ exports.createBusinessDraft = async (req, res) => {
     const hasFood = Array.isArray(foodCategories) && foodCategories.length > 0;
     const typeCount = [hasProduct, hasService, hasFood].filter(Boolean).length;
 
-    // if (typeCount !== 1) {
-    //   return res.status(400).json({
-    //     message: 'A business must list exactly one type: either Product, Service, or Food.',
-    //   });
-    // }
+    if (typeCount !== 1) {
+      return res.status(400).json({
+        message: 'A business must list exactly one type: either Product, Service, or Food.',
+      });
+    }
 
     // Check if business name already exists as a draft
     const existingDraft = await BusinessDraft.findOne({ businessName });
@@ -429,6 +429,8 @@ exports.retryCreateBusiness = async (req, res) => {
   const { subscriptionId, businessName, formData } = req.body;  // Get subscriptionId and business data from the request
   
   try {
+    console.log(formData);
+    
     // Find the subscription using the provided subscriptionId
     const subscription = await Subscription.findById(subscriptionId).populate('userId');
     if (!subscription) {

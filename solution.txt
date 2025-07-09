@@ -198,6 +198,32 @@ In the frontend, we created a tab to toggle between new and existing subscriptio
 
 
 
+09-07-2025
+implemented the `retryCreateBusiness` API to allow business creation from an existing subscription, Configured Route related to it, 
+
+`retryCreateBusiness` API,
+Stripe Checkout session Creation Api
+stripe Webhook Creation,
+Stripe Product Subscription Creation.
+Stripe Cli to chcek webhook
+Existing subscription fetch Api,
+
+
+
+10
+Added Category selection in Business Creation Form which will be disabled till the listing type is not selected once the listing type is selected it will display the category based on Listing.
+display existing subscription plan if user have.
+developed tab for existing plan and purchase new plan 
+Developed api to fetch the existing Subscription paln of the user
+Configured routes for fetching existing Subscription paln of the user
+Developed Api To get all the categories from the db realted to the Food,service,product
+configured route for it,
+Updated Business Creation api to work without the logo and coverImage.
+updated Stripe webhook so paymet can be verifed and business can be creted without the logo and coover imnage 
+developed retry mechanisum to crete the business from existing subscriptiion.
+configured routes and tested with stripe cli
+
+
 
 utils/paymentGatway
 -------------------- TODO : ----------------------

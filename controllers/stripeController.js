@@ -68,19 +68,17 @@ exports.handleStripeWebhook = async (req, res) => {
   // Handle successful checkout session completion
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-
-    const draftId = session.metadata.draftId;
-    const ownerId = session.metadata.ownerId;
+    const { draftId, ownerId } = session.metadata;
     const stripeSubscriptionId = session.subscription;
     const stripeCustomerId = session.customer;
 
-    console.log("Processing checkout.session.completed for Draft ID:", draftId);
+    console.log(`Processing checkout.session.completed for Draft ID: ${draftId}`);
 
     let newSubscription;
     let business;
 
     try {
-
+      // Check if this subscription is already linked to a business
       const existingSubscription = await Subscription.findOne({ stripeSubscriptionId });
       if (existingSubscription && existingSubscription.businessId) {
         console.error('This subscription is already linked to a business.');
@@ -101,7 +99,7 @@ exports.handleStripeWebhook = async (req, res) => {
       const endDate = new Date();
       endDate.setFullYear(startDate.getFullYear() + 1); // 1-year duration
 
-      // Create the subscription
+      // Create the subscription first
       newSubscription = await Subscription.create({
         userId: ownerId,
         businessId: null, // This will be updated later
@@ -150,7 +148,7 @@ exports.handleStripeWebhook = async (req, res) => {
         coverImage: draft.formData.coverImage || '',
         minorityType: draft.minorityType, // Use minorityType from the draft
         isApproved: false, // Not active until admin approval
-        isActive: false, // Mark as active
+        isActive: false, // Mark as inactive until admin approval
         subscriptionId: newSubscription._id,
         stripeSubscriptionId
       });
@@ -169,6 +167,7 @@ exports.handleStripeWebhook = async (req, res) => {
 
       console.log(`Business ${business.businessName} created from draft`);
 
+      // Respond with success message
       const responseMessage = businessName !== draft.businessName
         ? `Business name was already in use, so we have assigned you a new name: ${business.businessName}. You can change it later.`
         : `Business created successfully.`;
@@ -186,7 +185,9 @@ exports.handleStripeWebhook = async (req, res) => {
         newSubscription.businessId = null;
         await newSubscription.save();  // Save the updated subscription with businessId as null
       }
-      if (business) await business.deleteOne();
+      if (business) {
+        await business.deleteOne();  // Ensure that the business is removed if an error occurs
+      }
 
       if (!res.headersSent) {
         return res.status(500).send('Webhook processing failed');

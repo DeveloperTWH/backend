@@ -10,6 +10,7 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const minorityTypeRoutes = require('./routes/minorityTypeRoutes');
 const uploadImageRoute = require('./routes/uploadImage')
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 
 
 // Content Management Route - FAQ / BLOG / TESTIMONIALS
@@ -66,6 +67,7 @@ app.use('/api/service',serviceRoutes );
 app.use('/api/minority-types', minorityTypeRoutes);
 app.use('/api', uploadImageRoute);
 app.use('/api', subscriptionRoutes);
+app.use('/api', categoryRoutes);
 
 
 //CMS Route's
