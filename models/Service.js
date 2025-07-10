@@ -36,14 +36,7 @@ const serviceSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'ServiceCategory',
         required: true,
-      },
-      subcategoryIds: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'ServiceSubcategory',
-          required: true,
-        },
-      ],
+      }
     },
   ],
   ownerId: {

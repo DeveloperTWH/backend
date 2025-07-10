@@ -79,9 +79,6 @@ router.post('/draft', authenticate, isBusinessOwner, businessController.createBu
 
 
 
-// Test route
-router.get('/', (req, res) => {
-  res.send('<div>Hello World</div>');
-});
+router.get('/', businessController.getProductBusinesses);
 
 module.exports = router;

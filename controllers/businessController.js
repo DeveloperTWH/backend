@@ -4,7 +4,7 @@ const { uploadFile } = require('../utils/uploadFile');
 const cleanupUploads = require('../utils/cleanupUploads');
 const deleteCloudinaryFile = require('../utils/deleteCloudinaryFile');
 const { verifyPayPalPayment } = require('../utils/paypalVerification');
-const SubscriptionPlan =require('../models/SubscriptionPlan')
+const SubscriptionPlan = require('../models/SubscriptionPlan')
 
 
 exports.createBusiness = async (req, res) => {
@@ -427,10 +427,10 @@ exports.createBusinessDraft = async (req, res) => {
 
 exports.retryCreateBusiness = async (req, res) => {
   const { subscriptionId, businessName, formData } = req.body;  // Get subscriptionId and business data from the request
-  
+
   try {
     console.log(formData);
-    
+
     // Find the subscription using the provided subscriptionId
     const subscription = await Subscription.findById(subscriptionId).populate('userId');
     if (!subscription) {
@@ -455,7 +455,7 @@ exports.retryCreateBusiness = async (req, res) => {
     // Validate the business name (avoid duplicates)
     let businessNameToCheck = businessName.trim();
     let existingBusiness = await Business.findOne({ businessName: { $regex: new RegExp(`^${businessNameToCheck}$`, 'i') } });
-    
+
     let counter = 1;
     while (existingBusiness) {
       businessNameToCheck = `${businessName}-${counter}`;
@@ -489,7 +489,7 @@ exports.retryCreateBusiness = async (req, res) => {
       });
     }
 
-    
+
 
     // Create the new business using the existing subscription
     const business = new Business({
@@ -535,5 +535,56 @@ exports.retryCreateBusiness = async (req, res) => {
     res.status(500).json({ message: 'Error retrying business creation. Please try again later.' });
   }
 };
+
+
+
+
+exports.getProductBusinesses = async (req, res) => {
+  try {
+    const {
+      search = '',
+      city,
+      state,
+      country,
+      productCategory,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    const filters = { listingType: 'product', isActive: true, isApproved: true };
+
+    if (search) filters.businessName = { $regex: search, $options: 'i' };
+    if (city) filters['address.city'] = city;
+    if (state) filters['address.state'] = state;
+    if (country) filters['address.country'] = country;
+    if (productCategory) {
+      const categoryIds = productCategory.split(',');
+      filters.productCategories = { $in: categoryIds };
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const businesses = await Business.find(filters)
+      .select('businessName slug logo') // ✅ Only these fields
+      .skip(skip)
+      .limit(parseInt(limit))
+      .sort({ createdAt: -1 });
+
+    const total = await Business.countDocuments(filters);
+
+    res.json({
+      success: true,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / limit),
+      data: businesses,
+    });
+  } catch (err) {
+    console.error('Error fetching businesses:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+
 
 

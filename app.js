@@ -11,6 +11,7 @@ const minorityTypeRoutes = require('./routes/minorityTypeRoutes');
 const uploadImageRoute = require('./routes/uploadImage')
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const publicListingRoutes = require('./routes/publicListing');
 
 
 // Content Management Route - FAQ / BLOG / TESTIMONIALS
@@ -58,7 +59,7 @@ app.use(express.json());
 
 
 
-
+app.use('/api', publicListingRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/subscription-plans', subscriptionPlanRoutes);

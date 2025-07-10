@@ -224,6 +224,58 @@ developed retry mechanisum to crete the business from existing subscriptiion.
 configured routes and tested with stripe cli
 
 
+✅ Token is stored in HttpOnly cookie (sameSite: 'lax') → survives Stripe redirect.
+
+✅ user_session & user_gender moved to localStorage Login and Otp varification page updated.
+
+✅ Stripe redirects to /partners, middleware reads the token and allows access.
+
+✅ Created a product business listing API with filters & pagination.
+
+✅ Integrated it in the frontend VendorGrid.
+
+✅ Replaced dummy data with real API calls.
+
+✅ Added debounced search for business name.
+
+✅ Added a loading spinner during API fetch.
+
+✅ ServiceCategory model: Added slug, auto-generate on save.
+
+✅ ProductCategory model: Added slug, auto-generate on save.
+
+✅ Service Listing API (getAllServices):
+
+Added search, filter by city, minorityType, categorySlug, online booking, offers.
+
+Category filtering uses categorySlug → ObjectId mapping.
+
+Supports sorting, pagination.
+
+✅ ServicePage (Frontend):
+
+Setup React page with Hero, CategoryGrid, and BookServices.
+
+Integrated API call for fetching services.
+
+Dynamically passed services to BookServices.
+
+✅ BookServices component:
+
+Rendered dynamic data.
+
+"Read More" → linked to /services/[slug].
+
+✅ Configured external images: Allowed Cloudinary & AWS S3 in next.config.ts.
+
+Changed service detail route to /service/[slug].
+
+Updated Link to point to /service/${service.slug}.
+
+Fixed the conflict with /services/[categorySlug].
+
+
+
 
 utils/paymentGatway
 -------------------- TODO : ----------------------
