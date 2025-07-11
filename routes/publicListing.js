@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { getAllServices } = require('../controllers/publicListing');
+const { getAllServices, getServiceBySlug } = require('../controllers/publicListing');
 
 router.get('/services/list', getAllServices);
+
+router.get('/services/:slug', getServiceBySlug);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const Service = require('../models/Service');
+const Review = require('../models/Review');
 const ServiceCategory = require('../models/ServiceCategory');
 
 exports.getAllServices = async (req, res) => {
@@ -72,6 +73,41 @@ exports.getAllServices = async (req, res) => {
     });
   } catch (err) {
     console.error('Error fetching services:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+
+// GET /api/public/services/:slug
+
+exports.getServiceBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    const service = await Service.findOne({ slug, isPublished: true })
+      .populate('categories.categoryId', 'name')
+      .populate('ownerId', 'businessName');
+
+    if (!service) {
+      return res.status(404).json({ success: false, message: 'Service not found' });
+    }
+
+    // 👉 Fetch related reviews
+    const reviews = await Review.find({
+      listingId: service._id,
+      listingType: 'service',
+    })
+    .populate('userId', 'name profileImage'); // Adjust fields as needed
+
+    res.status(200).json({
+      success: true,
+      data: {
+        service,
+        reviews,
+      },
+    });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };

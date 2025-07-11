@@ -275,6 +275,69 @@ Updated Link to point to /service/${service.slug}.
 Fixed the conflict with /services/[categorySlug].
 
 
+                        or
+
+
+ ✅ Work Summary for Today
+
+1. Token is stored in HttpOnly cookie (sameSite: 'lax') to survive Stripe redirects.
+2. Moved `user_session` & `user_gender` to localStorage; updated Login and OTP verification pages.
+3. Stripe redirects to `/partners`, middleware reads the token for protected access.
+4. Created Product Business Listing API with filters & pagination.
+5. Integrated the business listing API in the VendorGrid frontend.
+6. Replaced dummy vendor data with real API calls.
+7. Added debounced search for business names.
+8. Implemented a loading spinner during API fetch.
+9. Updated ServiceCategory and ProductCategory models to auto-generate slugs on save.
+10. Built Service Listing API (`getAllServices`) with filters: search, city, minorityType, categorySlug, online booking, offers, sorting, and pagination.
+11. Integrated Service Listing API in the ServicePage with Hero, CategoryGrid, and BookServices components.
+12. Dynamically passed services to BookServices and rendered them.
+13. Linked "Read More" in services to `/services/[slug]`.
+14. Configured Cloudinary & AWS S3 for external images in `next.config.ts`.
+15. Refactored service detail route to `/service/[slug]` and updated links, fixing route conflicts with `/services/[categorySlug]`.
+
+---
+
+ 📄 Summary Paragraph:
+
+Today, I completed several backend and frontend tasks including implementing secure token storage using HttpOnly cookies, creating business listing APIs with filters and pagination, and integrating them into the VendorGrid component with debounced search and a loading spinner. I refactored the ServiceCategory and ProductCategory models to auto-generate slugs, enhanced the service listing API with comprehensive filtering and sorting, and integrated it into the ServicePage. Additionally, I resolved routing conflicts by separating the service detail and category listing routes, ensuring seamless navigation and proper image loading from Cloudinary and AWS S3.
+
+
+
+
+
+
+
+
+11-07-2025
+
+Service Detail & Listing
+Integrated Get Service by Slug API (/api/public/services/:slug) in the Service Detail page.
+
+Added review fetching in the Service API and displayed reviews on the frontend.
+
+Corrected the TypeScript types for Service and Review, created an interface for API response.
+
+Replaced static service and review data with dynamic API calls.
+
+Handled Loading and Not Found states with icons (Loader2, AlertTriangle).
+
+Converted phone, email, and website fields to tel, mailto, and external links respectively.
+
+Category-Based Service Listing (services/[id]/page.tsx)
+Connected the Service List API (/api/services/list) with filters: categorySlug, search, minorityType, city.
+
+Fixed URL query mismatch (searchText → search, location → city).
+
+Implemented search button behavior → fetches services only on click.
+
+Show/hide <CategoryGrid /> based on filter state (search, minorityType, location).
+
+Corrected JSX ternary conditional syntax.
+
+Fixed Google Maps iframe usage in service card map preview.
+
+
 
 
 utils/paymentGatway
@@ -321,6 +384,12 @@ Google Maps JavaScript API
     Beyond: ~$7 per 1,000 map loads
 
 
+
+
+Google Places Autocomplete API	
+Google Maps Geocoding API
+Google Maps Reverse Geocoding API
+Google Maps JavaScript API
 
 
 

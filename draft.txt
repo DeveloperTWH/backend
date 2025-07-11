@@ -1,0 +1,40 @@
+Certainly! Here's your update separated into Frontend and Backend sections:
+
+---
+
+11-07-2025
+
+---
+
+ Frontend (Next.js / TypeScript):
+
+ Integrated Get Service by Slug API (`/api/public/services/:slug`) on the Service Detail page.
+ Displayed service details and reviews dynamically instead of using static data.
+ Corrected TypeScript types for `Service` and `Review`, and created an API response interface.
+ Handled Loading and Not Found states using Loader2 and AlertTriangle icons.
+ Converted phone, email, and website fields into clickable `tel:`, `mailto:`, and external links.
+ Connected to the Service List API (`/api/services/list`) for category-based listing.
+ Fixed query parameter mismatches (`searchText → search`, `location → city`).
+ Implemented Search button functionality to fetch services on click.
+ Showed/hid the `<CategoryGrid />` component based on active filter values.
+ Embedded Google Maps iframe for the selected service's address in the map sidebar.
+
+---
+
+ Backend (Node.js / Express / Mongoose):
+
+ Enhanced the Service List API (`/api/services/list`) to support:
+
+   categorySlug → categoryId conversion
+   search, city, minorityType filters
+   sorting by price, rating, and reviews.
+ Developed the Get Service by Slug API to:
+
+   Fetch the service by slug
+   Fetch and include related reviews
+   
+ Ensured category-based filtering works correctly by querying `ServiceCategory` using the slug.
+
+---
+
+Let me know if you also need a single-line version for a timesheet update.
