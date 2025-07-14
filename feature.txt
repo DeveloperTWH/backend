@@ -1,0 +1,63 @@
+Thank you for the clarification. ✅ Yes, you can create Stripe Products and Prices programmatically from your application (admin portal) using Stripe's API.
+You don’t have to go to the Stripe Dashboard every time.
+
+
+
+ Example Flow for Admin Portal
+
+ 1. Admin Creates a New Plan in the Admin Portal
+
+ Admin fills:
+
+   Product name → e.g., "Pro Plus Plan"
+   Price → e.g., ₹499
+   Billing cycle → e.g., monthly
+
+ 2. Your Backend Creates Product & Price in Stripe
+
+js
+// 1. Create a Product
+const product = await stripe.products.create({
+  name: 'Pro Plus Plan',
+  description: 'Access to Pro Plus features',
+});
+
+// 2. Create a Price for the Product
+const price = await stripe.prices.create({
+  product: product.id,
+  unit_amount: 49900, // price in paisa (₹499.00)
+  currency: 'inr',
+  recurring: { interval: 'month' },
+});
+
+// Save product.id and price.id in your DB
+
+
+
+
+ Now your App Can Use:
+
+js
+items: [{ price: price.id }]
+
+
+You don’t need to hardcode/copy-paste anything.
+The new price.id will be fetched dynamically from your DB when creating a subscription.
+
+
+
+ 🔑 Summary:
+
+| Task                                 | Where?                     |
+| ------------------------------------ | -------------------------- |
+| Create new plan/product              | ✔ In your app admin portal |
+| Create new price                     | ✔ In your app admin portal |
+| Use priceId in subscription creation | ✔ From your DB             |
+
+
+ ✅ Conclusion:
+
+Yes, you can create Products & Prices dynamically from your application, and manage all subscription plans without using the Stripe Dashboard.
+The Dashboard becomes optional.
+
+Let me know if you want the complete admin-side API for this.
