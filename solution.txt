@@ -167,7 +167,7 @@ Created Address Model to Store the saved address, Created Order model To store t
 
 
 
----------------------> here i was (remember to list BusinessDraft creation api and adding validation)
+
 
 
 Today, you worked on implementing and debugging the **Stripe webhook** to handle events like `checkout.session.completed`. You ensured **signature verification** by using `express.raw()` for the webhook route and added detailed **debugging logs** to track the raw request and identify any errors. You created a **Stripe Checkout session**, processed it by retrieving the **BusinessDraft**, and used its data to create a **Subscription** and **Business**. You also created a new **BusinessDraft** model to store business-related drafts. Additionally, you handled the **500 error** by logging the process step-by-step and ensured proper error handling, all while testing the webhook with **Stripe CLI** to simulate events.
@@ -196,9 +196,9 @@ Added redirection to /partners on successful business creation.
 Handled subscription checks and ensured successful business creation only for completed payments.
 
 
-in paragraph
+[[[[[[[[[[[[in paragraph
 Today, we implemented the `retryCreateBusiness` API to allow business creation from an existing subscription, integrated Stripe Checkout and payment validation, and tested the Stripe webhook using the CLI. We also fixed TypeScript errors related to subscription types, displayed both new and existing subscription plans in the frontend with tab functionality, and ensured redirection to `/partners` on successful business creation. Additionally, we added subscription checks to ensure business creation only for completed payments.
-In the frontend, we created a tab to toggle between new and existing subscription plans, displaying the existing plans if available. We added a form for business creation, where the selected subscription plan (new or existing) is used to submit the business data. On successful business creation, the user is redirected to /partners. We handled the payment and subscription selection logic, ensuring that users can either retry business creation using an existing subscription or create a new one, with proper handling of subscription and payment status checks.
+In the frontend, we created a tab to toggle between new and existing subscription plans, displaying the existing plans if available. We added a form for business creation, where the selected subscription plan (new or existing) is used to submit the business data. On successful business creation, the user is redirected to /partners. We handled the payment and subscription selection logic, ensuring that users can either retry business creation using an existing subscription or create a new one, with proper handling of subscription and payment status checks.]]]]]]]]]]]]
 
 
 
@@ -206,16 +206,15 @@ In the frontend, we created a tab to toggle between new and existing subscriptio
 
 10
 Added Category selection in Business Creation Form which will be disabled till the listing type is not selected once the listing type is selected it will display the category based on Listing.
-display existing subscription plan if user have.
-developed tab for existing plan and purchase new plan 
 Developed api to fetch the existing Subscription paln of the user
 Configured routes for fetching existing Subscription paln of the user
 Developed Api To get all the categories from the db realted to the Food,service,product
 configured route for it,
+
+
+
 Updated Business Creation api to work without the logo and coverImage.
-updated Stripe webhook so paymet can be verifed and business can be creted without the logo and coover imnage 
-developed retry mechanisum to crete the business from existing subscriptiion.
-configured routes and tested with stripe cli
+updated Stripe webhook so paymet can be verifed and business can be creted without the logo and coover image 
 
 
 ✅ Token is stored in HttpOnly cookie (sameSite: 'lax') → survives Stripe redirect.
@@ -223,6 +222,12 @@ configured routes and tested with stripe cli
 ✅ user_session & user_gender moved to localStorage Login and Otp varification page updated.
 
 ✅ Stripe redirects to /partners, middleware reads the token and allows access.
+
+
+
+---------------------> here i was (remember to list BusinessDraft creation api and adding validation)
+
+
 
 ✅ Created a product business listing API with filters & pagination.
 

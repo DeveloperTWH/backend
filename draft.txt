@@ -44,3 +44,14 @@
 
 
    Developed Main Product Page With categories and product, Made Routing perfect, Developed the Business Dashboard page with key metric cards and visuals, Built the SalesSection component with bar, pie, and line charts using recharts, Enabled pie chart hover behavior with scale and value popover effect, Styledwith inner color ring and custom legend, Updated next.config.js to allow image loading from external domains
+
+15-07-2025
+
+   1. Made the sidebar responsive, ensuring it collapses on mobile and remains static on desktop, with a working hamburger menu for toggling.
+
+   2. Adjusted the Topbar for mobile responsiveness by implementing a hamburger menu and hiding the search bar on smaller screens.
+
+   3. Resolved the issue of excessive left padding in the `LineChart`, ensuring it adapts correctly across all screen sizes.
+
+   4. Made The sidebar, Topbar, OverviewCards, SalesSection, SubscriptionPlan, ProductTable responsive 
+
