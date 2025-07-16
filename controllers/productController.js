@@ -123,6 +123,7 @@ exports.createProductWithVariants = async (req, res) => {
             })),
             productId: product._id,
             businessId: business._id,
+            ownerId: userId,
             isDeleted: false,
             isPublished: false,
         }));
@@ -255,6 +256,7 @@ exports.addVariants = async (req, res) => {
         const variantDocs = variants.map((variant) => ({
             productId,
             businessId: product.businessId,
+            ownerId: userId,
             color: variant.color,
             sizes: variant.sizes.map((size) => ({
                 size: size.size,

@@ -2,7 +2,7 @@ const Service = require('../models/Service');
 const Review = require('../models/Review');
 const ServiceCategory = require('../models/ServiceCategory');
 
-exports.getAllServices = async (req, res) => {
+exports.getAllPrivateServicesForBusiness = async (req, res) => {
   try {
     const {
       search = '',
@@ -10,7 +10,7 @@ exports.getAllServices = async (req, res) => {
       state,
       country,
       minorityType,
-      categorySlug,  // ✅ New category filter
+      categorySlug,
       businessId,
       sort,
       openNow,
@@ -18,11 +18,17 @@ exports.getAllServices = async (req, res) => {
       offers,
       page = 1,
       limit = 10,
+      showUnpublished = 'false', // Query param to show unpublished services
     } = req.query;
 
-    const filters = { isPublished: true };
+    // Validate that businessId is provided
+    if (!businessId) {
+      return res.status(400).json({ success: false, message: 'Business ID is required' });
+    }
 
-    // Search
+    const filters = { businessId: businessId, ownerId: req.user.id }; // Filter by businessId and ownerId
+
+    // Search filter
     if (search) {
       filters.$or = [
         { title: { $regex: search, $options: 'i' } },
@@ -34,15 +40,12 @@ exports.getAllServices = async (req, res) => {
     if (minorityType) filters.minorityType = minorityType;
     if (city) filters['contact.address'] = { $regex: city, $options: 'i' };
 
-    if (businessId) filters.businessId = businessId;
-
-    // ✅ Category Slug to categoryId conversion
+    // Category Slug to categoryId conversion
     if (categorySlug) {
       const category = await ServiceCategory.findOne({ slug: categorySlug });
       if (category) {
         filters['categories.categoryId'] = category._id;
       } else {
-        // If category not found, return empty result
         return res.json({ success: true, total: 0, page: parseInt(page), totalPages: 0, data: [] });
       }
     }
@@ -50,7 +53,12 @@ exports.getAllServices = async (req, res) => {
     if (onlineBooking === 'true') filters.features = { $in: ['Online Booking'] };
     if (offers === 'true') filters.features = { $in: ['Offers Available'] };
 
-    // Sorting
+    // If showUnpublished is true, include unpublished services
+    if (showUnpublished === 'true') {
+      filters.isPublished = false; // Show unpublished services only
+    }
+
+    // Sorting logic
     let sortOption = { createdAt: -1 };
     if (sort === 'price_asc') sortOption = { price: 1 };
     if (sort === 'price_desc') sortOption = { price: -1 };
@@ -75,10 +83,12 @@ exports.getAllServices = async (req, res) => {
       data: services,
     });
   } catch (err) {
-    console.error('Error fetching services:', err);
+    console.error('Error fetching private services:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
+
 
 
 // GET /api/public/services/:slug
@@ -87,7 +97,7 @@ exports.getServiceBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const service = await Service.findOne({ slug, isPublished: true })
+    const service = await Service.findOne({ slug })
       .populate('categories.categoryId', 'name')
       .populate('ownerId', 'businessName');
 
@@ -137,9 +147,15 @@ exports.getAllFood = async (req, res) => {
       page = 1,
       limit = 10,
       outOfStock = false,
+      showUnpublished = 'false',  // New query parameter for unpublished filter
     } = req.query;
 
-    const filters = { isPublished: true };  // Ensure we only fetch active food items
+    // Validate that businessId is provided
+    if (!businessId) {
+      return res.status(400).json({ success: false, message: 'Business ID is required' });
+    }
+
+    const filters = { businessId: businessId, ownerId: req.user._id }; // Updated to use req.user._id
 
     // Search filter
     if (search) {
@@ -154,9 +170,6 @@ exports.getAllFood = async (req, res) => {
     if (city) filters['address.city'] = { $regex: city, $options: 'i' };
     if (state) filters['address.state'] = { $regex: state, $options: 'i' };
     if (country) filters['address.country'] = { $regex: country, $options: 'i' };
-
-    // Filter by businessId
-    if (businessId) filters.businessId = businessId;
 
     // Category Slug to categoryId conversion
     if (categorySlug) {
@@ -174,6 +187,11 @@ exports.getAllFood = async (req, res) => {
     // Out of stock filter
     if (outOfStock === 'true') {
       filters.stockQuantity = { $lte: 0 };  // Assuming stockQuantity tracks available stock
+    }
+
+    // Unpublished filter
+    if (showUnpublished === 'true') {
+      filters.isPublished = false;  // Only return unpublished food items
     }
 
     // Sorting logic
@@ -209,6 +227,8 @@ exports.getAllFood = async (req, res) => {
 
 
 
+
+
 const ProductVariant = require('../models/ProductVariant');
 const Product = require('../models/Product');
 const ProductCategory = require('../models/ProductCategory');
@@ -228,15 +248,21 @@ exports.getAllProducts = async (req, res) => {
       page = 1,
       limit = 10,
       outOfStock = false,
+      showUnpublished = 'false',  // New query parameter for unpublished products
     } = req.query;
 
-    const filters = { isDeleted: false, isPublished: true };  // Ensure we only fetch active products
+    // Validate that businessId is provided
+    if (!businessId) {
+      return res.status(400).json({ success: false, message: 'Business ID is required' });
+    }
+
+    const filters = { businessId: businessId, ownerId: req.user._id, };
 
     // Search filter
     if (search) {
       filters.$or = [
-        { 'product.title': { $regex: search, $options: 'i' } },  // Search in Product's title
-        { 'product.description': { $regex: search, $options: 'i' } },  // Search in Product's description
+        { 'productId.title': { $regex: search, $options: 'i' } },  // Correct path to title
+        { 'productId.description': { $regex: search, $options: 'i' } },  // Correct path to description
       ];
     }
 
@@ -245,9 +271,6 @@ exports.getAllProducts = async (req, res) => {
     if (city) filters['address.city'] = { $regex: city, $options: 'i' };
     if (state) filters['address.state'] = { $regex: state, $options: 'i' };
     if (country) filters['address.country'] = { $regex: country, $options: 'i' };
-
-    // Filter by businessId
-    if (businessId) filters.businessId = businessId;
 
     // Category Slug to categoryId conversion
     if (categorySlug) {
@@ -262,8 +285,16 @@ exports.getAllProducts = async (req, res) => {
     // Offers filter
     if (offers === 'true') filters.features = { $in: ['Offers Available'] };
 
+    // Out of stock filter
     if (outOfStock === 'true') {
       filters.stockQuantity = { $lte: 0 };  // Assuming stockQuantity is the field for available stock
+    }
+
+    // Unpublished filter
+    if (showUnpublished === 'true') {
+      filters.isPublished = false;  // Only return unpublished products
+    } else {
+        // Default: Only return published products
     }
 
     // Sorting logic
@@ -273,7 +304,9 @@ exports.getAllProducts = async (req, res) => {
     if (sort === 'rating') sortOption = { averageRating: -1 };
 
     // Pagination logic
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
+    const skip = (pageNum - 1) * limitNum;
 
     // Fetching ProductVariants based on filters, and populating Product details
     const productVariants = await ProductVariant.find(filters)
@@ -281,15 +314,15 @@ exports.getAllProducts = async (req, res) => {
       .populate('productId', 'title description coverImage')  // Populating Product data
       .sort(sortOption)
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(limitNum);
 
     const total = await ProductVariant.countDocuments(filters);
 
     res.json({
       success: true,
       total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / limit),
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum),
       data: productVariants,
     });
   } catch (err) {
@@ -297,3 +330,4 @@ exports.getAllProducts = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+

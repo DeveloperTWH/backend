@@ -55,3 +55,33 @@
 
    4. Made The sidebar, Topbar, OverviewCards, SalesSection, SubscriptionPlan, ProductTable responsive 
 
+16-07-2025
+
+   API Creation:
+
+      Created the getBusinessBySlug API.
+
+      Created the following routes for fetching business-related data:
+
+      /services/list - Fetch all private services for a business (including unpublished).
+
+      /services/:slug - Fetch a specific service for a business (including unpublished).
+
+      /food/list - Fetch all food/products for a business (including unpublished).
+
+      /products/list - Fetch all products for a business (including unpublished).
+
+      /food/list - Fetch all food/products for a business (Only Published).
+
+      /products/list - Fetch all products for a business (Only Published).
+
+Frontend Development:
+
+      Created the loading screen and the not found screen for product and food listings.
+
+      Developed the Review and Rating component.
+
+      Developed the TopSelling MapComponent to display geospatial data of the business.
+
+      Made the Business Owner Dashboard responsive.
+

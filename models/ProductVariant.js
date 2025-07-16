@@ -12,6 +12,12 @@ const productVariantSchema = new mongoose.Schema({
     ref: 'Business',
   },
 
+  ownerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+
   color: {
     type: String,
     required: true,
@@ -108,15 +114,20 @@ const productVariantSchema = new mongoose.Schema({
 
 productVariantSchema.set('toJSON', {
   transform: (doc, ret) => {
-    ret.sizes = ret.sizes.map(s => ({
+    // Check if `sizes` exists and is an array, otherwise default to an empty array
+    ret.sizes = Array.isArray(ret.sizes) ? ret.sizes.map(s => ({
       ...s,
       price: parseFloat(s.price?.toString() || '0'),
       salePrice: parseFloat(s.salePrice?.toString() || '0')
-    }));
+    })) : [];  // If sizes is undefined, return an empty array
+    
+    // Similarly, ensure `weightInKg` is defined and parsed
     ret.weightInKg = parseFloat(ret.weightInKg?.toString() || '0');
+
     return ret;
   }
 });
+
 
 productVariantSchema.index({ productId: 1 });
 productVariantSchema.index({ businessId: 1 });

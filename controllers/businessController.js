@@ -588,3 +588,72 @@ exports.getProductBusinesses = async (req, res) => {
 
 
 
+exports.getBusinessBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    const business = await Business.findOne({
+      slug,
+      owner: req.user._id, // ✅ ensure only the owner's business is fetched
+    })
+      .populate('subscriptionId')
+      .lean();
+
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        message: 'Business not found or you are not authorized',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: business,
+    });
+  } catch (err) {
+    console.error('Error fetching private business by slug:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+};
+
+
+
+
+exports.getBusinessBySlugPublic = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    console.log(`Fetching public business by slug: ${slug}`);
+    
+
+    const business = await Business.findOne({
+      slug,
+      isActive: true,
+      listingType: 'product', // ✅ Only product businesses
+    })
+      .select(
+        'businessName description logo coverImage website email phone address listingType slug'
+      )
+      .lean();
+
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        message: 'Business not found or not a product listing',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: business,
+    });
+  } catch (err) {
+    console.error('Error fetching public business by slug:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+};

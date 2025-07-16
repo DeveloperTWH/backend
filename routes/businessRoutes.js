@@ -49,6 +49,17 @@ router.get(
   businessController.getMyBusinesses
 );
 
+// Get a single business by slug (public)
+router.get('/public/:slug', businessController.getBusinessBySlugPublic);
+
+router.get(
+  '/:slug',
+  authenticate,
+  isBusinessOwner,
+  businessController.getBusinessBySlug
+);
+
+
 
 
 router.put(
