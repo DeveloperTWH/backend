@@ -75,7 +75,7 @@
 
       /products/list - Fetch all products for a business (Only Published).
 
-Frontend Development:
+   Frontend Development:
 
       Created the loading screen and the not found screen for product and food listings.
 
@@ -84,4 +84,28 @@ Frontend Development:
       Developed the TopSelling MapComponent to display geospatial data of the business.
 
       Made the Business Owner Dashboard responsive.
+
+17-07-2025
+
+   Updated Product API
+
+      Flattened sizes to size-level records.
+      Added `salePrice` and `sizeId`.
+      Included Product Out of Stock and `sellableCount` in API response.
+
+   Updated Business API
+
+      Populated `subscriptionPlan` inside `subscription`.
+      Returned business, subscription, and subscriptionPlan as separate objects.
+
+   Frontend Enhancements
+
+      Displayed dynamic subscription & subscription plan details in the dashboard.
+      Updated Product Table to show `salePrice`, stock status, and dynamic counts (`total`, `sellableCount`).
+      Added skeleton loader and error state for better UX.
+
+   Planning for Inventory Page
+
+      Decided to create `/partners/[businessid]/inventory`.
+      Will fetch business data by slug to get `listingType` dynamically.
 

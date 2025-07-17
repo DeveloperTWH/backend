@@ -594,10 +594,17 @@ exports.getBusinessBySlug = async (req, res) => {
 
     const business = await Business.findOne({
       slug,
-      owner: req.user._id, // ✅ ensure only the owner's business is fetched
+      owner: req.user._id,
     })
-      .populate('subscriptionId')
+      .populate({
+        path: 'subscriptionId',
+        populate: {
+          path: 'subscriptionPlanId',
+          model: 'SubscriptionPlan',
+        },
+      })
       .lean();
+
 
     if (!business) {
       return res.status(404).json({
@@ -606,9 +613,23 @@ exports.getBusinessBySlug = async (req, res) => {
       });
     }
 
+
+    // ✅ Separate subscriptionId & subscriptionPlanId from business
+    const subscription = business.subscriptionId || null;
+    const subscriptionPlan = subscription?.subscriptionPlanId || null;
+
+    // ✅ Remove them from business if you don't want duplication
+    if (business.subscriptionId) {
+      delete business.subscriptionId.subscriptionPlanId;
+    }
+
     res.status(200).json({
       success: true,
-      data: business,
+      data: {
+        business,
+        subscription,
+        subscriptionPlan,
+      },
     });
   } catch (err) {
     console.error('Error fetching private business by slug:', err);
@@ -626,7 +647,7 @@ exports.getBusinessBySlugPublic = async (req, res) => {
   try {
     const { slug } = req.params;
     console.log(`Fetching public business by slug: ${slug}`);
-    
+
 
     const business = await Business.findOne({
       slug,
