@@ -223,12 +223,6 @@ updated Stripe webhook so paymet can be verifed and business can be creted witho
 
 ✅ Stripe redirects to /partners, middleware reads the token and allows access.
 
-
-
----------------------> here i was (remember to list BusinessDraft creation api and adding validation)
-
-
-
 ✅ Created a product business listing API with filters & pagination.
 
 ✅ Integrated it in the frontend VendorGrid.
@@ -306,7 +300,7 @@ Today, I completed several backend and frontend tasks including implementing sec
 
 
 
-
+---------------------> here i was ()
 
 11-07-2025
 

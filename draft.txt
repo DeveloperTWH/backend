@@ -109,3 +109,22 @@
       Decided to create `/partners/[businessid]/inventory`.
       Will fetch business data by slug to get `listingType` dynamically.
 
+18-07-2025
+
+   Developed Inventory Page with full dynamic support for Products, Services, and Food based on listingType.
+
+   Integrated Product/Service/Food fetching logic with withCredentials for secure API calls.
+
+   Introduced global state using Zustand to store business data and reduce repeated API calls.
+
+   Implemented logic to check cached business (compares store slug with URL slug, clears & fetches if different).
+
+   Improved Loading & Error UI – Added spinner loader and styled alert boxes.
+
+   Added 3 Overview Boxes (Total, Available, Out Of Stock/Unpublished) with responsive grid design.
+
+   Converted Add Button to a Next.js Link, dynamically using businessid from URL.
+
+   Made Inventory Page responsive across all devices.
+
+
