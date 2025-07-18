@@ -127,4 +127,8 @@
 
    Made Inventory Page responsive across all devices.
 
+   Added Logout Functionality in partner's sidebar.
+
+   added Gender based Avtars in partner's tpbar
+
 
