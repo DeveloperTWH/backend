@@ -296,12 +296,6 @@ Fixed the conflict with /services/[categorySlug].
 Today, I completed several backend and frontend tasks including implementing secure token storage using HttpOnly cookies, creating business listing APIs with filters and pagination, and integrating them into the VendorGrid component with debounced search and a loading spinner. I refactored the ServiceCategory and ProductCategory models to auto-generate slugs, enhanced the service listing API with comprehensive filtering and sorting, and integrated it into the ServicePage. Additionally, I resolved routing conflicts by separating the service detail and category listing routes, ensuring seamless navigation and proper image loading from Cloudinary and AWS S3.
 
 
-
-
-
-
----------------------> here i was ()
-
 11-07-2025
 
 Service Detail & Listing
@@ -316,6 +310,11 @@ Replaced static service and review data with dynamic API calls.
 Handled Loading and Not Found states with icons (Loader2, AlertTriangle).
 
 Converted phone, email, and website fields to tel, mailto, and external links respectively.
+
+
+---------------------> here i was ()
+
+
 
 Category-Based Service Listing (services/[id]/page.tsx)
 Connected the Service List API (/api/services/list) with filters: categorySlug, search, minorityType, city.

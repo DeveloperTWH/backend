@@ -131,4 +131,13 @@
 
    added Gender based Avtars in partner's tpbar
 
+22-07-2025 
+
+   Developed the Vendor Profile Page with proper layout and sections.
+
+   Integrated backend API to fetch and display business-specific details dynamically.
+
+   Displayed real business name in the sidebar and showed the first character of the business name as the logo image fallback.
+
+   Made the Vendor Profile Page fully responsive for all screen sizes.
 
