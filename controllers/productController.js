@@ -18,6 +18,7 @@ exports.createProductWithVariants = async (req, res) => {
             title,
             description,
             brand,
+            isPublished,
             categoryId,
             subcategoryId,
             businessId,
@@ -102,7 +103,7 @@ exports.createProductWithVariants = async (req, res) => {
             specifications,
             coverImage,
             isDeleted: false,
-            isPublished: false,
+            isPublished: isPublished,
             minorityType: business.minorityType,
         });
 
@@ -125,7 +126,7 @@ exports.createProductWithVariants = async (req, res) => {
             businessId: business._id,
             ownerId: userId,
             isDeleted: false,
-            isPublished: false,
+            isPublished: isPublished,
         }));
 
 

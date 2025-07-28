@@ -43,6 +43,8 @@ const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 
 const app = express();
+
+// app.set('trust proxy', 1);
 app.use(cors({
   origin: 'http://localhost:3000',  // your frontend URL
   credentials: true                 // optional, only if using cookies or auth headers

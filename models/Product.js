@@ -66,6 +66,7 @@ const productSchema = new mongoose.Schema({
 
   coverImage: {
     type: String,
+    required: true,
   },
 
   variantOptions: {

@@ -1,27 +1,36 @@
-const { v2: cloudinary } = require('cloudinary');
-const fs = require('fs');
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { v4: uuidv4 } = require("uuid");
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+// Initialize S3 Client
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 });
 
-exports.uploadFile = async (filePath, folder = 'business') => {
-  if (process.env.STORAGE_PROVIDER === 'cloudinary') {
-    const result = await cloudinary.uploader.upload(filePath, { folder });
+exports.uploadFile = async (file, folder = "business") => {
+  console.log("Uploading file to S3:", file);
+  
+  if (!file) throw new Error("No file provided");
 
-    // Delete the local file after upload
-   
-    try {
-      fs.unlinkSync(filePath);
-    } catch (err) {
-      console.error('Failed to delete local file:', err);
-    }
+  const fileName = `${folder}/${uuidv4()}-${file.originalname}`;
 
+  const params = {
+    Bucket: process.env.AWS_S3_BUCKET,
+    Key: fileName,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+  };
 
-    return result.secure_url;
+  try {
+    await s3.send(new PutObjectCommand(params));
+
+    // Construct public URL (for public-read files)
+    return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+  } catch (err) {
+    console.error("S3 Upload Error:", err);
+    throw err;
   }
-
-  throw new Error('Unsupported storage provider');
 };

@@ -46,12 +46,6 @@ const productVariantSchema = new mongoose.Schema({
       salePrice: {
         type: mongoose.Schema.Types.Decimal128,
         min: 0,
-        validate: {
-          validator: function (v) {
-            return !v || v < this.price;
-          },
-          message: 'Sale price must be less than original price',
-        },
       },
       discountEndDate: {
         type: Date,

@@ -75,12 +75,15 @@ exports.createBusiness = async (req, res) => {
     }
 
     // Upload files to Cloudinary
+    
     let logoUrl, coverUrl;
     if (req.files?.logo?.[0]) {
-      logoUrl = await uploadFile(req.files.logo[0].path, 'business/logos');
+      logoUrl = await uploadFile(req.files.logo[0], 'business/logos');
+      console.log(logoUrl, "✅ Logo uploaded successfully");
+      
     }
     if (req.files?.coverImage?.[0]) {
-      coverUrl = await uploadFile(req.files.coverImage[0].path, 'business/covers');
+      coverUrl = await uploadFile(req.files.coverImage[0], 'business/covers');
     }
 
     // Extract form fields
@@ -102,13 +105,13 @@ exports.createBusiness = async (req, res) => {
     const hasService = Array.isArray(serviceCategories) && serviceCategories.length > 0;
     const hasFood = Array.isArray(foodCategories) && foodCategories.length > 0;
 
-    const typeCount = [hasProduct, hasService, hasFood].filter(Boolean).length;
-    if (typeCount !== 1) {
-      cleanupUploads(req.files);
-      return res.status(400).json({
-        message: 'A business must list exactly one type: either Product, Service, or Food.',
-      });
-    }
+    // const typeCount = [hasProduct, hasService, hasFood].filter(Boolean).length;
+    // if (typeCount !== 1) {
+    //   cleanupUploads(req.files);
+    //   return res.status(400).json({
+    //     message: 'A business must list exactly one type: either Product, Service, or Food.',
+    //   });
+    // }
 
 
     // Create business
@@ -226,12 +229,12 @@ exports.updateBusiness = async (req, res) => {
 
     // Handle uploads
     if (req.files?.logo?.[0]) {
-      const newLogo = await uploadFile(req.files.logo[0].path, 'business/logos');
+      const newLogo = await uploadFile(req.files.logo[0], 'business/logos');
       business.logo = newLogo;
     }
 
     if (req.files?.coverImage?.[0]) {
-      const newCover = await uploadFile(req.files.coverImage[0].path, 'business/covers');
+      const newCover = await uploadFile(req.files.coverImage[0], 'business/covers');
       business.coverImage = newCover;
     }
 

@@ -1,24 +1,31 @@
-const cloudinary = require('cloudinary').v2;
+const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+// Initialize S3 Client
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 });
 
 const deleteCloudinaryFile = async (fileUrl) => {
   if (!fileUrl) return;
 
   try {
-    const uploadIndex = fileUrl.indexOf('/upload/');
-    if (uploadIndex === -1) throw new Error('Invalid Cloudinary URL');
+    // Extract the S3 Key from the URL
+    const key = fileUrl.split(".amazonaws.com/")[1];
+    if (!key) throw new Error("Invalid S3 URL");
 
-    let path = fileUrl.substring(uploadIndex + 8); // skip "/upload/"
-    path = path.replace(/^v\d+\//, ''); // remove version like v1234567890/
-    const publicId = path.replace(/\.[^/.]+$/, ''); // remove extension
-    const result = await cloudinary.uploader.destroy(publicId);
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET,
+      Key: key,
+    };
+
+    await s3.send(new DeleteObjectCommand(params));
+    console.log(`✅ Deleted from S3: ${key}`);
   } catch (err) {
-    console.error('Failed to delete Cloudinary file:', err.message);
+    console.error("Failed to delete S3 file:", err.message);
   }
 };
 

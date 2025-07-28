@@ -317,10 +317,29 @@ exports.loginUser = async (req, res) => {
 exports.logout = (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
-    secure: true, // use true in production with HTTPS
-    sameSite: 'lax',
-    path: '/'
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
+    domain: '.minorityownedbusiness.info',
+    path: '/', // must match the original path
   });
+
+  res.clearCookie('user_session', {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
+    domain: '.minorityownedbusiness.info',
+    path: '/',
+  });
+
+  res.clearCookie('user_gender', {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
+    domain: '.minorityownedbusiness.info',
+    path: '/',
+  });
+
   res.status(200).json({ message: 'Logged out successfully' });
 };
+
 
