@@ -1,10 +1,27 @@
 const express = require('express');
-const { createProductWithVariants, addVariants, updateVariant, deleteVariant, deleteProduct  } = require('../controllers/productController');
+const { createProductWithVariants, addVariants, updateVariant, deleteVariant, deleteProduct, getProductById, updateProduct  } = require('../controllers/productController');
 const authenticate = require('../middlewares/authenticate');
 const isBusinessOwner = require('../middlewares/isBusinessOwner');
 const { validateProductInput, validateVariantInput  } = require('../validators/productValidators');
 
 const router = express.Router();
+
+router.get(
+  '/:productId',
+  authenticate,
+  isBusinessOwner,
+  getProductById
+);
+
+
+router.put(
+  '/:productId',
+  authenticate,
+  isBusinessOwner,
+  updateProduct
+);
+
+
 
 router.post(
   '/',

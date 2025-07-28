@@ -3,7 +3,7 @@ require("dotenv").config();
 
 // ✅ Local & Atlas URIs
 const localURI = "mongodb://127.0.0.1:27017/mosaic";
-const atlasURI = "mongodb+srv://webdevelopmenttwh:gslF8QrdKKNfONlU@mosiac.dyjco5y.mongodb.net/?retryWrites=true&w=majority&appName=mosiac";
+const atlasURI = process.env.MONGODB_URI
 
 // ✅ Define the schema for the collection you want to migrate
 const subscriptionPlanSchema = new mongoose.Schema({}, { strict: false }); 

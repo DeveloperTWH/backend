@@ -452,6 +452,7 @@ exports.deleteProduct = async (req, res) => {
   const { productId } = req.params; // Get productId from the URL
 
   try {
+    console.log('Deleting product with ID:', productId);
     // Find the product by productId
     const product = await Product.findById(productId);
     if (!product) {
@@ -482,5 +483,88 @@ exports.deleteProduct = async (req, res) => {
   } catch (err) {
     console.error('Error deleting product:', err);
     return res.status(500).json({ error: 'Server error while deleting product' });
+  }
+};
+
+
+
+
+exports.getProductById = async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    const product = await Product.findById(productId).lean();
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    // Ensure that the current user is the owner of the product
+    if (product.ownerId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'You are not authorized to delete this product' });
+    }
+
+    // Ensure fallback for optional fields
+    product.specifications = product.specifications ?? [];
+    product.variantOptions = product.variantOptions ?? {};
+
+    return res.status(200).json({ product });
+  } catch (err) {
+    console.error('Error in getProductById:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+
+exports.updateProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const ownerId = req.user._id; // set by authenticate middleware
+    const {
+      title,
+      description,
+      brand,
+      categoryId,
+      subcategoryId,
+      coverImage,
+      specifications,
+      isPublished,
+    } = req.body;
+
+    // Validate required fields
+    if (
+      !title || !description || !categoryId || !subcategoryId ||
+      !coverImage
+    ) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Fetch and verify ownership
+    const product = await Product.findById(productId);
+    if (!product || product.isDeleted) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    if (product.ownerId.toString() !== ownerId.toString()) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    // Update fields
+    product.title = title;
+    product.description = description;
+    product.brand = brand || '';
+    product.categoryId = categoryId;
+    product.subcategoryId = subcategoryId;
+    product.coverImage = coverImage;
+    product.specifications = specifications || [];
+    product.isPublished = !!isPublished;
+
+    await product.save();
+
+    return res.status(200).json({ message: 'Product updated successfully', product });
+
+  } catch (err) {
+    console.error('Error updating product:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };

@@ -234,6 +234,118 @@ const Product = require('../models/Product');
 const ProductCategory = require('../models/ProductCategory');
 
 
+// exports.getAllProducts = async (req, res) => {
+//   try {
+//     const {
+//       search = '',
+//       city,
+//       state,
+//       country,
+//       minorityType,
+//       categorySlug,
+//       businessId,
+//       sort,
+//       offers,
+//       page = 1,
+//       limit = 10,
+//       outOfStock = false,
+//       showUnpublished = 'false',
+//     } = req.query;
+
+//     if (!businessId) {
+//       return res.status(400).json({ success: false, message: 'Business ID is required' });
+//     }
+
+//     const filters = { businessId: businessId, ownerId: req.user._id };
+
+//     // Search filter
+//     if (search) {
+//       filters.$or = [
+//         { 'productId.title': { $regex: search, $options: 'i' } },
+//         { 'productId.description': { $regex: search, $options: 'i' } },
+//       ];
+//     }
+
+//     if (minorityType) filters.minorityType = minorityType;
+//     if (city) filters['address.city'] = { $regex: city, $options: 'i' };
+//     if (state) filters['address.state'] = { $regex: state, $options: 'i' };
+//     if (country) filters['address.country'] = { $regex: country, $options: 'i' };
+
+//     if (categorySlug) {
+//       const category = await ProductCategory.findOne({ slug: categorySlug });
+//       if (category) {
+//         filters.categoryId = category._id;
+//       } else {
+//         return res.json({ success: true, total: 0, page: 1, totalPages: 0, data: [] });
+//       }
+//     }
+
+//     if (offers === 'true') filters.features = { $in: ['Offers Available'] };
+//     if (outOfStock === 'true') filters['sizes.stock'] = { $lte: 0 };
+
+//     if (showUnpublished === 'true') {
+//       filters.isPublished = false;
+//     }
+
+//     // Sorting logic
+//     let sortOption = { createdAt: -1 };
+//     if (sort === 'price_asc') sortOption = { 'sizes.price': 1 };
+//     if (sort === 'price_desc') sortOption = { 'sizes.price': -1 };
+//     if (sort === 'rating') sortOption = { averageRating: -1 };
+
+//     const pageNum = parseInt(page) || 1;
+//     const limitNum = parseInt(limit) || 10;
+//     const skip = (pageNum - 1) * limitNum;
+
+//     // Fetch product variants
+//     const productVariants = await ProductVariant.find(filters)
+//       .select('color sizes isPublished images totalReviews averageRating')
+//       .populate('productId', 'title description coverImage')
+//       .sort(sortOption)
+//       .lean();
+
+//     // ✅ Flatten sizes to size-level records
+//     const flattenedSizes = productVariants.flatMap((variant) =>
+//       variant.sizes.map((size) => ({
+//         _id: variant._id, // ProductVariant ID
+//         sizeId: size._id, // ✅ Add Size ID explicitly
+//         color: variant.color,
+//         isPublished: variant.isPublished,
+//         images: variant.images,
+//         averageRating: variant.averageRating,
+//         totalReviews: variant.totalReviews,
+//         productId: variant.productId,
+//         size: size.size,
+//         sku: size.sku,
+//         stock: size.stock,
+//         price: size.price ? Number(size.price) : 0, // ✅ Convert Decimal128 to Number
+//         salePrice: size.salePrice ? Number(size.salePrice) : null, // ✅ Convert & Include salePrice
+//         discountEndDate: size.discountEndDate || null,
+//       }))
+//     );
+
+
+//     const total = flattenedSizes.length;
+//     const sellableCount = flattenedSizes.filter((item) => item.stock > 0).length;
+
+//     // ✅ Paginate at size level
+//     const paginatedData = flattenedSizes.slice(skip, skip + limitNum);
+
+//     res.json({
+//       success: true,
+//       total,
+//       sellableCount,
+//       page: pageNum,
+//       totalPages: Math.ceil(total / limitNum),
+//       data: paginatedData,
+//     });
+//   } catch (err) {
+//     console.error('Error fetching product sizes:', err);
+//     res.status(500).json({ success: false, message: 'Server error' });
+//   }
+// };
+
+
 exports.getAllProducts = async (req, res) => {
   try {
     const {
@@ -256,9 +368,8 @@ exports.getAllProducts = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Business ID is required' });
     }
 
-    const filters = { businessId: businessId, ownerId: req.user._id };
+    const filters = { businessId, ownerId: req.user._id };
 
-    // Search filter
     if (search) {
       filters.$or = [
         { 'productId.title': { $regex: search, $options: 'i' } },
@@ -276,72 +387,92 @@ exports.getAllProducts = async (req, res) => {
       if (category) {
         filters.categoryId = category._id;
       } else {
-        return res.json({ success: true, total: 0, page: 1, totalPages: 0, data: [] });
+        return res.json({ success: true, total: 0, sellableCount: 0, page: 1, totalPages: 0, data: [] });
       }
     }
 
     if (offers === 'true') filters.features = { $in: ['Offers Available'] };
     if (outOfStock === 'true') filters['sizes.stock'] = { $lte: 0 };
+    if (showUnpublished === 'true') filters.isPublished = false;
+    filters.isDeleted = false;
 
-    if (showUnpublished === 'true') {
-      filters.isPublished = false;
-    }
 
-    // Sorting logic
     let sortOption = { createdAt: -1 };
     if (sort === 'price_asc') sortOption = { 'sizes.price': 1 };
     if (sort === 'price_desc') sortOption = { 'sizes.price': -1 };
     if (sort === 'rating') sortOption = { averageRating: -1 };
 
-    const pageNum = parseInt(page) || 1;
-    const limitNum = parseInt(limit) || 10;
-    const skip = (pageNum - 1) * limitNum;
-
-    // Fetch product variants
     const productVariants = await ProductVariant.find(filters)
       .select('color sizes isPublished images totalReviews averageRating')
       .populate('productId', 'title description coverImage')
       .sort(sortOption)
       .lean();
 
-    // ✅ Flatten sizes to size-level records
-    const flattenedSizes = productVariants.flatMap((variant) =>
-      variant.sizes.map((size) => ({
-        _id: variant._id, // ProductVariant ID
-        sizeId: size._id, // ✅ Add Size ID explicitly
+    const groupedProductsMap = {};
+    let sellableCount = 0;
+
+    for (const variant of productVariants) {
+      const productId = variant.productId?._id?.toString();
+      if (!productId) continue;
+
+      if (!groupedProductsMap[productId]) {
+        groupedProductsMap[productId] = {
+          _id: productId,
+          title: variant.productId.title,
+          description: variant.productId.description,
+          coverImage: variant.productId.coverImage,
+          variants: [],
+        };
+      }
+
+      const sizes = variant.sizes.map(size => ({
+        sizeId: size._id,
+        size: size.size,
+        sku: size.sku,
+        stock: size.stock,
+        price: size.price ? Number(size.price) : 0,
+        salePrice: size.salePrice ? Number(size.salePrice) : null,
+        discountEndDate: size.discountEndDate || null,
+      }));
+
+      groupedProductsMap[productId].variants.push({
+        variantId: variant._id,
         color: variant.color,
         isPublished: variant.isPublished,
         images: variant.images,
         averageRating: variant.averageRating,
         totalReviews: variant.totalReviews,
-        productId: variant.productId,
-        size: size.size,
-        sku: size.sku,
-        stock: size.stock,
-        price: size.price ? Number(size.price) : 0, // ✅ Convert Decimal128 to Number
-        salePrice: size.salePrice ? Number(size.salePrice) : null, // ✅ Convert & Include salePrice
-        discountEndDate: size.discountEndDate || null,
-      }))
-    );
+        sizes,
+      });
 
+      // ✅ Count if this variant is sellable
+      if (
+        variant.sizes.some(s => s.stock > 0)
+      ) {
+        sellableCount++;
+      }
+    }
 
-    const total = flattenedSizes.length;
-    const sellableCount = flattenedSizes.filter((item) => item.stock > 0).length;
+    const groupedProducts = Object.values(groupedProductsMap);
+    const total = groupedProducts.length;
+    const totalVariants = productVariants.length;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const totalPages = Math.ceil(total / limitNum);
 
-    // ✅ Paginate at size level
-    const paginatedData = flattenedSizes.slice(skip, skip + limitNum);
+    const paginatedData = groupedProducts.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
     res.json({
       success: true,
       total,
+      totalVariants,
       sellableCount,
       page: pageNum,
-      totalPages: Math.ceil(total / limitNum),
+      totalPages,
       data: paginatedData,
     });
   } catch (err) {
-    console.error('Error fetching product sizes:', err);
+    console.error('Error fetching products:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
-
