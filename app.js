@@ -44,11 +44,24 @@ const xss = require('xss-clean');
 
 const app = express();
 
-// app.set('trust proxy', 1);
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://app.minorityownedbusiness.info'
+];
+app.set('trust proxy', 1);
 app.use(cors({
-  origin: 'http://localhost:3000',  // your frontend URL
-  credentials: true                 // optional, only if using cookies or auth headers
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
 }));
+
 
 
 

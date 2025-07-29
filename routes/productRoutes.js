@@ -1,5 +1,5 @@
 const express = require('express');
-const { createProductWithVariants, addVariants, updateVariant, deleteVariant, deleteProduct, getProductById, updateProduct  } = require('../controllers/productController');
+const { createProductWithVariants, addVariants, updateVariant, deleteVariant, deleteProduct, getProductById, updateProduct,getVariantById  } = require('../controllers/productController');
 const authenticate = require('../middlewares/authenticate');
 const isBusinessOwner = require('../middlewares/isBusinessOwner');
 const { validateProductInput, validateVariantInput  } = require('../validators/productValidators');
@@ -29,6 +29,14 @@ router.post(
   isBusinessOwner,
   validateProductInput,
   createProductWithVariants
+);
+
+
+router.get(
+  '/get-variant/:productId/:variantId',
+  authenticate,
+  isBusinessOwner,
+  getVariantById
 );
 
 
