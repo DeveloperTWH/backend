@@ -44,6 +44,11 @@ const serviceSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  businessId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Business',
+    required: true,
+  },
   minorityType: {
     type: String,
     trim: true,
@@ -170,7 +175,7 @@ serviceSchema.methods.calculateRatings = async function () {
 };
 
 // Post-save hook to automatically update ratings when a Review is added/updated
-serviceSchema.post('save', async function(doc, next) {
+serviceSchema.post('save', async function (doc, next) {
   if (doc.isModified('totalReviews') || doc.isModified('averageRating')) {
     await doc.calculateRatings();
   }

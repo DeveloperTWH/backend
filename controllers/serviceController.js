@@ -31,6 +31,7 @@ exports.createService = async (req, res) => {
       contact,
       faq,
       videos,
+      isPublished,
       maxBookingsPerSlot,
       businessId, // Sent from frontend
     } = req.body;
@@ -93,6 +94,7 @@ exports.createService = async (req, res) => {
       categories,
       coverImage,
       images,
+      isPublished,
       features,
       amenities,
       businessHours,
@@ -101,6 +103,7 @@ exports.createService = async (req, res) => {
       videos,
       maxBookingsPerSlot,
       ownerId: userId,
+      businessId,
       minorityType: business.minorityType,
       location: {
         type: 'Point',
