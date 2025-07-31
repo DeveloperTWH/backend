@@ -1,0 +1,1 @@
+<!-- INFO: add minrity type in product variant also or we will have to fliter minority type after we populate the product -->

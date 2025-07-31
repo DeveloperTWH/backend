@@ -41,9 +41,13 @@ doubt 3 => will platform hold payment or directly transfer the fund - commision 
 
 
 
------------------------------ things to do in abckend before deployment
+----------------------------- things to do in backend before deployment
 
 
 userContorller cookie setting chnges site and domain
 app.use("trust proxy", 1);
 app.js
+
+stripeController.js
+    success_url: 'https://app.minorityownedbusiness.info/partners',
+    cancel_url: 'https://app.minorityownedbusiness.info/partners',

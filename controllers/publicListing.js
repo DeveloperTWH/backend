@@ -277,7 +277,7 @@ exports.getAllProducts = async (req, res) => {
 
     // Fetching ProductVariants based on filters, and populating Product details
     const productVariants = await ProductVariant.find(filters)
-      .select('color price sku isPublished weightInKg images videos totalReviews averageRating')
+      .select('color price sku isPublished weightInKg images videos totalReviews averageRating sizes')
       .populate('productId', 'title description coverImage')  // Populating Product data
       .sort(sortOption)
       .skip(skip)
@@ -285,13 +285,54 @@ exports.getAllProducts = async (req, res) => {
 
     const total = await ProductVariant.countDocuments(filters);
 
+    const groupedProductsMap = {};
+
+    for (const variant of productVariants) {
+      const product = variant.productId;
+      if (!product) continue;
+
+      const productId = product._id.toString();
+
+      if (!groupedProductsMap[productId]) {
+        groupedProductsMap[productId] = {
+          _id: productId,
+          title: product.title,
+          description: product.description,
+          coverImage: product.coverImage,
+          variants: [],
+        };
+      }
+
+      groupedProductsMap[productId].variants.push({
+        variantId: variant._id,
+        color: variant.color,
+        isPublished: variant.isPublished,
+        images: variant.images,
+        averageRating: variant.averageRating,
+        totalReviews: variant.totalReviews,
+        sizes: variant.sizes?.map((size) => ({
+          sizeId: size._id,
+          size: size.size,
+          sku: size.sku,
+          stock: size.stock,
+          price: size.price ? Number(size.price) : 0,
+          salePrice: size.salePrice ? Number(size.salePrice) : null,
+          discountEndDate: size.discountEndDate ?? null,
+        })) || [],
+      });
+    }
+
+    const groupedProducts = Object.values(groupedProductsMap);
+
     res.json({
       success: true,
-      total,
+      total: groupedProducts.length,
       page: parseInt(page),
       totalPages: Math.ceil(total / limit),
-      data: productVariants,
+      data: groupedProducts,
     });
+
+
   } catch (err) {
     console.error('Error fetching product variants:', err);
     res.status(500).json({ success: false, message: 'Server error' });

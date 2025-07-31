@@ -68,16 +68,25 @@ exports.getAllPrivateServicesForBusiness = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const services = await Service.find(filters)
-      .select('title services averageRating totalReviews slug description contact.address coverImage')
+      .select('title services averageRating totalReviews slug description contact.address coverImage isPublished')
       .sort(sortOption)
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await Service.countDocuments(filters);
+    const total = await Service.countDocuments({ ...filters }); // Already present
+
+    // Clone the filters without mutating original
+    const publishedFilter = { ...filters, isPublished: true };
+    const unpublishedFilter = { ...filters, isPublished: false };
+
+    const publishedCount = await Service.countDocuments(publishedFilter);
+    const unpublishedCount = await Service.countDocuments(unpublishedFilter);
 
     res.json({
       success: true,
       total,
+      publishedCount,
+      unpublishedCount,
       page: parseInt(page),
       totalPages: Math.ceil(total / limit),
       data: services,

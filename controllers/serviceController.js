@@ -224,8 +224,25 @@ exports.updateService = async (req, res) => {
       return res.status(404).json({ message: 'Service not found' });
     }
 
+    // ✅ Delete old cover image if changed
+    if (req.body.coverImage && req.body.coverImage !== service.coverImage) {
+      await deleteCloudinaryFile(service.coverImage);
+    }
+
+    // ✅ Delete removed images
+    if (
+      Array.isArray(req.body.images) &&
+      Array.isArray(service.images)
+    ) {
+      const removedImages = service.images.filter(img => !req.body.images.includes(img));
+      for (const image of removedImages) {
+        await deleteCloudinaryFile(image);
+      }
+    }
+
+
     const updatableFields = [
-      'title', 'description', 'price', 'duration', 'services',
+      'title', 'description', 'price', 'duration', 'services', 'isPublished',
       'categories', 'coverImage', 'images', 'features', 'amenities',
       'businessHours', 'contact', 'faq', 'videos', 'maxBookingsPerSlot'
     ];
@@ -291,7 +308,6 @@ exports.getServiceById = async (req, res) => {
 
     const service = await Service.findOne({ _id: serviceId, ownerId: userId })
       .populate('categories.categoryId', 'name')
-      .populate('categories.subcategoryIds', 'name')
       .populate('ownerId', 'name email');
 
     if (!service) {

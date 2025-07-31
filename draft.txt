@@ -141,3 +141,19 @@
 
    Made the Vendor Profile Page fully responsive for all screen sizes.
 
+31-07-2025
+
+   Created product grouping logic in backend to fetch grouped products with variants and sizes.
+
+   Modified product listing API to match ProductListingItem type (includes size, pricing, ratings).
+
+   Integrated product listing API on frontend to show real products.
+
+   Handled Decimal128 conversion on backend to ensure proper numeric values for price/salePrice.
+
+   Integrated discount visibility logic based on salePrice and discountEndDate.
+
+   Added loading state handling for product and service listings.
+
+   Fixed issue with image scaling (small image) using Tailwind adjustments.
+
