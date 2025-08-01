@@ -338,3 +338,60 @@ exports.getAllProducts = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
+
+// Route: /api/products/:productId
+
+exports.getProductById = async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    const product = await Product.findById(productId).lean();
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    const variants = await ProductVariant.find({ productId, isPublished: true, isDeleted: false })
+      .select('color price sku weightInKg images videos totalReviews averageRating sizes')
+      .lean();
+
+    res.json({
+      success: true,
+      data: {
+        _id: product._id,
+        title: product.title,
+        description: product.description,
+        brand: product.brand,
+        categoryId: product.categoryId,
+        subcategoryId: product.subcategoryId,
+        businessId: product.businessId,
+        coverImage: product.coverImage,
+        specifications: product.specifications || [],
+        isPublished: product.isPublished,
+        variants: variants.map(variant => ({
+          variantId: variant._id,
+          color: variant.color,
+          images: variant.images,
+          averageRating: variant.averageRating,
+          totalReviews: variant.totalReviews,
+          sizes: variant.sizes?.map((size) => ({
+            sizeId: size._id,
+            size: size.size,
+            sku: size.sku,
+            stock: size.stock,
+            price: size.price ? Number(size.price) : 0,
+            salePrice: size.salePrice ? Number(size.salePrice) : null,
+            discountEndDate: size.discountEndDate ?? null,
+          })) || [],
+        }))
+      }
+    });
+
+  } catch (err) {
+    console.error('Error fetching product details:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+

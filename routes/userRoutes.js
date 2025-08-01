@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const userController = require('../controllers/userController');
+const authenticate = require('../middlewares/authenticate')
 
 const router = express.Router();
 
@@ -53,6 +54,12 @@ router.post(
   [body('email').isEmail().withMessage('Valid email is required')],
   userController.resendOtp
 );
+
+
+router.get('/auth/check', authenticate, (req, res) => {
+  res.json({ loggedIn: true, user: req.user });
+});
+
 
 
 module.exports = router;
