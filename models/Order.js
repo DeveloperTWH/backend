@@ -1,66 +1,136 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
 
-const orderSchema = new mongoose.Schema({
-  userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
+const orderItemSchema = new Schema(
+  {
+    productId: {
+      type: Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+    variantId: {
+      type: Schema.Types.ObjectId,
+      ref: "ProductVariant",
+    },
+    color: {
+      type: String,
+      required: true,
+    },
+    size: {
+      type: String, // ✅ Add size info
+      required: true,
+    },
+    sku: {
+      type: String, // ✅ Store SKU at the time of purchase
+    },
+    quantity: {
+      type: Number,
+      required: true,
+    },
+    price: {
+      // Price at the time of purchase
+      type: Number,
+      required: true,
+    },
   },
-  orderItems: [{
-    productVariantId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductVariant', required: true },
-    quantity: { type: Number, required: true },
-    priceAtPurchase: { type: Number, required: true },
-    discountApplied: { type: Number, default: 0 },
-  }],
-  // Embedding shipping address directly in the order
-  shippingAddress: { 
-    name: { type: String, required: true },
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    state: { type: String, required: true },
-    country: { type: String, required: true },
-    pincode: { type: String, required: true },
-    phoneNumber: { type: String, required: true },
-  },
-  paymentStatus: { 
-    type: String, 
-    enum: ['pending', 'paid', 'failed', 'refunded'], 
-    required: true 
-  },
-  transactionId: { 
-    type: String, 
-    required: true 
-  },
-  orderStatus: { 
-    type: String, 
-    enum: ['pending', 'shipped', 'completed', 'cancelled', 'refunded'], 
-    default: 'pending' 
-  },
-  totalAmount: { 
-    type: Number, 
-    required: true 
-  },
-  promoCode: { 
-    type: String 
-  },
-  promoDiscount: { 
-    type: Number, 
-    default: 0 
-  },
-  trackingNumber: { 
-    type: String 
-  },
-  shippingCarrier: { 
-    type: String 
-  },
-  refunds: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Refund' 
-  }],
-  orderStatusHistory: [{
-    status: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now },
-  }],
-}, { timestamps: true });
+  { _id: false }
+);
 
-module.exports = mongoose.model('Order', orderSchema);
+const orderSchema = new Schema(
+  {
+    groupOrderId: {
+      type: String,
+      required: true,
+    },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    vendorId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    businessId: {
+      type: Schema.Types.ObjectId,
+      ref: "Business",
+      required: true, // 🔥 REQUIRED to filter vendor orders by business
+    },
+    items: {
+      type: [orderItemSchema],
+      required: true,
+    },
+    totalAmount: {
+      type: Number, // stored in smallest currency unit (e.g. paise if INR)
+      required: true,
+    },
+    currency: {
+      type: String,
+      default: 'USD'
+    },
+    status: {
+      type: String,
+      enum: [
+        "created",   // ✅ updated from 'ordered'
+        "ordered",
+        "accepted",
+        "rejected",
+        "shipped",
+        "delivered",
+        "cancelled",
+        "returned",
+        "refunded",
+      ],
+      default: "created",
+    },
+    statusHistory: [
+      {
+        status: { type: String, required: true },
+        updatedAt: { type: Date, default: Date.now },
+      },
+    ],
+    trackingInfo: {
+      trackingId: String,
+      trackingUrl: String,
+    },
+    vendorNote: String,
+    userNote: String,
+    shippingAddress: {
+      fullName: String,
+      phone: String,
+      addressLine1: String,
+      addressLine2: String,
+      city: String,
+      state: String,
+      country: String,
+      pincode: String,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "failed", "refunded"],
+      default: "pending",
+    },
+    paymentId: {
+      type: String, // Stripe PaymentIntent ID
+      required: false,
+    },
+    stripeCustomerId: {
+      type: String // Optional: if using Stripe Customer objects
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["stripe"],
+      default: "stripe",
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+orderSchema.index({ userId: 1, vendorId: 1, status: 1 });
+orderSchema.index({ groupOrderId: 1 });
+
+module.exports = mongoose.model("Order", orderSchema);
