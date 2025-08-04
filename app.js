@@ -115,7 +115,7 @@ app.use('/api/webhooks', webhookRoutes);
 
 
 // Test route
-app.get('/api/test', (req, res) => {
+app.get('/', (req, res) => {
   res.json({ message: 'Mosaic Biz Hub API is working' });
 });
 

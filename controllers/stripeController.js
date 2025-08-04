@@ -33,8 +33,8 @@ exports.createCheckoutSession = async (req, res) => {
       line_items: [
         { price: stripePriceId, quantity: 1 },
       ],
-      success_url: 'http://localhost:3000/partners',
-      cancel_url: 'http://localhost:3000/partners',
+      success_url: 'https://app.minorityownedbusiness.info/partners',
+      cancel_url: 'https://app.minorityownedbusiness.info/partners',
       metadata: {
         draftId: draft._id.toString(),
         ownerId: draft.owner.toString(),
