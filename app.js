@@ -25,6 +25,8 @@ const adminFaqRoutes = require('./routes/admin/faqRoutes');
 const testimonialRoutes = require('./routes/admin/testimonialRoutes');
 const blogRoutes = require('./routes/admin/Blog/blogRoutes');
 
+const adminBusinessRoutes=require('./routes/admin/businessRoutes')
+
 
 // User Routes
 const wishlistRoutes = require('./routes/customer/wishlistRoutes');
@@ -97,6 +99,7 @@ app.use('/admin/users', adminUserRoutes);
 app.use('/admin/faqs', adminFaqRoutes);
 app.use('/api/admin/testimonials', testimonialRoutes);
 app.use('/admin/api/blogs', blogRoutes);
+app.use('/admin/api/business', adminBusinessRoutes);
 
 
 // User Routes
