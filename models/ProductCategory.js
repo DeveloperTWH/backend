@@ -14,11 +14,19 @@ const productCategorySchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    description: {
+      type: String,
+      trim: true,
+    },
+    img: {
+      type: String, // S3 URL
+      trim: true,
+    },
   },
   { timestamps: true }
 );
 
-// ✅ Pre-save hook to auto-generate slug
+// Auto-generate unique slug from name
 productCategorySchema.pre('save', async function (next) {
   if (!this.isModified('name')) return next();
 

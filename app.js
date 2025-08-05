@@ -24,7 +24,10 @@ const adminUserRoutes =require('./routes/admin/userRoutes')
 const adminFaqRoutes = require('./routes/admin/faqRoutes');
 const testimonialRoutes = require('./routes/admin/testimonialRoutes');
 const blogRoutes = require('./routes/admin/Blog/blogRoutes');
-
+const productCategoryRoutes = require('./routes/admin/productCategoryRoutes')
+const productSubcategoryRoutes = require('./routes/admin/productSubcategoryRoutes')
+const ServiceCategoryRoutes = require('./routes/admin/categoryRoutes')
+const foodCategoryRoutes = require('./routes/admin/foodCategoryRoutes')
 const adminBusinessRoutes=require('./routes/admin/businessRoutes')
 
 
@@ -100,6 +103,10 @@ app.use('/admin/faqs', adminFaqRoutes);
 app.use('/api/admin/testimonials', testimonialRoutes);
 app.use('/admin/api/blogs', blogRoutes);
 app.use('/admin/api/business', adminBusinessRoutes);
+app.use('/api/admin/category/product', productCategoryRoutes);
+app.use('/api/admin/category/product-subcategory', productSubcategoryRoutes);
+app.use('/api/admin/category/service', ServiceCategoryRoutes);
+app.use('/api/admin/category/food', foodCategoryRoutes);
 
 
 // User Routes

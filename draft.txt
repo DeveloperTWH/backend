@@ -157,3 +157,35 @@
 
    Fixed issue with image scaling (small image) using Tailwind adjustments.
 
+05-08-2025
+
+   Product Subcategory APIs
+      GET /api/admin/category/product-subcategory – List all product subcategories
+
+      POST /api/admin/category/product-subcategory – Create a product subcategory
+
+      PUT /api/admin/category/product-subcategory/:id – Update a product subcategory
+
+      DELETE /api/admin/category/product-subcategory/:id – Delete a product subcategory
+      
+   Service Category
+      GET /api/admin/category/service – list all service categories
+
+      POST /api/admin/category/service – create service category
+
+      PUT /api/admin/category/service/:id – update category
+
+      DELETE /api/admin/category/service/:id – delete category
+
+   Food Category
+      GET /api/admin/category/food – list all food categories
+
+      POST /api/admin/category/food – create food category
+
+      PUT /api/admin/category/food/:id – update category
+
+      DELETE /api/admin/category/food/:id – delete category
+
+   Handled default image fallback for missing category images.
+   Made category cards fully clickable via Link.
+   integrated all the api's in the Admin Dashboard categories management page

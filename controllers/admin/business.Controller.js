@@ -3,29 +3,36 @@ const Business = require("../../models/Business");
 
 exports.getAllBusinesses = async (req, res) => {
   try {
-    // Fetch all businesses from the database
-    const businesses = await Business.find();
+    const limit = parseInt(req.query.limit) || 10; // default 10
+    const page = parseInt(req.query.page) || 1; // default 1
 
-    // Get count of not approved businesses
+    const skip = (page - 1) * limit;
+
+    // Fetch paginated businesses
+    const businesses = await Business.find().skip(skip).limit(limit);
+
+    // Total count (for frontend pagination)
+    const totalBusinesses = await Business.countDocuments();
+
+    // Not approved count
     const notApprovedCount = await Business.countDocuments({ isApproved: false });
 
-    // Check if businesses exist
+    // If none found
     if (!businesses || businesses.length === 0) {
       return res.status(404).json({ success: true, message: "No businesses found." });
     }
 
-    // Respond with the list of businesses and additional data
     return res.status(200).json({
       success: true,
       data: businesses,
       message: "Businesses retrieved successfully",
-      totalBusinesses: businesses.length, // Total number of businesses
-      notApprovedCount, // Count of businesses that are not approved
+      totalBusinesses,
+      notApprovedCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalBusinesses / limit),
     });
   } catch (error) {
-    console.error(error); // Log the error for debugging
-
-    // Handle server errors
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: "Server error. Please try again later.",

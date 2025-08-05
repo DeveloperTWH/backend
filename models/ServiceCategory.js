@@ -14,6 +14,14 @@ const serviceCategorySchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    description: {
+      type: String,
+      trim: true,
+    },
+    img: {
+      type: String, // S3 URL for category image
+      trim: true,
+    },
   },
   { timestamps: true }
 );
