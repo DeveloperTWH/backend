@@ -51,6 +51,7 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:3000',
+  'http://localhost:8081',
   'https://app.minorityownedbusiness.info'
 ];
 app.set('trust proxy', 1);

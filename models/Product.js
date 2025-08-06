@@ -80,6 +80,12 @@ const productSchema = new mongoose.Schema({
       key: { type: String, required: true },
       value: { type: String, required: true },
     }
+  ],
+  variants: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ProductVariant',
+    }
   ]
 
 }, { timestamps: true });

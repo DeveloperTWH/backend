@@ -112,6 +112,7 @@ exports.createProductWithVariants = async (req, res) => {
     // Create Variants
     const variantDocs = variants.map((variant) => ({
       color: variant.color,
+      label: variant.label || 'Size',
       images: variant.images || [],
       allowBackorder: !!variant.allowBackorder,
       sizes: (variant.sizes || []).map((s) => ({
@@ -135,6 +136,9 @@ exports.createProductWithVariants = async (req, res) => {
     let savedVariants;
     try {
       savedVariants = await ProductVariant.insertMany(variantDocs);
+      const variantIds = savedVariants.map((variant) => variant._id);
+      await Product.findByIdAndUpdate(product._id, { $push: { variants: { $each: variantIds } } });
+
     } catch (variantErr) {
       await Product.findByIdAndDelete(product._id); // rollback orphan product
 
@@ -259,6 +263,7 @@ exports.addVariants = async (req, res) => {
       businessId: product.businessId,
       ownerId: userId,
       color: variant.color,
+      label: variant.label || 'Size',
       sizes: variant.sizes.map((size) => ({
         size: size.size,
         stock: size.stock,
@@ -275,6 +280,9 @@ exports.addVariants = async (req, res) => {
 
     // Save the variants to the database
     const savedVariants = await ProductVariant.insertMany(variantDocs);
+
+    const variantIds = savedVariants.map((variant) => variant._id);
+    await Product.findByIdAndUpdate(productId, { $push: { variants: { $each: variantIds } } });
 
     const updatedVariantOptions = new Map(product.variantOptions);
 
@@ -333,7 +341,7 @@ exports.addVariants = async (req, res) => {
 
 exports.updateVariant = async (req, res) => {
   const { productId, variantId } = req.params; // Get productId and variantId from URL
-  const { color, sizes, images, allowBackorder, isPublished, isDeleted } = req.body; // Get the data to update
+  const { color, label, sizes, images, allowBackorder, isPublished, isDeleted } = req.body; // Get the data to update
 
   try {
     const product = await Product.findById(productId);
@@ -364,6 +372,7 @@ exports.updateVariant = async (req, res) => {
 
     // Update variant fields
     variant.color = color || variant.color;
+    variant.label = label || variant.label;
     variant.sizes = sizes || variant.sizes;
     variant.images = images || variant.images;
     variant.allowBackorder = allowBackorder !== undefined ? allowBackorder : variant.allowBackorder;
@@ -373,12 +382,11 @@ exports.updateVariant = async (req, res) => {
     // Save the updated variant
     await variant.save();
 
-    // Remove the old color from variantOptions (if color is updated)
+    
     if (oldColor && oldColor !== color) {
       product.variantOptions.delete(oldColor); // Remove the old color from the Map
     }
 
-    // If the new color is provided, add it to the variantOptions map
     if (color) {
       product.variantOptions.set(color, sizes.map((size) => size.size)); // Add the updated color and sizes
     }
@@ -501,7 +509,7 @@ exports.getProductById = async (req, res) => {
 
     // Ensure that the current user is the owner of the product
     if (product.ownerId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ error: 'You are not authorized to delete this product' });
+      return res.status(403).json({ error: 'You are not authorized to Get this product' });
     }
 
     // Ensure fallback for optional fields

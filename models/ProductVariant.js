@@ -25,6 +25,13 @@ const productVariantSchema = new mongoose.Schema({
     lowercase: true,
   },
 
+  label: {
+    type: String,
+    required: true,
+    trim: true,
+    default: 'Size', // Now stored once per variant
+  },
+
   sizes: [
     {
       size: {
@@ -114,7 +121,7 @@ productVariantSchema.set('toJSON', {
       price: parseFloat(s.price?.toString() || '0'),
       salePrice: parseFloat(s.salePrice?.toString() || '0')
     })) : [];  // If sizes is undefined, return an empty array
-    
+
     // Similarly, ensure `weightInKg` is defined and parsed
     ret.weightInKg = parseFloat(ret.weightInKg?.toString() || '0');
 

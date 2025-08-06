@@ -412,7 +412,7 @@ exports.getAllProducts = async (req, res) => {
     if (sort === 'rating') sortOption = { averageRating: -1 };
 
     const productVariants = await ProductVariant.find(filters)
-      .select('color sizes isPublished images totalReviews averageRating')
+      .select('color label sizes isPublished images totalReviews averageRating')
       .populate('productId', 'title description coverImage')
       .sort(sortOption)
       .lean();
@@ -447,6 +447,7 @@ exports.getAllProducts = async (req, res) => {
       groupedProductsMap[productId].variants.push({
         variantId: variant._id,
         color: variant.color,
+        label: variant.label,
         isPublished: variant.isPublished,
         images: variant.images,
         averageRating: variant.averageRating,

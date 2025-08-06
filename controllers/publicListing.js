@@ -215,6 +215,7 @@ const ProductCategory = require('../models/ProductCategory');
 
 exports.getAllProducts = async (req, res) => {
   try {
+    // Destructure query parameters from the request
     const {
       search = '',
       city,
@@ -230,26 +231,27 @@ exports.getAllProducts = async (req, res) => {
       outOfStock = false,
     } = req.query;
 
-    const filters = { isDeleted: false, isPublished: true };  // Ensure we only fetch active products
+    // Set the initial filters for active and published products
+    const filters = { isDeleted: false, isPublished: true };
 
-    // Search filter
+    // Add search filters for product title and description
     if (search) {
       filters.$or = [
-        { 'product.title': { $regex: search, $options: 'i' } },  // Search in Product's title
-        { 'product.description': { $regex: search, $options: 'i' } },  // Search in Product's description
+        { 'product.title': { $regex: search, $options: 'i' } },  // Search in product title
+        { 'product.description': { $regex: search, $options: 'i' } },  // Search in product description
       ];
     }
 
-    // Filter by minorityType, city, state, and country
+    // Filter by minorityType, city, state, and country if provided
     if (minorityType) filters.minorityType = minorityType;
     if (city) filters['address.city'] = { $regex: city, $options: 'i' };
     if (state) filters['address.state'] = { $regex: state, $options: 'i' };
     if (country) filters['address.country'] = { $regex: country, $options: 'i' };
 
-    // Filter by businessId
+    // Filter by businessId if provided
     if (businessId) filters.businessId = businessId;
 
-    // Category Slug to categoryId conversion
+    // Convert categorySlug to categoryId and add it to filters
     if (categorySlug) {
       const category = await ProductCategory.findOne({ slug: categorySlug });
       if (category) {
@@ -259,85 +261,54 @@ exports.getAllProducts = async (req, res) => {
       }
     }
 
-    // Offers filter
+    // Filter by offers if provided
     if (offers === 'true') filters.features = { $in: ['Offers Available'] };
 
+    // Filter by outOfStock if provided
     if (outOfStock === 'true') {
       filters.stockQuantity = { $lte: 0 };  // Assuming stockQuantity is the field for available stock
     }
 
-    // Sorting logic
-    let sortOption = { createdAt: -1 };
+    // Sorting logic based on the sort query parameter
+    let sortOption = { createdAt: -1 };  // Default sort by createdAt descending
     if (sort === 'price_asc') sortOption = { price: 1 };
     if (sort === 'price_desc') sortOption = { price: -1 };
     if (sort === 'rating') sortOption = { averageRating: -1 };
 
-    // Pagination logic
+    // Pagination logic: skip for pagination and limit for the number of products per page
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Fetching ProductVariants based on filters, and populating Product details
-    const productVariants = await ProductVariant.find(filters)
-      .select('color price sku isPublished weightInKg images videos totalReviews averageRating sizes')
-      .populate('productId', 'title description coverImage')  // Populating Product data
-      .sort(sortOption)
-      .skip(skip)
-      .limit(parseInt(limit));
+    // Fetch products with populated variants (including necessary fields for variants)
+    const products = await Product.find(filters)
+      .select('title description coverImage')
+      .populate({
+        path: 'variants',  // Populate the variants array
+        select: 'color price sku isPublished weightInKg images videos totalReviews averageRating sizes',  // Fields to include for variants
+        match: { isPublished: true },  // Only include published variants
+        options: { limit: parseInt(limit) },  // Limit the number of variants populated
+      })
+      .sort(sortOption)  // Apply sorting
+      .skip(skip)  // Pagination: skip based on the page
+      .limit(parseInt(limit));  // Limit the number of products
 
-    const total = await ProductVariant.countDocuments(filters);
+    // Total count for pagination
+    const total = await Product.countDocuments(filters);
 
-    const groupedProductsMap = {};
-
-    for (const variant of productVariants) {
-      const product = variant.productId;
-      if (!product) continue;
-
-      const productId = product._id.toString();
-
-      if (!groupedProductsMap[productId]) {
-        groupedProductsMap[productId] = {
-          _id: productId,
-          title: product.title,
-          description: product.description,
-          coverImage: product.coverImage,
-          variants: [],
-        };
-      }
-
-      groupedProductsMap[productId].variants.push({
-        variantId: variant._id,
-        color: variant.color,
-        isPublished: variant.isPublished,
-        images: variant.images,
-        averageRating: variant.averageRating,
-        totalReviews: variant.totalReviews,
-        sizes: variant.sizes?.map((size) => ({
-          sizeId: size._id,
-          size: size.size,
-          sku: size.sku,
-          stock: size.stock,
-          price: size.price ? Number(size.price) : 0,
-          salePrice: size.salePrice ? Number(size.salePrice) : null,
-          discountEndDate: size.discountEndDate ?? null,
-        })) || [],
-      });
-    }
-
-    const groupedProducts = Object.values(groupedProductsMap);
-
+    // Return the result with pagination details
     res.json({
       success: true,
-      total: groupedProducts.length,
+      total: products.length,
       page: parseInt(page),
       totalPages: Math.ceil(total / limit),
-      data: groupedProducts,
+      data: products,
     });
 
-
   } catch (err) {
-    console.error('Error fetching product variants:', err);
+    console.error('Error fetching products:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
 
 
 // Route: /api/products/:productId
@@ -353,7 +324,7 @@ exports.getProductById = async (req, res) => {
     }
 
     const variants = await ProductVariant.find({ productId, isPublished: true, isDeleted: false })
-      .select('color price sku weightInKg images videos totalReviews averageRating sizes')
+      .select('color label price sku weightInKg images videos totalReviews averageRating sizes')
       .lean();
 
     res.json({
@@ -372,6 +343,7 @@ exports.getProductById = async (req, res) => {
         variants: variants.map(variant => ({
           variantId: variant._id,
           color: variant.color,
+          label: variant.label,
           images: variant.images,
           averageRating: variant.averageRating,
           totalReviews: variant.totalReviews,

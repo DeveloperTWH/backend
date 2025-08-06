@@ -77,7 +77,7 @@ exports.deleteProductCategory = async (req, res) => {
 // ✅ Get All Product Categories
 exports.getAllProductCategories = async (req, res) => {
   try {
-    const categories = await ProductCategory.find().sort({ createdAt: -1 });
+    const categories = await ProductCategory.find().sort({ createdAt: 1 });
     return res.status(200).json({ success: true, data: categories });
   } catch (err) {
     console.error('Fetch Categories Error:', err);
