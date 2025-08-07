@@ -340,8 +340,16 @@ exports.addVariants = async (req, res) => {
 
 
 exports.updateVariant = async (req, res) => {
-  const { productId, variantId } = req.params; // Get productId and variantId from URL
-  const { color, label, sizes, images, allowBackorder, isPublished, isDeleted } = req.body; // Get the data to update
+  const { productId, variantId } = req.params;
+  const {
+    color,
+    label,
+    sizes,
+    images,
+    allowBackorder,
+    isPublished,
+    isDeleted,
+  } = req.body;
 
   try {
     const product = await Product.findById(productId);
@@ -358,19 +366,18 @@ exports.updateVariant = async (req, res) => {
       return res.status(400).json({ error: 'This variant does not belong to this product' });
     }
 
-    // Check if the images are updated and remove old images from Cloudinary
+    // Delete old images if changed
     if (images && images.length > 0) {
       const oldImages = variant.images || [];
       const imagesToDelete = oldImages.filter(image => !images.includes(image));
       for (const oldImage of imagesToDelete) {
-        await deleteCloudinaryFile(oldImage); // Delete old image from Cloudinary
+        await deleteCloudinaryFile(oldImage);
       }
     }
 
-    // Store the old color before updating
     const oldColor = variant.color;
 
-    // Update variant fields
+    // Update fields
     variant.color = color || variant.color;
     variant.label = label || variant.label;
     variant.sizes = sizes || variant.sizes;
@@ -379,25 +386,47 @@ exports.updateVariant = async (req, res) => {
     variant.isPublished = isPublished !== undefined ? isPublished : variant.isPublished;
     variant.isDeleted = isDeleted !== undefined ? isDeleted : variant.isDeleted;
 
-    // Save the updated variant
     await variant.save();
 
-    
+    // Update product.variantOptions
     if (oldColor && oldColor !== color) {
-      product.variantOptions.delete(oldColor); // Remove the old color from the Map
+      product.variantOptions.delete(oldColor);
     }
-
     if (color) {
-      product.variantOptions.set(color, sizes.map((size) => size.size)); // Add the updated color and sizes
+      product.variantOptions.set(color, sizes.map((size) => size.size));
     }
 
-    // Save the updated product document with the updated variantOptions
+    // ✅ Auto-publish product if variant is being published and product isn't yet published
+    if (
+      isPublished === true &&
+      product.isPublished === false
+    ) {
+      product.isPublished = true;
+    }
+
+    // ✅ Auto-unpublish product if variant is being unpublished
+    if (
+      isPublished === false
+    ) {
+      const validVariantCount = await ProductVariant.countDocuments({
+        productId,
+        isPublished: true,
+        isDeleted: false,
+      });
+
+      if (validVariantCount === 0) {
+        product.isPublished = false;
+      }
+    }
+
     await product.save();
 
     return res.status(200).json({
+      success: true,
       message: 'Variant updated successfully.',
       variant,
     });
+
   } catch (err) {
     console.error('Error updating variant:', err);
     return res.status(500).json({ error: 'Server error while updating variant' });
@@ -407,46 +436,65 @@ exports.updateVariant = async (req, res) => {
 
 
 exports.deleteVariant = async (req, res) => {
-  const { productId, variantId } = req.params; // Get productId and variantId from URL
+  const { productId, variantId } = req.params;
 
   try {
+    // Step 1: Validate product
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Check if the user owns the product
+    // Step 2: Ownership check
     if (product.ownerId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: 'You are not authorized to delete variants for this product' });
     }
 
+    // Step 3: Validate variant
     const variant = await ProductVariant.findById(variantId);
     if (!variant) {
       return res.status(404).json({ error: 'Variant not found' });
     }
 
-    // Ensure that the variant belongs to the specified product
+    // Step 4: Ensure variant belongs to product
     if (variant.productId.toString() !== productId) {
       return res.status(400).json({ error: 'This variant does not belong to this product' });
     }
 
-    // Set isDeleted to true to soft delete the variant
+    // Step 5: Soft delete the variant
     variant.isDeleted = true;
-
-    // Save the updated variant
     await variant.save();
 
-    // Remove the color from variantOptions in the product if it's soft deleted
-    if (variant.color) {
-      product.variantOptions.delete(variant.color); // Remove the color from the Map
+    // Step 6: Remove the color from variantOptions map (if present)
+    if (variant.color && product.variantOptions?.has(variant.color)) {
+      product.variantOptions.delete(variant.color);
     }
 
-    // Save the updated product document
+    // Step 7: Remove variant from product.variants array
+    product.variants = product.variants.filter(
+      vId => vId.toString() !== variantId.toString()
+    );
+
+    // Step 8: Check if any other valid variants exist
+    const validVariantCount = await ProductVariant.countDocuments({
+      productId,
+      isDeleted: false,
+      isPublished: true,
+    });
+
+    if (validVariantCount === 0) {
+      product.isPublished = false;
+    }
+
+    // Save product after updates
     await product.save();
 
     return res.status(200).json({
+      success: true,
       message: 'Variant soft deleted successfully.',
+      productUnpublished: validVariantCount === 0,
     });
+
   } catch (err) {
     console.error('Error deleting variant:', err);
     return res.status(500).json({ error: 'Server error while deleting variant' });
@@ -528,7 +576,7 @@ exports.getProductById = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const { productId } = req.params;
-    const ownerId = req.user._id; // set by authenticate middleware
+    const ownerId = req.user._id;
     const {
       title,
       description,
@@ -542,28 +590,32 @@ exports.updateProduct = async (req, res) => {
 
     // Validate required fields
     if (
-      !title || !description || !categoryId || !subcategoryId ||
-      !coverImage
+      !title || !description || !categoryId || !subcategoryId || !coverImage
     ) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Fetch and verify ownership
+    // Fetch product
     const product = await Product.findById(productId);
     if (!product || product.isDeleted) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
+    // Check ownership
     if (product.ownerId.toString() !== ownerId.toString()) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    // Delete old cover image if changed and is from Cloudinary
-    if (product.coverImage && product.coverImage !== coverImage && product.coverImage.includes('s3.amazonaws.com')) {
+    // Delete old cover image if changed (and hosted on Cloudinary)
+    if (
+      product.coverImage &&
+      product.coverImage !== coverImage &&
+      product.coverImage.includes('s3.amazonaws.com')
+    ) {
       await deleteCloudinaryFile(product.coverImage);
     }
 
-    // Update fields
+    // Update product fields
     product.title = title;
     product.description = description;
     product.brand = brand || '';
@@ -575,13 +627,23 @@ exports.updateProduct = async (req, res) => {
 
     await product.save();
 
-    return res.status(200).json({ message: 'Product updated successfully', product });
+    // ✅ Update all variants' isPublished to match the product
+    await ProductVariant.updateMany(
+      { productId: product._id },
+      { $set: { isPublished: !!isPublished } }
+    );
+
+    return res.status(200).json({
+      message: 'Product updated successfully',
+      product,
+    });
 
   } catch (err) {
     console.error('Error updating product:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 
 exports.getVariantById = async (req, res) => {

@@ -215,7 +215,6 @@ const ProductCategory = require('../models/ProductCategory');
 
 exports.getAllProducts = async (req, res) => {
   try {
-    // Destructure query parameters from the request
     const {
       search = '',
       city,
@@ -231,75 +230,78 @@ exports.getAllProducts = async (req, res) => {
       outOfStock = false,
     } = req.query;
 
-    // Set the initial filters for active and published products
     const filters = { isDeleted: false, isPublished: true };
 
-    // Add search filters for product title and description
     if (search) {
       filters.$or = [
-        { 'product.title': { $regex: search, $options: 'i' } },  // Search in product title
-        { 'product.description': { $regex: search, $options: 'i' } },  // Search in product description
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
       ];
     }
 
-    // Filter by minorityType, city, state, and country if provided
     if (minorityType) filters.minorityType = minorityType;
     if (city) filters['address.city'] = { $regex: city, $options: 'i' };
     if (state) filters['address.state'] = { $regex: state, $options: 'i' };
     if (country) filters['address.country'] = { $regex: country, $options: 'i' };
-
-    // Filter by businessId if provided
     if (businessId) filters.businessId = businessId;
 
-    // Convert categorySlug to categoryId and add it to filters
     if (categorySlug) {
       const category = await ProductCategory.findOne({ slug: categorySlug });
-      if (category) {
-        filters.categoryId = category._id;
-      } else {
-        return res.json({ success: true, total: 0, page: parseInt(page), totalPages: 0, data: [] });
-      }
+      if (category) filters.categoryId = category._id;
+      else return res.json({ success: true, total: 0, page: parseInt(page), totalPages: 0, data: [] });
     }
 
-    // Filter by offers if provided
     if (offers === 'true') filters.features = { $in: ['Offers Available'] };
+    if (outOfStock === 'true') filters.stockQuantity = { $lte: 0 };
 
-    // Filter by outOfStock if provided
-    if (outOfStock === 'true') {
-      filters.stockQuantity = { $lte: 0 };  // Assuming stockQuantity is the field for available stock
-    }
-
-    // Sorting logic based on the sort query parameter
-    let sortOption = { createdAt: -1 };  // Default sort by createdAt descending
+    let sortOption = { createdAt: -1 };
     if (sort === 'price_asc') sortOption = { price: 1 };
     if (sort === 'price_desc') sortOption = { price: -1 };
     if (sort === 'rating') sortOption = { averageRating: -1 };
 
-    // Pagination logic: skip for pagination and limit for the number of products per page
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Fetch products with populated variants (including necessary fields for variants)
-    const products = await Product.find(filters)
-      .select('title description coverImage')
+    // Fetch and populate variants
+    let products = await Product.find(filters)
+      .select('title description coverImage variants')
       .populate({
-        path: 'variants',  // Populate the variants array
-        select: 'color price sku isPublished weightInKg images videos totalReviews averageRating sizes',  // Fields to include for variants
-        match: { isPublished: true },  // Only include published variants
-        options: { limit: parseInt(limit) },  // Limit the number of variants populated
+        path: 'variants',
+        select: 'color price salePrice sku isPublished isDeleted weightInKg images videos totalReviews averageRating sizes',
+        match: { isPublished: true, isDeleted: false },
       })
-      .sort(sortOption)  // Apply sorting
-      .skip(skip)  // Pagination: skip based on the page
-      .limit(parseInt(limit));  // Limit the number of products
+      .sort(sortOption)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean(); // Enable manual data cleanup
 
-    // Total count for pagination
+    // Filter out products with no variants
+    products = products
+      .filter(product => product.variants && product.variants.length > 0)
+      .map(product => {
+        // Convert Decimal128 fields to Number (for frontend)
+        product.variants = product.variants.map(variant => {
+          variant.price = parseFloat(variant.price?.$numberDecimal || 0);
+          variant.salePrice = parseFloat(variant.salePrice?.$numberDecimal || 0);
+          if (Array.isArray(variant.sizes)) {
+            variant.sizes = variant.sizes.map(size => ({
+              ...size,
+              price: parseFloat(size?.price?.$numberDecimal || size?.price || 0),
+              salePrice: parseFloat(size?.salePrice?.$numberDecimal || size?.salePrice || 0),
+            }));
+          }
+          return variant;
+        });
+        return product;
+      });
+
     const total = await Product.countDocuments(filters);
+    const totalPages = Math.ceil(total / limit);
 
-    // Return the result with pagination details
     res.json({
       success: true,
       total: products.length,
       page: parseInt(page),
-      totalPages: Math.ceil(total / limit),
+      totalPages,
       data: products,
     });
 
@@ -308,6 +310,7 @@ exports.getAllProducts = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
 
 
 

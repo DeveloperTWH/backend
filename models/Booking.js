@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const bookingSchema = new mongoose.Schema({
+  serviceTitle: { type: String, required: true },
   serviceId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Service',
@@ -16,19 +17,28 @@ const bookingSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  customerInfo: {
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: true },
+  },
+  businessId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Business",
+    required: true, // 🔥 REQUIRED to filter vendor orders by business
+  },
+  serviceItems: [String],   //  service : [hair cut, Shaving, hair cleaing etc]
   date: { type: Date, required: true },
-  startTime: { type: String, required: true },
-  endTime: { type: String, required: true },
+  time: { type: String, required: true },
 
   status: {
     type: String,
-    enum: ['confirmed', 'completed', 'cancelled'],
-    default: 'confirmed',
+    enum: ['created', 'Booked', 'confirmed', 'completed', 'cancelled'],
+    default: 'Booked',
   },
 
   notes: { type: String },
 
-  // ✅ Payment Info
   paymentStatus: {
     type: String,
     enum: ['pending', 'paid', 'failed', 'refunded'],

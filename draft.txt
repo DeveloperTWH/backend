@@ -189,3 +189,24 @@
    Handled default image fallback for missing category images.
    Made category cards fully clickable via Link.
    integrated all the api's in the Admin Dashboard categories management page
+
+07-08-2025
+
+   Created Booking Management Page in the Partner Dashboard to list all vendor bookings with filters.
+
+   Integrated the listing API in the Booking Management Page to fetch vendor-specific bookings dynamically.
+
+   Displayed customer info (name, email, phone), service title, booked items, time, and date.
+
+   Displayed booking creation time using createdAt field from MongoDB.
+
+   Implemented conditional action buttons based on booking status:
+
+      Confirm (when status is Booked)
+
+      Complete (when status is confirmed)
+
+      Decline (visible unless status is completed)
+
+   Integrated Confirm, Complete, and Decline APIs to update booking statuses in real-time.
+

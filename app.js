@@ -36,6 +36,12 @@ const wishlistRoutes = require('./routes/customer/wishlistRoutes');
 
 
 
+// Service Booking Route
+
+const bookingRoutes = require('./routes/bookingRoutes')
+
+
+
 // Import Payment and Order Routes
 const paymentRoutes = require('./routes/paymentRoutes');
 const orderRoutes = require('./routes/orderRoutes');
@@ -118,6 +124,7 @@ app.use('/api/wishlist', wishlistRoutes);
 
 app.use('/api/payments', paymentRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/bookings', bookingRoutes)
 app.use('/api/webhooks', webhookRoutes);
 
 
