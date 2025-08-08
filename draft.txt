@@ -210,3 +210,12 @@
 
    Integrated Confirm, Complete, and Decline APIs to update booking statuses in real-time.
 
+08-08-2025
+
+   Created new types related to orders (VariantSize, Variant, Product, Item, ShippingAddress, StatusHistory, Order) to ensure error-free rendering of order-related data on the Customer Order page.
+
+   Added toast notifications for error handling.
+
+   Developed a "No Orders" screen for when there are no orders to display.
+
+   integrated backend Order api's to Dispaly the data of users
