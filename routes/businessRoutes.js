@@ -66,10 +66,6 @@ router.put(
   '/:id',
   authenticate,
   isBusinessOwner,
-  upload.fields([
-    { name: 'logo', maxCount: 1 },
-    { name: 'coverImage', maxCount: 1 }
-  ]),
   businessController.updateBusiness
 );
 
