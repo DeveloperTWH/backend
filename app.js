@@ -47,6 +47,10 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
 
+// Stripe connect 
+const connectRoutes=require('./routes/connectRoutes');
+
+
 
 
 
@@ -126,6 +130,8 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/bookings', bookingRoutes)
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/connect', connectRoutes);
+
 
 
 // subscription 

@@ -1,11 +1,11 @@
-const mongoose = require('mongoose');
-const slugify = require('slugify');
+const mongoose = require("mongoose");
+const slugify = require("slugify");
 
 const businessSchema = new mongoose.Schema(
   {
     owner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     businessName: {
@@ -39,7 +39,7 @@ const businessSchema = new mongoose.Schema(
     },
     minorityType: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'MinorityType',
+      ref: "MinorityType",
       required: true,
     },
     phone: {
@@ -60,26 +60,26 @@ const businessSchema = new mongoose.Schema(
     },
     listingType: {
       type: String,
-      enum: ['product', 'service', 'food'],
+      enum: ["product", "service", "food"],
       required: true,
     },
     productCategories: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'ProductCategory'
-      }
+        ref: "ProductCategory",
+      },
     ],
     serviceCategories: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'ServiceCategory'
-      }
+        ref: "ServiceCategory",
+      },
     ],
     foodCategories: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'FoodCategory'
-      }
+        ref: "FoodCategory",
+      },
     ],
     isApproved: {
       type: Boolean,
@@ -91,19 +91,40 @@ const businessSchema = new mongoose.Schema(
     },
     subscriptionId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Subscription',
+      ref: "Subscription",
       required: true,
     },
     stripeSubscriptionId: {
       type: String,
       required: true,
     },
-
+    stripeConnectAccountId: { type: String },
+    chargesEnabled: { type: Boolean, default: false },
+    payoutsEnabled: { type: Boolean, default: false },
+    onboardingStatus: {
+      type: String,
+      enum: ["not_started", "in_progress", "completed", "requirements_due"],
+      default: "not_started",
+    },
+    onboardedAt: { type: Date },
+    // optional: store capability states from Stripe
+    capabilities: {
+      card_payments: {
+        type: String,
+        enum: ["active", "pending", "inactive"],
+        default: "inactive",
+      },
+      transfers: {
+        type: String,
+        enum: ["active", "pending", "inactive"],
+        default: "inactive",
+      },
+    },
   },
   { timestamps: true }
 );
 
-businessSchema.pre('save', async function (next) {
+businessSchema.pre("save", async function (next) {
   if (!this.slug && this.businessName) {
     let baseSlug = slugify(this.businessName, { lower: true, strict: true });
     let slug = baseSlug;
@@ -119,4 +140,5 @@ businessSchema.pre('save', async function (next) {
   next();
 });
 
-module.exports = mongoose.models.Business || mongoose.model('Business', businessSchema);
+module.exports =
+  mongoose.models.Business || mongoose.model("Business", businessSchema);
