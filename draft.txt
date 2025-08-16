@@ -210,7 +210,7 @@
 
    Integrated Confirm, Complete, and Decline APIs to update booking statuses in real-time.
 
-08-08-2025
+11-08-2025
 
    Created new types related to orders (VariantSize, Variant, Product, Item, ShippingAddress, StatusHistory, Order) to ensure error-free rendering of order-related data on the Customer Order page.
 
@@ -219,3 +219,42 @@
    Developed a "No Orders" screen for when there are no orders to display.
 
    integrated backend Order api's to Dispaly the data of users
+
+12-08-2025 
+   1. Added Stripe Connect fields to Business model (account ID, charges/payouts flags, onboarding status).
+   2. Built POST /api/connect/\:businessId/account-link (create/reuse Express account + onboarding link).
+   3. Built GET /api/connect/\:businessId/status (sync charges/payouts/capabilities + status).
+   4. Extended Stripe webhook with account.updated to keep onboarding state in sync.
+   5. Implemented single-vendor initiateOrder with `transfer_data.destination` + `application_fee_amount`.
+   6. Added idempotency + rich metadata to PaymentIntents.
+   7. Updated webhook payment\_intent.succeeded to mark orders paid → ordered and store `chargeId`/`transferId`/`applicationFeeId`.
+   8. Frontend: vendor dashboard shows Connect with Stripe, then Locked—waiting for approval, then full dashboard when approved.
+   9. Frontend: vendors list page shows Connect button per business or Locked/“Go to Business” based on status.
+   10. Fixed Invalid URL error by ensuring absolute `return_url` in frontend and robust URL handling in Connect flows.
+
+13-08-2025 to 14
+
+   1. Designed Stripe Connect flow: added account linking, status check, and gating business visibility until Connect is complete.
+   2. Backend Connect endpoints: `POST /api/connect/:businessId/account-link`, `GET /api/connect/:businessId/status`, plus optional return/refresh handlers.
+   3. Business model updates (discussed): fields for `stripeConnectAccountId`, `onboardingStatus`, `chargesEnabled`, `payoutsEnabled`, `onboardedAt`, `capabilities`.
+   4. Fixed “Invalid URL: explicit scheme” errors by enforcing absolute HTTPS return/refresh URLs and robust URL builders.
+   5. Clarified PaymentIntent strategies: cards-only vs. all methods with proper `return_url`; removed undefined vars (`buyerStripeCustomerId`, `buyerEmail`).
+   6. Implemented single-vendor `initiateOrder` directing funds to vendors via `transfer_data.destination` and platform fee via `application_fee_amount`.
+   7. Added idempotency keys and rich metadata to PaymentIntents.
+   8. Webhook `payment_intent.succeeded`: mark orders paid→ordered; capture and store `chargeId` / `transferId` / `applicationFeeId`; fixed scope bug (`it` not defined) and added robust charge retrieval with expands.
+   9. Frontend vendor dashboard updates: “Connect with Stripe” CTA, status banner, and “Locked — waiting for admin approval” logic.
+   10. Vendors list page: per-business Connect status + CTA; show “Go to Business” when approved.
+   11. Resolved frontend return\_url issue by building from `window.location.origin` / env and explaining when to omit it.
+   12. Admin users API: returned counts `totalVendor`, `totalCustomer`, plus OTP verification counts (`otpVerified`, `otpUnverified`).
+   13. Admin Users page: added stat cards (Vendors, Customers) and later a Verification card (Verified/Unverified) with Lucide icons; built users table UI.
+   14. Admin orders API: `GET /admin/api/orders` with filters, pagination, and summaries for payment (`pending/paid/failed/refunded`) and status (created→refunded).
+   15. Admin Orders page: top summary cards, status distribution chips, paginated orders table.
+
+   planed: 
+      16. Subscription plans: moved from hard-coded price map to Stripe-backed plans.
+      17. Extended `SubscriptionPlan` schema with Stripe/billing fields (`stripeProductId`, `stripePriceId`, `currency`, `interval`, `intervalCount`, `trialPeriodDays`).
+      18. Created helper `ensurePlanPrice` to lazily create Stripe Product + Price and persist IDs.
+      19. Updated plan controllers: admin `create` auto-creates product/price; `update` creates a new Stripe Price when billing terms change; added list/get endpoints and admin routes.
+      20. Checkout session now pulls plan from DB, ensures price, and uses `stripePriceId` (no more hard-coded maps).
+
+
