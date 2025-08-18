@@ -182,7 +182,7 @@ exports.handleStripeWebhook = async (req, res) => {
           ? `Business name was already in use, so we have assigned you a new name: ${business.businessName}. You can change it later.`
           : `Business created successfully.`;
 
-      sendWelcomeEmail(business.email, businessName )
+      sendWelcomeEmail(business.email, businessName);
       return res.status(200).json({
         message: responseMessage,
         business,
@@ -203,6 +203,36 @@ exports.handleStripeWebhook = async (req, res) => {
         return res.status(500).send("Webhook processing failed");
       }
     }
+  }
+  if (event.type === "account.updated") {
+    const account = event.data.object;
+    console.log(account);
+    
+    try {
+      const business = await Business.findOne({
+        stripeConnectAccountId: account.id,
+      });
+      if (business) {
+        business.chargesEnabled = !!account.charges_enabled;
+        business.payoutsEnabled = !!account.payouts_enabled;
+        if (account.capabilities) {
+          business.capabilities = {
+            card_payments: account.capabilities.card_payments || "inactive",
+            transfers: account.capabilities.transfers || "inactive",
+          };
+        }
+        const completed = account.charges_enabled && account.payouts_enabled;
+        business.onboardingStatus = completed
+          ? "completed"
+          : "requirements_due";
+        if (completed && !business.onboardedAt)
+          business.onboardedAt = new Date();
+        await business.save();
+      }
+    } catch (e) {
+      console.error("Failed to sync account.updated:", e);
+    }
+    return res.status(200).send();
   }
 
   return res.status(400).send(`Unhandled event type: ${event.type}`);

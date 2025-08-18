@@ -32,6 +32,9 @@ const orderItemSchema = new Schema(
       type: Number,
       required: true,
     },
+    chargeId: { type: String }, // from payment_intent.succeeded (charge.id)
+    transferId: { type: String }, // from charge.transfer if using direct/automatic transfers
+    applicationFeeId: { type: String }, // if you query application_fee later
   },
   { _id: false }
 );
@@ -67,12 +70,12 @@ const orderSchema = new Schema(
     },
     currency: {
       type: String,
-      default: 'USD'
+      default: "USD",
     },
     status: {
       type: String,
       enum: [
-        "created",   // ✅ updated from 'ordered'
+        "created", // ✅ updated from 'ordered'
         "ordered",
         "accepted",
         "rejected",
@@ -116,7 +119,7 @@ const orderSchema = new Schema(
       required: false,
     },
     stripeCustomerId: {
-      type: String // Optional: if using Stripe Customer objects
+      type: String, // Optional: if using Stripe Customer objects
     },
     paymentMethod: {
       type: String,
