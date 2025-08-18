@@ -4,6 +4,7 @@ const SubscriptionPlan = require("../models/SubscriptionPlan");
 const Subscription = require("../models/Subscription");
 const Business = require("../models/Business");
 const { sendWelcomeEmail } = require("../utils/WellcomeMailer");
+const { ensurePlanPrice } = require('../helpers/stripePlan');
 
 exports.createCheckoutSession = async (req, res) => {
   try {
@@ -18,29 +19,22 @@ exports.createCheckoutSession = async (req, res) => {
     }
 
     // ✅ 2. Validate Stripe Price ID
-    const priceMap = {
-      "686cf1174000a9f8efd5842c": "price_1RiBujCe8NK5w7I0HICqEpOw",
-      "685281f61e1de765d6b297c0": "price_1RiBujCe8NK5w7I0nKgWkLhu",
-      "686cf2144000a9f8efd58433": "price_1RiBujCe8NK5w7I0nGiysSCh",
-    };
-    const stripePriceId = priceMap[draft.subscriptionPlanId.toString()];
+    const plan = await SubscriptionPlan.findById(draft.subscriptionPlanId);
+    if (!plan) return res.status(400).json({ message: 'Invalid subscription plan selected' });
 
-    if (!stripePriceId) {
-      return res
-        .status(400)
-        .json({ message: "Invalid subscription plan selected" });
-    }
-
+    // Make sure the plan has a Stripe price (create if missing)
+    const { priceId } = await ensurePlanPrice(plan);
     // ✅ 3. Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer_email: draft.email,
-      line_items: [{ price: stripePriceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: "https://app.minorityownedbusiness.info/partners",
       cancel_url: "https://app.minorityownedbusiness.info/partners",
       metadata: {
         draftId: draft._id.toString(),
         ownerId: draft.owner.toString(),
+        planId: String(plan._id),
       },
     });
 
@@ -207,7 +201,7 @@ exports.handleStripeWebhook = async (req, res) => {
   if (event.type === "account.updated") {
     const account = event.data.object;
     console.log(account);
-    
+
     try {
       const business = await Business.findOne({
         stripeConnectAccountId: account.id,

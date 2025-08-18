@@ -1,17 +1,16 @@
-const express = require('express');
-const { createSubscriptionPlan, getAllSubscriptionPlans  } = require('../controllers/subscriptionPlanController');
+const router = require('express').Router();
 const authenticate = require('../middlewares/authenticate');
 const isAdmin = require('../middlewares/isAdmin');
+const {
+  createSubscriptionPlan,
+  updateSubscriptionPlan,
+  listSubscriptionPlans,
+  getSubscriptionPlan,
+} = require('../controllers/subscriptionPlanController');
 
-const router = express.Router();
-
-// POST /api/subscription-plans
 router.post('/', authenticate, isAdmin, createSubscriptionPlan);
-router.get('/', getAllSubscriptionPlans);
-
-router.get('/test', (req, res) => {
-  res.send('<div>Hello World</div>');
-});
-
+router.put('/:id', authenticate, isAdmin, updateSubscriptionPlan);
+router.get('/',  listSubscriptionPlans);
+router.get('/:id', authenticate, isAdmin, getSubscriptionPlan);
 
 module.exports = router;

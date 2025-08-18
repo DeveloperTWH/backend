@@ -11,10 +11,19 @@ const subscriptionPlanSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  currency: { type: String, default: 'usd' },
+  interval: { type: String, enum: ['day', 'week', 'month', 'year'], default: 'year' }, // <- NEW
+  intervalCount: { type: Number, default: 1 },                        // <- NEW
+  trialPeriodDays: { type: Number, default: 0 },                      // <- NEW
+
   durationInDays: {
     type: Number,
     default: 365, // Annual by default
   },
+
+  stripeProductId: { type: String },                                  // <- NEW
+  stripePriceId: { type: String, unique: true, sparse: true },      // <- NEW
+  
   limits: {
     productListings: { type: Number, default: 1 },
     serviceListings: { type: Number, default: 1 },
