@@ -391,7 +391,7 @@ exports.rejectOrder = async (req, res) => {
     const vendorId = req.user.id;
     const orderId = req.params.orderId;
 
-    const order = await Order.findOne({ _id: orderId, vendorId });
+    const order = await Order.findOne({ _id: orderId, vendorId }).populate('businessId');
     if (!order) {
       return res
         .status(404)
@@ -412,18 +412,30 @@ exports.rejectOrder = async (req, res) => {
     if (order.paymentStatus === "paid" && order.paymentId) {
       const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-      const refund = await stripe.refunds.create({
-        payment_intent: order.paymentId,
-        amount: Math.round(order.totalAmount * 100),
-        reason: "requested_by_customer",
-      });
+      const vendorStripeAccountId = order.business.stripeConnectAccountId; // Vendor's Stripe Connect Account ID
 
-      order.paymentStatus = "refunded";
-      order.statusHistory.push({ status: "refunded" });
+      try {
+        // Create the refund from the vendor's Stripe account
+        const refund = await stripe.refunds.create(
+          {
+            payment_intent: order.paymentId,
+            amount: Math.round(order.totalAmount * 100), // Amount in cents
+            reason: "requested_by_customer", // Optionally, customize the reason
+          },
+          {
+            stripeAccount: vendorStripeAccountId, // Ensure refund is processed from the vendor's account
+          }
+        );
 
-      console.log(
-        `💸 Refund initiated for order ${orderId}: $${order.totalAmount}`
-      );
+        // Update order and payment status
+        order.paymentStatus = "refunded";
+        order.statusHistory.push({ status: "refunded" });
+
+        console.log(`💸 Refund initiated for order ${orderId}: $${order.totalAmount}`);
+      } catch (err) {
+        console.error("Error processing refund via Stripe Connect:", err);
+        return res.status(500).json({ success: false, message: "Refund failed" });
+      }
     }
 
     await order.save();
@@ -483,6 +495,140 @@ exports.shipOrder = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+exports.deliverOrder = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const orderId = req.params.orderId;
+
+    const order = await Order.findOne({ _id: orderId, vendorId });
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found or unauthorized" });
+    }
+
+    if (order.status !== "shipped") {
+      return res.status(400).json({
+        success: false,
+        message: 'Order must be shipped before it can be delivered',
+      });
+    }
+
+    // Mark as delivered
+    order.status = "delivered";
+    order.statusHistory.push({ status: "delivered" });
+
+    await order.save();
+
+    res.json({
+      success: true,
+      message: 'Order marked as delivered successfully',
+      order,
+    });
+  } catch (err) {
+    console.error("Error delivering order:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+// Customer initiates return
+exports.initiateReturn = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const orderId = req.params.orderId;
+
+    const order = await Order.findOne({ _id: orderId, userId });
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found or unauthorized" });
+    }
+
+    if (order.status !== "delivered") {
+      return res.status(400).json({
+        success: false,
+        message: 'Order must be delivered before it can be returned',
+      });
+    }
+
+    // Step 1: Mark as returned when the customer initiates the return
+    order.status = "returned";  // Change order status to returned
+    order.statusHistory.push({ status: "returned" });  // Add returned to status history
+
+    await order.save();  // Save the order after marking it as returned
+
+    res.json({
+      success: true,
+      message: 'Return initiated successfully',
+      order,
+    });
+  } catch (err) {
+    console.error("Error initiating return:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+
+exports.acceptReturn = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const orderId = req.params.orderId;
+
+    const order = await Order.findOne({ _id: orderId, vendorId }).populate('businessId');
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found or unauthorized" });
+    }
+
+    if (order.status !== "returned") {
+      return res.status(400).json({
+        success: false,
+        message: 'Order must be marked as returned before it can be accepted',
+      });
+    }
+
+    // Step 1: Mark the order as 'refunded'
+    order.status = "refunded";  // Change order status to refunded
+    order.statusHistory.push({ status: "refunded" });  // Add refunded to status history
+
+    // Step 2: Process the refund if the order is paid
+    if (order.paymentStatus === "paid" && order.paymentId) {
+      const vendorStripeAccountId = order.businessId.stripeConnectAccountId;  // Vendor's Stripe Account ID
+
+      try {
+        // Refund the payment through Stripe Connect (vendor's account)
+        const refund = await stripe.refunds.create(
+          {
+            payment_intent: order.paymentId,
+            amount: Math.round(order.totalAmount * 100), // Convert to cents
+            reason: "requested_by_customer",
+          },
+          {
+            stripeAccount: vendorStripeAccountId,  // Refund will be processed from the vendor's account
+          }
+        );
+
+        // Step 3: After successful refund, update order status to 'refunded'
+        order.paymentStatus = "refunded";  // Update payment status to refunded
+        console.log(`💸 Refund initiated for order ${orderId}: $${order.totalAmount}`);
+      } catch (err) {
+        console.error("Error processing refund via Stripe Connect:", err);
+        return res.status(500).json({ success: false, message: "Refund failed" });
+      }
+    }
+
+    await order.save();  // Save the updated order
+
+    res.json({
+      success: true,
+      message: 'Return accepted and refund processed (if paid)',
+      order,
+    });
+  } catch (err) {
+    console.error("Error accepting return:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 
 exports.getAllOrdersAdmin = async (req, res) => {
   try {

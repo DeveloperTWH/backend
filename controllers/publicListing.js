@@ -327,7 +327,7 @@ exports.getProductById = async (req, res) => {
     }
 
     const variants = await ProductVariant.find({ productId, isPublished: true, isDeleted: false })
-      .select('color label price sku weightInKg images videos totalReviews averageRating sizes')
+      .select('color label price sku weightInKg images videos allowBackorder totalReviews averageRating sizes')
       .lean();
 
     res.json({
@@ -347,6 +347,7 @@ exports.getProductById = async (req, res) => {
           variantId: variant._id,
           color: variant.color,
           label: variant.label,
+          allowBackorder: variant.allowBackorder,
           images: variant.images,
           averageRating: variant.averageRating,
           totalReviews: variant.totalReviews,

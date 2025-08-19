@@ -81,7 +81,7 @@ exports.createProductWithVariants = async (req, res) => {
     const productLimit = subscriptionPlan?.limits?.productListings || 0;
 
     // Count existing variants for the business (sellable items)
-    const variantCount = await ProductVariant.countDocuments({ businessId });
+    const variantCount = await ProductVariant.countDocuments({ businessId, isDeleted: false  });
 
     // Check if adding more variants would exceed the product listing limit
     if (variantCount + variants.length > productLimit) {
