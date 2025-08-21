@@ -257,4 +257,6 @@
       19. Updated plan controllers: admin `create` auto-creates product/price; `update` creates a new Stripe Price when billing terms change; added list/get endpoints and admin routes.
       20. Checkout session now pulls plan from DB, ensures price, and uses `stripePriceId` (no more hard-coded maps).
 
-
+20-08-2025 
+   4. Created `PUT /update/:cartItemId` – `updateCartItem` API: Updates the quantity of an item in the cart, Checks stock availability and handles backorder support, Validates that the product and variant are valid and published.
+   5. Created `DELETE /remove/:cartItemId` – `removeItemFromCart` API: Removes a specific item from the cart, Validates that the cart item belongs to the authenticated user, Updates the total items in the cart and deletes the CartItem document.

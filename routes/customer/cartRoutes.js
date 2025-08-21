@@ -4,7 +4,9 @@ const {
   getCart, 
   addItemToCart, 
   updateCartItem, 
-  removeItemFromCart 
+  removeItemFromCart,
+  updateCartItemByComposite,
+  removeItemByComposite
 } = require('../../controllers/customer/cartController');
 
 const authenticate = require("../../middlewares/authenticate")
@@ -21,5 +23,9 @@ router.put('/update/:cartItemId', authenticate, isCustomer, updateCartItem);
 
 // Remove Item from Cart
 router.delete('/remove/:cartItemId', authenticate, isCustomer, removeItemFromCart);
+
+router.put('/update-quantity', authenticate, isCustomer, updateCartItemByComposite);
+
+router.delete('/remove', authenticate, isCustomer, removeItemByComposite);
 
 module.exports = router;

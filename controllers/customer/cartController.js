@@ -5,71 +5,114 @@ const ProductVariant = require('../../models/ProductVariant');
 
 // Add Item to Cart
 const addItemToCart = async (req, res) => {
-    const { productId, variantId, quantity, variant } = req.body;  // Expecting size/color as variant
-    const userId = req.user._id; // Assuming the user is authenticated and `req.user` contains user data
+    const { productId, variantId, quantity, variant } = req.body;
+    const userId = req.user._id;
 
     try {
-        // Fetch the product details and check if it's published and not deleted
+        const qty = Number(quantity) || 1;
+        if (qty < 1) return res.status(400).json({ message: 'Quantity must be at least 1' });
+
+        // Normalize requested size key (store as string for compatibility with getCart)
+        const requestedSize = typeof variant === 'string' ? variant : variant?.size;
+        if (!requestedSize) {
+            return res.status(400).json({ message: 'Selected variant size/color not found' });
+        }
+
+        // Product validity
         const product = await Product.findById(productId);
         if (!product || !product.isPublished || product.isDeleted) {
             return res.status(400).json({ message: 'Product is not available (unpublished or deleted)' });
         }
 
-        // Fetch the variant details and check if it's published and not deleted
+        // Variant validity (+ belongs to product if you want to enforce)
         const variantData = await ProductVariant.findById(variantId);
         if (!variantData || !variantData.isPublished || variantData.isDeleted) {
             return res.status(400).json({ message: 'Product variant is not available (unpublished or deleted)' });
         }
+        // Optional: ensure variant belongs to product
+        // if (!variantData.productId.equals(product._id)) {
+        //   return res.status(400).json({ message: 'Variant does not belong to product' });
+        // }
 
-        // Ensure the selected size exists in the variant
-        const selectedVariant = variantData.sizes.find(s => s.size === variant); // Finding the selected variant (size/color)
-        if (!selectedVariant) {
+        // Ensure the selected size exists
+        const selectedSize = variantData.sizes.find(s => s.size === requestedSize);
+        if (!selectedSize) {
             return res.status(400).json({ message: 'Selected variant size/color not found' });
         }
 
-        const businessId = variantData.businessId;  // Get the businessId of the variant
+        // Stock / backorder checks on ADD
+        if (qty > selectedSize.stock && !variantData.allowBackorder) {
+            return res.status(422).json({ message: `Not enough stock. Only ${selectedSize.stock} left.` });
+        }
 
-        // Find the user's cart for the given business
+        // Determine business via product (safer)
+        const businessId = product.businessId;
+
+        // Find or create user's cart
         let cart = await Cart.findOne({ userId: req.user._id });
 
-        // If no cart exists, create a new one for the user and business
+        let reset = false;
         if (!cart) {
             cart = new Cart({ userId, businessId, items: [], totalItems: 0 });
             await cart.save();
         }
 
-        // If the cart exists but belongs to a different business, reset it
-        if (cart.businessId.toString() !== businessId.toString()) {
-            // First, delete all the CartItem documents from the old cart
-            await CartItem.deleteMany({ _id: { $in: cart.items } });  // Delete CartItems related to the old business
-
-            // Clear existing cart items, reset totalItems, and update businessId
+        // If existing cart is for different business, reset it
+        if (cart.businessId && !cart.businessId.equals(businessId)) {
+            await CartItem.deleteMany({ _id: { $in: cart.items } });
             cart.items = [];
             cart.totalItems = 0;
-            cart.businessId = businessId;  // Update to the new businessId
+            cart.businessId = businessId;
+            await cart.save();
+            reset = true;
+        }
+
+        // Try to find an existing line (same product + variant + size)
+        const existingLine = await CartItem.findOne({
+            _id: { $in: cart.items },
+            productId: product._id,
+            variantId: variantData._id,
+            variant: requestedSize, // stored as string
+        });
+
+        if (existingLine) {
+            const newQty = existingLine.quantity + qty;
+
+            if (newQty > selectedSize.stock && !variantData.allowBackorder) {
+                return res.status(422).json({ message: `Not enough stock. Only ${selectedSize.stock} left.` });
+            }
+
+            existingLine.quantity = newQty;
+            await existingLine.save();
+        } else {
+            // Create new line
+            const cartItem = new CartItem({
+                userId: req.user._id,
+                productId: product._id,
+                variantId: variantData._id,
+                businessId,
+                quantity: qty,
+                variant: requestedSize, // store size string
+            });
+            await cartItem.save();
+
+            cart.items.push(cartItem._id);
             await cart.save();
         }
 
-        // Create the CartItem for the selected variant
-        const cartItem = new CartItem({
-            productId: product._id,
-            variantId: variantData._id,
-            businessId,
-            quantity,
-            variant,  // Store the selected variant (e.g., size/color)
+        // Recompute totalItems as sum of quantities
+        const quantities = await CartItem.find({ _id: { $in: cart.items } }).select('quantity');
+        const totalQty = quantities.reduce((sum, it) => sum + (Number(it.quantity) || 0), 0);
+        cart.totalItems = totalQty;
+        await cart.save();
+
+        return res.status(201).json({
+            message: 'Item added to cart',
+            reset,
+            // Optional: include businessName for frontend toast
+            // businessName: product.businessName || undefined,
+            cart,
         });
-
-        await cartItem.save();
-
-        // Add the new cart item to the cart
-        cart.items.push(cartItem._id);
-        await cart.save();
-
-        // Update the total number of items in the cart
-        cart.totalItems = cart.items.length;
-        await cart.save();
-
-        return res.status(201).json({ message: 'Item added to cart', cart });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: 'Error adding item to cart', error: err.message });
@@ -87,7 +130,7 @@ const getCart = async (req, res) => {
                 path: 'items',
                 populate: [
                     { path: 'productId', select: 'title coverImage isPublished isDeleted', match: { isPublished: true, isDeleted: false } },  // Populate product details (name, coverImage) and ensure it's published and not deleted
-                    { path: 'variantId', select: 'color label sizes allowBackorder isPublished isDeleted', match: { isPublished: true, isDeleted: false } },  // Populate variant details and ensure it's published and not deleted
+                    { path: 'variantId', select: 'color label sizes allowBackorder isPublished isDeleted images', match: { isPublished: true, isDeleted: false } },  // Populate variant details and ensure it's published and not deleted
                 ],
             });
 
@@ -112,14 +155,32 @@ const getCart = async (req, res) => {
             // Find the selected size's details
             const selectedSize = variant.sizes.find(size => size.size === cartItem.variant);
 
+
             if (!selectedSize) {
                 // If size not found in the variant, remove the cart item
                 invalidItems.push(cartItem._id);
                 return null; // Exclude this item from the response
             }
 
+            // Compute selectedSizePrice with discount validity
+            const toNum = (v) =>
+                v && typeof v === 'object' && v.$numberDecimal != null ? Number(v.$numberDecimal) : Number(v);
+
+            const discountEnd = selectedSize?.discountEndDate ? new Date(selectedSize.discountEndDate) : null;
+            // Use salePrice ONLY if it exists AND discountEndDate exists AND is in the future
+            const useSale =
+                !!selectedSize?.salePrice &&
+                !!discountEnd &&
+                discountEnd.getTime() > Date.now();
+
+            const price = toNum(selectedSize.price);
+            const salePrice = toNum(selectedSize.salePrice);
+            const selectedSizePrice = useSale ? salePrice : price;
+
+
             // Return only necessary details (price is calculated on the frontend)
             return {
+                title: product.title,
                 productId: product._id,
                 variantId: variant._id,
                 businessId: cartItem.businessId,
@@ -129,8 +190,11 @@ const getCart = async (req, res) => {
                 label: variant.label,
                 stock: selectedSize.stock,
                 sku: selectedSize.sku,
-                selectedSizePrice: selectedSize.salePrice || selectedSize.price,  // Send salePrice/price for frontend calculation
-                imageUrl: product.coverImage,  // Send image URL to display in cart
+                salePrice,
+                discountEndDate: selectedSize.discountEndDate,
+                price,
+                selectedSizePrice,  // Send salePrice/price for frontend calculation
+                imageUrl: variant.images[0],  // Send image URL to display in cart
                 allowBackorder: variant.allowBackorder,  // Send allowBackorder flag
             };
         });
@@ -156,24 +220,26 @@ const getCart = async (req, res) => {
 // Update Cart Item
 const updateCartItem = async (req, res) => {
     const { cartItemId } = req.params;
-    const { quantity } = req.body;  // Updated quantity
-    const userId = req.user._id; // Assuming the user is authenticated and `req.user` contains user data
+    const { quantity } = req.body;
 
     try {
-        // Find the cart item by ID
-        const cartItem = await CartItem.findById(cartItemId);
+        const qty = Number(quantity);
+        if (!Number.isFinite(qty) || qty < 1) {
+            return res.status(400).json({ message: 'Quantity must be at least 1' });
+        }
 
+        const cartItem = await CartItem.findById(cartItemId);
         if (!cartItem) {
             return res.status(404).json({ message: 'Cart item not found' });
         }
 
         // Ensure the cart item belongs to the current user
         const cart = await Cart.findOne({ userId: req.user._id });
-        if (!cart || !cart.items.includes(cartItemId)) {
+        if (!cart || !cart.items.some(id => id.equals(cartItem._id))) {
             return res.status(400).json({ message: 'Cart item does not belong to the user' });
         }
 
-        // Fetch the product and variant details
+        // Product/Variant validity
         const product = await Product.findById(cartItem.productId);
         if (!product || !product.isPublished || product.isDeleted) {
             return res.status(400).json({ message: 'Product is not available (unpublished or deleted)' });
@@ -184,28 +250,25 @@ const updateCartItem = async (req, res) => {
             return res.status(400).json({ message: 'Product variant is not available (unpublished or deleted)' });
         }
 
-        // Ensure the selected size exists in the variant
-        const selectedVariant = variantData.sizes.find(s => s.size === cartItem.variant);
-        if (!selectedVariant) {
+        // Size lookup (cartItem.variant is the size string)
+        const selectedSize = variantData.sizes.find(s => s.size === cartItem.variant);
+        if (!selectedSize) {
             return res.status(400).json({ message: 'Variant size/color not found' });
         }
 
-        // Ensure the updated quantity is available in stock or backorder is allowed
-        if (quantity > selectedVariant.stock) {
-            if (selectedVariant.allowBackorder) {
-                // Backorder is allowed, so we can proceed
-                console.log(`Backorder allowed. Proceeding with quantity: ${quantity}`);
-            } else {
-                return res.status(400).json({ message: `Not enough stock for the selected variant. Only ${selectedVariant.stock} left.` });
-            }
+        // Stock / backorder (variant-level allowBackorder)
+        if (qty > selectedSize.stock && !variantData.allowBackorder) {
+            return res.status(422).json({ message: `Not enough stock for the selected variant. Only ${selectedSize.stock} left.` });
         }
 
-        // Update the quantity of the cart item
-        cartItem.quantity = quantity;
+        // Update quantity
+        cartItem.quantity = qty;
         await cartItem.save();
 
-        // Update the total number of items in the cart
-        cart.totalItems = cart.items.length;
+        // Recompute totalItems as sum of quantities
+        const quantities = await CartItem.find({ _id: { $in: cart.items } }).select('quantity');
+        const totalQty = quantities.reduce((sum, it) => sum + (Number(it.quantity) || 0), 0);
+        cart.totalItems = totalQty;
         await cart.save();
 
         return res.status(200).json({ message: 'Cart item updated successfully', cart });
@@ -257,11 +320,114 @@ const removeItemFromCart = async (req, res) => {
 
 
 
+// UPDATE by composite key
+const updateCartItemByComposite = async (req, res) => {
+    try {
+        const { productId, variantId, quantity } = req.body;
+        // accept either { size } or { variant: { size } }
+        const size = req.body.size || req.body?.variant?.size;
+        const qty = Number(quantity);
+
+        if (!productId || !variantId || !size) {
+            return res.status(400).json({ message: 'productId, variantId and size are required' });
+        }
+        if (!Number.isFinite(qty) || qty < 1) {
+            return res.status(400).json({ message: 'Quantity must be at least 1' });
+        }
+
+        // Load cart
+        const cart = await Cart.findOne({ userId: req.user._id });
+        if (!cart) return res.status(404).json({ message: 'Cart not found' });
+
+        // Find the line item in this cart
+        const line = await CartItem.findOne({
+            _id: { $in: cart.items },
+            productId,
+            variantId,
+            variant: size, // we store size string in "variant" field
+        });
+        if (!line) return res.status(404).json({ message: 'Cart item not found' });
+
+        // Validate product + variant
+        const product = await Product.findById(line.productId);
+        if (!product || !product.isPublished || product.isDeleted) {
+            return res.status(400).json({ message: 'Product is not available (unpublished or deleted)' });
+        }
+        const variantData = await ProductVariant.findById(line.variantId);
+        if (!variantData || !variantData.isPublished || variantData.isDeleted) {
+            return res.status(400).json({ message: 'Product variant is not available (unpublished or deleted)' });
+        }
+
+        // Size + stock/backorder
+        const selectedSize = variantData.sizes.find(s => s.size === size);
+        if (!selectedSize) return res.status(400).json({ message: 'Variant size/color not found' });
+        if (qty > selectedSize.stock && !variantData.allowBackorder) {
+            return res.status(422).json({ message: `Not enough stock. Only ${selectedSize.stock} left.` });
+        }
+
+        // Update quantity
+        line.quantity = qty;
+        await line.save();
+
+        // Recompute totalItems = sum of quantities
+        const quantities = await CartItem.find({ _id: { $in: cart.items } }).select('quantity');
+        cart.totalItems = quantities.reduce((sum, it) => sum + (Number(it.quantity) || 0), 0);
+        await cart.save();
+
+        return res.status(200).json({ message: 'Cart item updated successfully', cart });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Error updating cart item', error: err.message });
+    }
+};
+
+
+// REMOVE by composite key
+const removeItemByComposite = async (req, res) => {
+    try {
+        const { productId, variantId } = req.body;
+        const size = req.body.size || req.body?.variant?.size;
+
+        if (!productId || !variantId || !size) {
+            return res.status(400).json({ message: 'productId, variantId and size are required' });
+        }
+
+        const cart = await Cart.findOne({ userId: req.user._id });
+        if (!cart) return res.status(404).json({ message: 'Cart not found' });
+
+        const line = await CartItem.findOne({
+            _id: { $in: cart.items },
+            productId,
+            variantId,
+            variant: size,
+        });
+        if (!line) return res.status(404).json({ message: 'Cart item not found' });
+
+        // Remove from cart + delete line
+        cart.items.pull(line._id);
+        await cart.save();
+        await line.deleteOne();
+
+        // Recompute totalItems
+        const quantities = await CartItem.find({ _id: { $in: cart.items } }).select('quantity');
+        cart.totalItems = quantities.reduce((sum, it) => sum + (Number(it.quantity) || 0), 0);
+        await cart.save();
+
+        return res.status(200).json({ message: 'Item removed from cart', cart });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Error removing item from cart', error: err.message });
+    }
+};
+
+
 
 
 module.exports = {
     getCart,
     addItemToCart,
     updateCartItem,
-    removeItemFromCart
+    removeItemFromCart,
+    updateCartItemByComposite,
+    removeItemByComposite
 };

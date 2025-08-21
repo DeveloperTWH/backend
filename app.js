@@ -33,6 +33,7 @@ const adminBusinessRoutes=require('./routes/admin/businessRoutes')
 
 // User Routes
 const wishlistRoutes = require('./routes/customer/wishlistRoutes');
+const cartRoutes = require('./routes/customer/cartRoutes');
 
 
 
@@ -122,6 +123,7 @@ app.use('/api/admin/category/food', foodCategoryRoutes);
 
 // User Routes
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/cart', cartRoutes);
 
 
 

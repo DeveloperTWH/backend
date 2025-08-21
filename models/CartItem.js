@@ -4,6 +4,7 @@ const Schema = mongoose.Schema;
 const cartItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     variantId: { type: Schema.Types.ObjectId, ref: 'ProductVariant', required: true },
     businessId: { type: Schema.Types.ObjectId, ref: 'Business', required: true },
     quantity: { type: Number, required: true, min: [1, 'Quantity must be at least 1'] },
