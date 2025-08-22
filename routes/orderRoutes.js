@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { initiateOrder, getUserOrders, getVendorOrders, acceptOrder, rejectOrder, shipOrder, getAllOrdersAdmin, deliverOrder, acceptReturn, initiateReturn } = require('../controllers/orderController');
+const { initiateOrder, getUserOrders, getVendorOrders, acceptOrder, rejectOrder, shipOrder, getAllOrdersAdmin, deliverOrder, acceptReturn, initiateReturn, cancelOrderByUser } = require('../controllers/orderController');
 const { retrieveIntent } = require('../controllers/stripePaymentController');
 const authenticate = require('../middlewares/authenticate');
 const isBusinessOwner = require('../middlewares/isBusinessOwner')
@@ -19,6 +19,7 @@ router.put('/ship/:orderId', authenticate, isBusinessOwner, shipOrder);
 router.put('/deliver/:orderId', authenticate, isBusinessOwner, deliverOrder);
 router.put('/return/:orderId', authenticate, isBusinessOwner, acceptReturn);
 router.put('/initiateReturn/:orderId', authenticate, isCustomer, initiateReturn);
+router.post("/:orderId/cancel", authenticate, isCustomer, cancelOrderByUser);
 router.get('/admin', authenticate, isAdmin, getAllOrdersAdmin);
 
 

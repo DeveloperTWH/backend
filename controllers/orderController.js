@@ -734,3 +734,82 @@ exports.getAllOrdersAdmin = async (req, res) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
+
+
+
+exports.cancelOrderByUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { orderId } = req.params;
+
+    // Load the order for this user
+    const order = await Order.findOne({ _id: orderId, userId });
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found or unauthorized" });
+    }
+
+    // Only orders in 'ordered' or 'accepted' may be canceled by the user
+    if (!(order.status === "ordered" || order.status === "accepted")) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only "ordered" or "accepted" orders can be cancelled by the user',
+      });
+    }
+    if (order.paymentStatus === "refunded") {
+      return res.status(400).json({
+        success: false,
+        message: 'all ready refunded',
+      });
+    }
+
+    // If status is 'accepted', we previously decremented stock. Restore it.
+    if (order.status === "accepted") {
+      for (const item of order.items) {
+        const variant = await ProductVariant.findById(item.variantId);
+        if (!variant) continue;
+
+        const sizeObj = variant.sizes?.find((s) => s.size === item.size);
+        if (sizeObj) {
+          sizeObj.stock = Number(sizeObj.stock || 0) + Number(item.quantity || 0);
+        }
+        await variant.save();
+      }
+    }
+
+    // If payment captured, refund the whole order
+    // (Assumes single PaymentIntent for the order. Adjust for partial refunds if needed.)
+    if (order.paymentStatus === "paid" && order.paymentId) {
+      try {
+        await stripe.refunds.create({
+          payment_intent: order.paymentId,
+          // amount: Math.round(order.totalAmount * 100), // optional; full if omitted
+        });
+        order.paymentStatus = "refunded";
+      } catch (err) {
+        console.error("Stripe refund failed:", err);
+        return res.status(502).json({
+          success: false,
+          message: "Failed to process refund. Please try again or contact support.",
+        });
+      }
+    } else {
+      // Not paid yet (e.g., pending) – ensure we reflect that:
+      order.paymentStatus = order.paymentStatus || "pending";
+    }
+
+    order.status = "cancelled";
+    order.statusHistory.push({ status: "cancelled" });
+    await order.save();
+
+    return res.json({
+      success: true,
+      message: "Order cancelled successfully",
+      order,
+    });
+  } catch (err) {
+    console.error("Error cancelling order:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};

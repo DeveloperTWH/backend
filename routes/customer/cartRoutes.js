@@ -6,7 +6,9 @@ const {
   updateCartItem, 
   removeItemFromCart,
   updateCartItemByComposite,
-  removeItemByComposite
+  removeItemByComposite,
+  getProductsMini,
+  getVariantsMini
 } = require('../../controllers/customer/cartController');
 
 const authenticate = require("../../middlewares/authenticate")
@@ -27,5 +29,13 @@ router.delete('/remove/:cartItemId', authenticate, isCustomer, removeItemFromCar
 router.put('/update-quantity', authenticate, isCustomer, updateCartItemByComposite);
 
 router.delete('/remove', authenticate, isCustomer, removeItemByComposite);
+
+// Products mini API
+router.get("/products/mini", getProductsMini);
+router.post("/products/mini", getProductsMini);
+
+// Variants mini API
+router.get("/variants/mini", getVariantsMini);
+router.post("/variants/mini", getVariantsMini);
 
 module.exports = router;

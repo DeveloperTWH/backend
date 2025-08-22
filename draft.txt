@@ -260,3 +260,22 @@
 20-08-2025 
    4. Created `PUT /update/:cartItemId` – `updateCartItem` API: Updates the quantity of an item in the cart, Checks stock availability and handles backorder support, Validates that the product and variant are valid and published.
    5. Created `DELETE /remove/:cartItemId` – `removeItemFromCart` API: Removes a specific item from the cart, Validates that the cart item belongs to the authenticated user, Updates the total items in the cart and deletes the CartItem document.
+
+22-08-2025
+
+   1. Created Product Mini API and Variant Mini API to fetch lightweight product/variant details (title, cover image, size-based pricing, etc.), enabling faster cart and order rendering.
+   2. Enhanced guest cart enrichment by integrating the mini APIs to fetch product/variant details and ensure size-based pricing is handled correctly.
+   3. Fixed a price display bug where product prices were incorrectly showing extra digits (e.g., `8500` instead of `850`).
+   4. Updated the guest cart flow to correctly handle multiple products/variants and display accurate prices.
+   5. Implemented the Place Order flow with shipping address state management, initiating the order via API, and redirecting to checkout/payment.
+   6. Built and integrated an Address component, supporting saved addresses, selecting an existing one, and adding new addresses.
+   7. Integrated the order initiation API in the Cart page with proper address mapping (`postalCode → pincode`) to match backend requirements.
+   8. Improved the order listing page to display all items in an order, instead of only the first item.
+
+
+
+   9. Added conditional tracking link visibility, shown only when an order is in `shipped` or `delivered` status.
+   10. Implemented a Cancel Order button on the frontend for users to cancel orders with status `ordered` or `accepted`.
+   11. Developed a backend cancelOrderByUser controller that: Validates cancellable statuses (`ordered`/`accepted`), Restores stock if already decremented, Issues a full Stripe refund (including reverse transfer and application fee refund), Updates order status/history
+   12. Added the cancel order route (`POST /api/orders/:orderId/cancel`) in the backend.
+

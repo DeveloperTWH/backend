@@ -423,11 +423,149 @@ const removeItemByComposite = async (req, res) => {
 
 
 
+
+// Utility: collect IDs from query (?ids=a,b,c) or body {ids:[]}
+
+function parseIds(req) {
+    const ids = [];
+    if (req.query.ids) ids.push(...String(req.query.ids).split(","));
+    if (Array.isArray(req.body?.ids)) ids.push(...req.body.ids);
+    return [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
+}
+
+function parseFilters(req) {
+    // Accepts duplicates; we'll group by variantId
+    const arr = Array.isArray(req.body?.filters) ? req.body.filters : [];
+    const map = new Map(); // variantId -> Set(sizes)
+    for (const f of arr) {
+        if (!f?.variantId || !f?.size) continue;
+        const vid = String(f.variantId);
+        const size = String(f.size).toUpperCase();
+        if (!map.has(vid)) map.set(vid, new Set());
+        map.get(vid).add(size);
+    }
+    return map; // Map<string, Set<string>>
+}
+
+async function getVariantsMini(req, res, next) {
+    try {
+        const ids = parseIds(req);
+        if (!ids.length) return res.json([]);
+
+        const wantedByVariant = parseFilters(req); // Map<variantId, Set<sizes>>
+
+        // IMPORTANT: no .lean() so toJSON() flattens Decimal128
+        const docs = await ProductVariant.find({
+            _id: { $in: ids },
+            isDeleted: false,
+            isPublished: true,
+        })
+            .select("_id productId label color allowBackorder images sizes")
+            .exec();
+
+        const variants = docs.map((d) => d.toJSON());
+
+        const out = variants.map((v) => {
+            const wanted = wantedByVariant.get(String(v._id)); // Set or undefined
+            const sizes = Array.isArray(v.sizes) ? v.sizes : [];
+            const filtered = wanted && wanted.size
+                ? sizes.filter((s) => wanted.has(String(s.size).toUpperCase()))
+                : sizes; // if no filter supplied, return all (backward compatible)
+            return {
+                _id: v._id,
+                productId: v.productId,
+                label: v.label,
+                color: v.color,
+                allowBackorder: v.allowBackorder,
+                images: v.images,
+                sizes: filtered,
+            };
+        });
+
+        res.json(out);
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * GET/POST /api/public/products/mini
+ */
+const getProductsMini = async (req, res, next) => {
+    try {
+        const ids = parseIds(req);
+        if (!ids.length) return res.json([]);
+
+        const products = await Product.find({
+            _id: { $in: ids },
+            isDeleted: false,
+            isPublished: true,
+        })
+            .select("_id title coverImage businessId slug")
+            .lean();
+
+        res.json(products);
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * GET/POST /api/public/variants/mini
+ * Expects: ids[]=variantId, optional sizes filter: { variantId: "xxx", size: "SM" }
+ */
+// const getVariantsMini = async (req, res, next) => {
+//     try {
+//         const ids = parseIds(req);
+//         if (!ids.length) return res.json([]);
+
+//         const filters = parseFilters(req); // optional size filters per variant
+
+//         // IMPORTANT: no .lean() so toJSON transform converts Decimal128
+//         const docs = await ProductVariant.find({
+//             _id: { $in: ids },
+//             isDeleted: false,
+//             isPublished: true,
+//         })
+//             .select("_id productId label color allowBackorder images sizes")
+//             .exec();
+
+//         // toJSON() applies your Decimal128 -> number conversion
+//         const variants = docs.map((d) => d.toJSON());
+
+//         const out = variants.map((v) => {
+//             const f = filters.find((x) => String(x.variantId) === String(v._id));
+//             const wantedSize = f?.size ? String(f.size).toUpperCase() : null;
+
+//             return {
+//                 _id: v._id,
+//                 productId: v.productId,
+//                 label: v.label,
+//                 color: v.color,
+//                 allowBackorder: v.allowBackorder,
+//                 images: v.images,
+//                 sizes: wantedSize
+//                     ? (v.sizes || []).filter((s) => s.size === wantedSize)
+//                     : v.sizes || [],
+//             };
+//         });
+
+//         res.json(out);
+//     } catch (err) {
+//         next(err);
+//     }
+// }
+
+
+
+
 module.exports = {
     getCart,
     addItemToCart,
     updateCartItem,
     removeItemFromCart,
     updateCartItemByComposite,
-    removeItemByComposite
+    removeItemByComposite,
+    getProductsMini,
+    getVariantsMini
 };
