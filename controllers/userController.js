@@ -41,12 +41,13 @@ exports.registerUser = async (req, res) => {
         await newUser.save();
 
         console.log(`🔐 OTP for ${email} is: ${otp}`); // Simulate sending OTP
-        // await sendOtpEmail(email, otp);
+        await sendOtpEmail(email, otp);
 
         res.cookie('otpPending', 'true', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
+            domain: '.minorityownedbusiness.info',
             maxAge: 10 * 60 * 1000, // 10 minutes
         });
 
@@ -107,13 +108,15 @@ exports.verifyOtp = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
+            domain: '.minorityownedbusiness.info',
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
         res.cookie('user_session', 'true', {
             httpOnly: false,
-            sameSite: 'strict',
+            sameSite: 'none',
+            domain: '.minorityownedbusiness.info',
             secure: process.env.NODE_ENV === 'production',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -121,7 +124,8 @@ exports.verifyOtp = async (req, res) => {
         res.cookie('user_gender', user.gender || '', {
             httpOnly: false,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
+            domain: '.minorityownedbusiness.info',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -130,6 +134,7 @@ exports.verifyOtp = async (req, res) => {
         res.status(200).json({
             success: true,
             message: 'OTP verified and login successful',
+            token,
             user: {
                 id: user._id,
                 name: user.name,
@@ -178,13 +183,14 @@ exports.resendOtp = async (req, res) => {
         user.otpExpiry = otpExpiry;
         await user.save();
 
-        // await sendOtpEmail(user.email, otp);
+        await sendOtpEmail(user.email, otp);
         console.log(`🔐 OTP for ${email} is: ${otp}`); // Simulate sending OTP
 
         res.cookie('otpPending', 'true', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
+            domain: '.minorityownedbusiness.info',
             maxAge: 10 * 60 * 1000,
         });
 
@@ -247,12 +253,13 @@ exports.loginUser = async (req, res) => {
             await user.save();
 
             console.log(`🔐 OTP re-sent for ${email}: ${otp}`);
-            // await sendOtpEmail(user.email, otp);
+            await sendOtpEmail(user.email, otp);
 
             res.cookie('otpPending', 'true', {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
+                sameSite: 'none',
+                domain: '.minorityownedbusiness.info',
                 maxAge: 10 * 60 * 1000, // 10 minutes
             });
 
@@ -276,13 +283,15 @@ exports.loginUser = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'none',
+            domain: '.minorityownedbusiness.info',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         res.cookie('user_session', 'true', {
             httpOnly: false,
-            sameSite: 'strict',
+            sameSite: 'none',
+            domain: '.minorityownedbusiness.info',
             secure: process.env.NODE_ENV === 'production',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -290,13 +299,15 @@ exports.loginUser = async (req, res) => {
         res.cookie('user_gender', user.gender || '', {
             httpOnly: false,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
+            domain: '.minorityownedbusiness.info',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         res.status(200).json({
             success: true,
             message: 'Login successful',
+            token,
             user: {
                 id: user._id,
                 name: user.name,

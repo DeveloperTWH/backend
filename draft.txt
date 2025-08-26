@@ -279,3 +279,21 @@
    11. Developed a backend cancelOrderByUser controller that: Validates cancellable statuses (`ordered`/`accepted`), Restores stock if already decremented, Issues a full Stripe refund (including reverse transfer and application fee refund), Updates order status/history
    12. Added the cancel order route (`POST /api/orders/:orderId/cancel`) in the backend.
 
+26-08-2025 
+
+   1. Fixed header with --header-h (ResizeObserver) and global padding to prevent overlap.
+   2. Synced sticky offsets using top-[calc(var(--header-h)+…)].
+   3. Installed @types/google.maps and typed google refs.
+   4. Map UX: gestureHandling: "greedy", keyboardShortcuts: false; overlays unclipped via overflow-visible + ancestor unclip.
+   5. Numbered SVG markers + safe InfoWindow; click pans/zooms to selection.
+   6. Layout: lg:items-stretch, no self-start/h-full; viewport-based map height.
+   7. Provided AffixSidebar for Yelp-style behavior (fixed while scrolling, stops at list end).
+   8. Finalized manual vs “track current” address flow; set default coords \[0,0] only as fallback.
+   9. Wired backend geocoding: if manual address, use Google Geocoding → save GeoJSON `[lng, lat]`.
+   10. Reviewed schema/controller + helper; confirmed `geocodeAddress` integration & error handling.
+   11. Built `AllServicesMap` (Google Maps JS API) to plot all services from API coords; auto fitBounds.
+   12. Fixed TS issues (`google` namespace) using `/* global google */` and `window.google` access.
+   13. Implemented right-side map panel layout; independent list scroll; attempted sticky, then added JS sticky polyfill.
+   14. Added numbered markers, centered digits; highlight selected (bigger red) + InfoWindow (serial, title, address).
+   15. Hooked marker clicks to parent (`onSelect`) → set active service & smooth-scroll to the matching card; fixed prop types and removed `h-[100vh]` wrappers.
+

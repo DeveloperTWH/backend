@@ -60,7 +60,7 @@ exports.getAllServices = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const services = await Service.find(filters)
-      .select('title services averageRating totalReviews slug description contact.address coverImage')
+      .select('title services averageRating totalReviews slug description contact.address coverImage location')
       .sort(sortOption)
       .skip(skip)
       .limit(parseInt(limit));

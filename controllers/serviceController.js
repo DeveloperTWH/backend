@@ -72,16 +72,33 @@ exports.createService = async (req, res) => {
       });
     }
 
-    // 📍 Step 3: Prepare coordinates
+    // 📍 Step 3: Prepare coordinates (handle [0,0] as missing)
     let finalCoordinates;
 
-    if (location?.coordinates && Array.isArray(location.coordinates) && location.coordinates.length === 2) {
-      finalCoordinates = location.coordinates;
-    } else if (contact?.address) {
-      const geo = await geocodeAddress(contact.address);
-      finalCoordinates = [geo.lng, geo.lat];
+    const rawCoords = Array.isArray(location?.coordinates) ? location.coordinates : null;
+    const hasTwo = rawCoords && rawCoords.length === 2 && rawCoords.every(n => Number.isFinite(Number(n)));
+    const isZero = hasTwo && Number(rawCoords[0]) === 0 && Number(rawCoords[1]) === 0;
+
+    if (hasTwo && !isZero) {
+      // Already have valid non-zero coordinates (assume tracked mode)
+      finalCoordinates = [Number(rawCoords[0]), Number(rawCoords[1])];
     } else {
-      return res.status(400).json({ error: 'Either location coordinates or contact address is required.' });
+      // Manual entry path → we must geocode the address
+      if (!contact?.address?.trim()) {
+        return res.status(400).json({
+          error: 'Contact address is required when coordinates are missing or [0,0].'
+        });
+      }
+
+      const geo = await geocodeAddress(contact.address.trim());
+      if (!geo || typeof geo.lat !== 'number' || typeof geo.lng !== 'number') {
+        return res.status(422).json({
+          error: 'Unable to geocode the provided address. Please verify the address and try again.'
+        });
+      }
+
+      // GeoJSON order: [lng, lat]
+      finalCoordinates = [geo.lng, geo.lat];
     }
 
     // ✅ Step 4: Save service
@@ -132,6 +149,14 @@ exports.createService = async (req, res) => {
       await deleteCloudinaryFile(image);
       await PendingImage.deleteOne({ url: image });
     }
+
+    if (err?.message?.includes('REQUEST_DENIED')) {
+      return res.status(502).json({ error: 'Geocoding denied: check API key/billing/restrictions.' });
+    }
+    if (err?.message?.includes('OVER_QUERY_LIMIT')) {
+      return res.status(429).json({ error: 'Geocoding rate limit reached. Please try again later.' });
+    }
+
 
     console.error('Service creation failed:', err.message);
     return res.status(400).json({ error: err.message || 'Failed to create service' });
