@@ -8,7 +8,9 @@ const {
   updateCartItemByComposite,
   removeItemByComposite,
   getProductsMini,
-  getVariantsMini
+  getVariantsMini,
+  getCount,
+  mergeGuestCart
 } = require('../../controllers/customer/cartController');
 
 const authenticate = require("../../middlewares/authenticate")
@@ -37,5 +39,9 @@ router.post("/products/mini", getProductsMini);
 // Variants mini API
 router.get("/variants/mini", getVariantsMini);
 router.post("/variants/mini", getVariantsMini);
+
+
+router.get("/count", authenticate, isCustomer, getCount);
+router.post("/merge", authenticate, isCustomer, mergeGuestCart);
 
 module.exports = router;

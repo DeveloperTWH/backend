@@ -559,6 +559,170 @@ const getProductsMini = async (req, res, next) => {
 
 
 
+
+
+
+async function destroyCart(cartDoc) {
+    if (!cartDoc) return;
+    if (Array.isArray(cartDoc.items) && cartDoc.items.length) {
+        await CartItem.deleteMany({ _id: { $in: cartDoc.items } });
+    }
+    await Cart.deleteOne({ _id: cartDoc._id });
+}
+
+// ensure exactly ONE open cart (isBooked:false) per user, for the given businessId
+// if an open cart exists for a different business, remove it and create a fresh one
+async function ensureActiveCart(userId, businessId) {
+    const openCarts = await Cart.find({ userId, isBooked: false });
+
+    // try to keep the one matching this business
+    let active = openCarts.find(c => String(c.businessId) === String(businessId));
+
+    if (active) {
+        // remove any other open carts
+        const toRemove = openCarts.filter(c => String(c._id) !== String(active._id));
+        for (const c of toRemove) await destroyCart(c);
+        return active;
+    }
+
+    // no active cart for this business -> remove all others and create fresh
+    for (const c of openCarts) await destroyCart(c);
+
+    return await Cart.create({
+        userId,
+        businessId,
+        items: [],
+        totalItems: 0,
+        isBooked: false,
+    });
+}
+
+// recompute totalItems from referenced CartItem.quantity and persist on Cart
+async function recalcCartTotals(cartId) {
+    const cart = await Cart.findById(cartId).lean();
+    if (!cart) return 0;
+
+    const items = cart.items?.length
+        ? await CartItem.find({ _id: { $in: cart.items } }, { quantity: 1 }).lean()
+        : [];
+
+    const total = items.reduce((sum, it) => sum + (Number(it.quantity) || 0), 0);
+    await Cart.updateOne({ _id: cartId }, { $set: { totalItems: total } });
+    return total;
+}
+
+// ---- controllers ----
+
+// GET /cart/count
+// returns item count of the single open cart (isBooked:false) for the user
+const getCount = async (req, res) => {
+    try {
+        const userId = req.user && req.user._id;
+        if (!userId) return res.status(401).json({ error: "unauthorized" });
+
+        const active = await Cart.findOne({ userId, isBooked: false }).lean();
+        if (!active) return res.json({ count: 0 });
+
+        const count = await recalcCartTotals(active._id);
+        return res.json({ count });
+    } catch (e) {
+        console.error("getCount error:", e);
+        return res.status(500).json({ error: "server_error" });
+    }
+};
+
+
+async function ensureSingleActiveCartReplace(userId, businessId) {
+    // find any open cart for the user
+    let cart = await Cart.findOne({ userId, isBooked: false });
+
+    // none → create
+    if (!cart) {
+        return await Cart.create({
+            userId,
+            businessId,
+            items: [],
+            totalItems: 0,
+            isBooked: false,
+        });
+    }
+
+    // if cart is for a different business → delete existing line items and reuse cart with new business
+    if (String(cart.businessId) !== String(businessId)) {
+        if (Array.isArray(cart.items) && cart.items.length) {
+            await CartItem.deleteMany({ _id: { $in: cart.items } });
+        }
+        cart.items = [];
+        cart.totalItems = 0;
+        cart.businessId = businessId;
+        await cart.save();
+
+        // hygiene: if there are any OTHER open carts, remove them
+        await Cart.deleteMany({ userId, isBooked: false, _id: { $ne: cart._id } });
+    }
+
+    return cart;
+}
+
+
+
+mergeGuestCart = async (req, res) => {
+    try {
+        const userId = req.user && req.user._id;
+        if (!userId) return res.status(401).json({ message: "unauthorized" });
+
+        const { businessId, items = [] } = req.body || {};
+        if (!businessId) return res.status(400).json({ message: "businessId_required" });
+
+        // ensure single active cart; clear & switch business if needed
+        const cart = await ensureSingleActiveCartReplace(userId, businessId);
+
+        // upsert items (productId + variantId + size unique within THIS cart)
+        for (const it of items) {
+            if (!it || !it.productId || !it.variantId) continue;
+            // DB expects `variant` (string) — map incoming `size` → `variant`
+            const variantStr = String(it.size ?? "").trim();
+            if (!variantStr) continue;
+            const inc = Math.max(1, Number(it.quantity || 1))
+
+            const existing = await CartItem.findOne({
+                _id: { $in: cart.items },
+                productId: it.productId,
+                variantId: it.variantId,
+                variant: variantStr,
+                userId,                         // required by schema
+                businessId: cart.businessId,    // required by schema
+            });
+
+            if (existing) {
+                existing.quantity = Math.max(1, Number(existing.quantity || 0) + inc);
+                await existing.save();
+            } else {
+                const created = await CartItem.create({
+                    productId: it.productId,
+                    variantId: it.variantId,
+                    businessId: cart.businessId, // required
+                    userId,                      // required
+                    variant: variantStr,         // required (string)
+                    quantity: inc,
+                });
+                await Cart.updateOne({ _id: cart._id }, { $addToSet: { items: created._id } });
+            }
+        }
+
+        const count = await recalcCartTotals(cart._id);
+        return res.json({ count });
+    } catch (e) {
+        console.error("mergeGuestCart error:", e);
+        return res.status(500).json({ message: "server_error" });
+    }
+};
+
+
+
+
+
+
 module.exports = {
     getCart,
     addItemToCart,
@@ -567,5 +731,7 @@ module.exports = {
     updateCartItemByComposite,
     removeItemByComposite,
     getProductsMini,
-    getVariantsMini
+    getVariantsMini,
+    getCount,
+    mergeGuestCart
 };

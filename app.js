@@ -20,7 +20,7 @@ const cmsRoutes = require('./routes/cms/cmsRoutes');
 
 
 // admin Routes
-const adminUserRoutes =require('./routes/admin/userRoutes')
+const adminUserRoutes = require('./routes/admin/userRoutes')
 const adminFaqRoutes = require('./routes/admin/faqRoutes');
 const testimonialRoutes = require('./routes/admin/testimonialRoutes');
 const blogRoutes = require('./routes/admin/Blog/blogRoutes');
@@ -28,7 +28,7 @@ const productCategoryRoutes = require('./routes/admin/productCategoryRoutes')
 const productSubcategoryRoutes = require('./routes/admin/productSubcategoryRoutes')
 const ServiceCategoryRoutes = require('./routes/admin/categoryRoutes')
 const foodCategoryRoutes = require('./routes/admin/foodCategoryRoutes')
-const adminBusinessRoutes=require('./routes/admin/businessRoutes')
+const adminBusinessRoutes = require('./routes/admin/businessRoutes')
 
 
 // User Routes
@@ -49,7 +49,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
 
 // Stripe connect 
-const connectRoutes=require('./routes/connectRoutes');
+const connectRoutes = require('./routes/connectRoutes');
 
 
 
@@ -63,7 +63,11 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:8081',
-  'https://app.minorityownedbusiness.info'
+  'https://app.minorityownedbusiness.info',
+  "http://192.168.1.50:3000",
+  "exp://192.168.0.104:8081",
+  "exp://192.168.0.104:3000",
+  "exp://192.168.0.104:3001"
 ];
 app.set('trust proxy', 1);
 app.use(cors({
@@ -98,7 +102,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/subscription-plans', subscriptionPlanRoutes);
 app.use('/api/product', productRoutes);
-app.use('/api/service',serviceRoutes );
+app.use('/api/service', serviceRoutes);
 app.use('/api/minority-types', minorityTypeRoutes);
 app.use('/api', uploadImageRoute);
 app.use('/api', subscriptionRoutes);
