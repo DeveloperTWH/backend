@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { getAllServices, getServiceBySlug, getAllProducts, getAllFood, getProductById} = require('../controllers/publicListing');
+const { listProductsRanked } = require('../controllers/productListingController');
+
 
 router.get('/services/list', getAllServices);
 
@@ -14,6 +16,15 @@ router.get('/product/:productId', getProductById);
 router.get('/food/list', getAllFood);
 
 // router.get('/food/:slug', getFoodBySlug);
+
+
+
+
+// GET /api/products/ranked?categoryId=&subcategoryId=&page=1&pageSize=24&maxPerVendor=3
+router.get('/ranked', listProductsRanked);
+
+
+
 
 
 module.exports = router;

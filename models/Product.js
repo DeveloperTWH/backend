@@ -108,6 +108,7 @@ productSchema.pre('save', async function (next) {
 
 productSchema.index({ businessId: 1 });
 productSchema.index({ categoryId: 1, subcategoryId: 1 });
+productSchema.index({ isPublished: 1, isDeleted: 1, createdAt: -1 });
 
 
 module.exports = mongoose.models.Product || mongoose.model('Product', productSchema);

@@ -130,7 +130,7 @@ productVariantSchema.set('toJSON', {
 });
 
 
-productVariantSchema.index({ productId: 1 });
+productVariantSchema.index({ productId: 1, isPublished: 1, isDeleted: 1 });
 productVariantSchema.index({ businessId: 1 });
 
 module.exports = mongoose.models.ProductVariant || mongoose.model('ProductVariant', productVariantSchema);

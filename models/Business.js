@@ -140,5 +140,8 @@ businessSchema.pre("save", async function (next) {
   next();
 });
 
+businessSchema.index({ _id: 1, isActive: 1 });
+businessSchema.index({ subscriptionId: 1 });
+
 module.exports =
   mongoose.models.Business || mongoose.model("Business", businessSchema);
