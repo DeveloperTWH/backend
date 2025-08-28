@@ -297,3 +297,19 @@
    14. Added numbered markers, centered digits; highlight selected (bigger red) + InfoWindow (serial, title, address).
    15. Hooked marker clicks to parent (`onSelect`) → set active service & smooth-scroll to the matching card; fixed prop types and removed `h-[100vh]` wrappers.
 
+27-08-2025
+
+   1. Ranked endpoint weighted by subscription price (priority + weight).
+   2. Weighted interleave across plans with safeguards (credit accrual, epsilon clamp).
+   3. Per-vendor cap + soft backfill to avoid empty pages.
+   4. Eligibility rules: product/variant published, stock/backorder check; active business & subscription.
+   5. Debug mode: removedAtAggregation, removedByCap, notOnPage, and timings.
+   6. Aggregation hardening: ObjectId validation, early $sort + $limit, minimal $lookup projections, { allowDiskUse, maxTimeMS }.
+   7. Vendor meta: 5-min TTL cache, clamped weights, chunked subscription lookups.
+   8. Ranking helpers hardened (baseScore guards; interleaver safety).
+   9. Controller hardening: input clipping, fetchLimit = pageSize10, paginate after backfill.
+   10. Fixed .maxTimeMS issue by using aggregate options; delivered a master feature prompt for future work.
+   11. body Padding top bug removed now it will be only applied in the layout with the heder fixed.
+   12. in index page hero section now add the btn loading blink effect till we get the login state of user if user not logedin btn visble in logedin not visble.
+   13. Performed reconnaissance on https://crownstandard.ca Identified 4 potential security issues, reported findings for bug
+

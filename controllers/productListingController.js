@@ -16,27 +16,35 @@ async function listProductsRanked(req, res) {
     const {
       categoryId,
       subcategoryId,
+      excludeProductId,
       page = 1,
       pageSize = 24,
       maxPerVendor = 3,
       debug // "1" | "true"
     } = req.query;
 
+    // Prefer locals from the middleware; fall back to query if present
+    const sim = res.locals?.similar || {};
+    const excludeId = sim.excludeProductId || excludeProductId;
+    const catId = sim.categoryId || categoryId;
+    const subId = sim.subcategoryId || subcategoryId
+
+
     const wantDebug = debug === '1' || debug === 'true';
-    const pageNum    = clip(page, 1, 100000, 1);
-    const pageSizeN  = clip(pageSize, 1, 60, 24);     // hard cap pageSize
-    const cap        = clip(maxPerVendor, 0, 50, 3);  // 0 disables cap
+    const pageNum = clip(page, 1, 100000, 1);
+    const pageSizeN = clip(pageSize, 1, 60, 24);     // hard cap pageSize
+    const cap = clip(maxPerVendor, 0, 50, 3);  // 0 disables cap
     const enforceCap = cap > 0;
 
     const t0 = Date.now();
 
     // Bound upstream work: enough headroom for interleave + cap + backfill
-    const fetchLimit = Math.max(50, pageSizeN * 10);
+    const fetchLimit = Math.max(50, pageSizeN * 10);    
 
     // Fetch eligible + (optional) debug removals in parallel
     const [products, removedAtAggregation] = await Promise.all([
-      fetchEligibleProducts({ categoryId, subcategoryId, fetchLimit }),
-      wantDebug ? fetchRemovalLogs({ categoryId, subcategoryId }) : Promise.resolve([])
+      fetchEligibleProducts({ categoryId: catId, subcategoryId: subId, excludeProductId: excludeId, fetchLimit }),
+      wantDebug ? fetchRemovalLogs({ categoryId: catId, subcategoryId: subId }) : Promise.resolve([])
     ]);
 
     if (!products.length) {
@@ -61,7 +69,7 @@ async function listProductsRanked(req, res) {
     for (const p of products) {
       const vendor = vendorByBizId.get(String(p.businessId));
       const planId = vendor?.planId || String(p.planId || 'UNKNOWN');
-      const score  = baseScore(p, vendor, now);
+      const score = baseScore(p, vendor, now);
       (byPlan[planId] ||= []).push({ ...p, __score: score, planId, biz: { businessName: p.businessName } });
     }
 
@@ -107,7 +115,7 @@ async function listProductsRanked(req, res) {
 
     // --- SOFT-CAP BACKFILL ---
     const start = (pageNum - 1) * pageSizeN;
-    const end   = start + pageSizeN;
+    const end = start + pageSizeN;
 
     if (capped.length < end && overflow.length > 0) {
       const need = end - capped.length;
@@ -129,15 +137,15 @@ async function listProductsRanked(req, res) {
     // Debug: which valid items aren’t on this page
     const notOnPage = wantDebug
       ? capped
-          .map((p, idx) => ({ p, idx }))
-          .filter(({ idx }) => idx < start || idx >= Math.min(end, capped.length))
-          .map(({ p }) => ({
-            productId: p._id,
-            businessId: p.businessId,
-            reason: 'page_excluded',
-            planId: p.planId,
-            capRelaxed: !!p.__capRelaxed
-          }))
+        .map((p, idx) => ({ p, idx }))
+        .filter(({ idx }) => idx < start || idx >= Math.min(end, capped.length))
+        .map(({ p }) => ({
+          productId: p._id,
+          businessId: p.businessId,
+          reason: 'page_excluded',
+          planId: p.planId,
+          capRelaxed: !!p.__capRelaxed
+        }))
       : [];
 
     // Mix telemetry (count per planId on this page)

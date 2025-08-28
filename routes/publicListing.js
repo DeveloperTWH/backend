@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getAllServices, getServiceBySlug, getAllProducts, getAllFood, getProductById} = require('../controllers/publicListing');
 const { listProductsRanked } = require('../controllers/productListingController');
+const attachSimilarQuery = require('../middlewares/attachSimilarQuery');
 
 
 router.get('/services/list', getAllServices);
@@ -22,6 +23,7 @@ router.get('/food/list', getAllFood);
 
 // GET /api/products/ranked?categoryId=&subcategoryId=&page=1&pageSize=24&maxPerVendor=3
 router.get('/ranked', listProductsRanked);
+router.get('/:id/similar', attachSimilarQuery , listProductsRanked)
 
 
 
