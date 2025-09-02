@@ -46,9 +46,9 @@ exports.registerUser = async (req, res) => {
         res.cookie('otpPending', 'true', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            // sameSite: 'strict',
-            sameSite: 'none',
-            domain: '.minorityownedbusiness.info',
+            sameSite: 'strict',
+            // sameSite: 'none',
+            // domain: '.minorityownedbusiness.info',
             maxAge: 10 * 60 * 1000, // 10 minutes
         });
 
@@ -109,17 +109,17 @@ exports.verifyOtp = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            // sameSite: 'strict',
-            sameSite: 'none',
-            domain: '.minorityownedbusiness.info',
+            sameSite: 'strict',
+            // sameSite: 'none',
+            // domain: '.minorityownedbusiness.info',
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
         res.cookie('user_session', 'true', {
             httpOnly: false,
-            // sameSite: 'strict',
-            sameSite: 'none',
-            domain: '.minorityownedbusiness.info',
+            sameSite: 'strict',
+            // sameSite: 'none',
+            // domain: '.minorityownedbusiness.info',
             secure: process.env.NODE_ENV === 'production',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -127,9 +127,9 @@ exports.verifyOtp = async (req, res) => {
         res.cookie('user_gender', user.gender || '', {
             httpOnly: false,
             secure: process.env.NODE_ENV === 'production',
-            // sameSite: 'strict',
-            sameSite: 'none',
-            domain: '.minorityownedbusiness.info',
+            sameSite: 'strict',
+            // sameSite: 'none',
+            // domain: '.minorityownedbusiness.info',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -193,9 +193,9 @@ exports.resendOtp = async (req, res) => {
         res.cookie('otpPending', 'true', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            // sameSite: 'strict',
-            sameSite: 'none',
-            domain: '.minorityownedbusiness.info',
+            sameSite: 'strict',
+            // sameSite: 'none',
+            // domain: '.minorityownedbusiness.info',
             maxAge: 10 * 60 * 1000,
         });
 
@@ -288,17 +288,17 @@ exports.loginUser = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            // sameSite: 'strict',
-            sameSite: 'none',
-            domain: '.minorityownedbusiness.info',
+            sameSite: 'strict',
+            // sameSite: 'none',
+            // domain: '.minorityownedbusiness.info',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         res.cookie('user_session', 'true', {
             httpOnly: false,
-            // sameSite: 'strict',
-            sameSite: 'none',
-            domain: '.minorityownedbusiness.info',
+            sameSite: 'strict',
+            // sameSite: 'none',
+            // domain: '.minorityownedbusiness.info',
             secure: process.env.NODE_ENV === 'production',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -306,9 +306,9 @@ exports.loginUser = async (req, res) => {
         res.cookie('user_gender', user.gender || '', {
             httpOnly: false,
             secure: process.env.NODE_ENV === 'production',
-            // sameSite: 'strict',
-            sameSite: 'none',
-            domain: '.minorityownedbusiness.info',
+            sameSite: 'strict',
+            // sameSite: 'none',
+            // domain: '.minorityownedbusiness.info',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
