@@ -1,5 +1,6 @@
 const Stripe = require("stripe");
 const Order = require("../models/Order");
+const { sendOrderPaidEmails } = require("../utils/OrderMail");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 exports.stripePaymentWebhook = async (req, res) => {
@@ -22,7 +23,16 @@ exports.stripePaymentWebhook = async (req, res) => {
       const pi = event.data.object;
       const paymentId = pi.id;
 
-      const orders = await Order.find({ paymentId });
+      const orders = await Order.find({ paymentId }).populate([
+        // customer
+        { path: "userId", select: "name email" },
+        // vendor account
+        { path: "vendorId", select: "name email" },
+        // business (for name/slug/email/owner)
+        { path: "businessId", select: "businessName slug email owner", populate: { path: "owner", select: "name email" } },
+        // item product names (fallback safe)
+        { path: "items.productId", select: "name title" },
+      ]);
       if (!orders.length) {
         console.warn(`⚠️ No orders found for paymentId ${paymentId}`);
         return res.status(200).json({ received: true });
@@ -54,7 +64,7 @@ exports.stripePaymentWebhook = async (req, res) => {
         }
 
         // store IDs on each item (matches your current schema)
-        
+
         order.items.forEach((it) => {
           console.log(chargeId || it.chargeId)
           console.log(transferId || it.transferId)
@@ -71,9 +81,32 @@ exports.stripePaymentWebhook = async (req, res) => {
         // order.applicationFeeId = applicationFeeId;
 
         await order.save();
+        // ---------------------------------
+
+        // ✅ recipients (deduped)
+        const customerEmails = [...new Set([order.userId?.email].filter(Boolean))];
+
+        const vendorEmails = [
+          order.vendorId?.email,
+          order.businessId?.email,
+          order.businessId?.owner?.email,
+        ].filter(Boolean);
+        const uniqueVendorEmails = [...new Set(vendorEmails)];
+
+        // ✅ send emails (best-effort)
+        try {
+          await sendOrderPaidEmails({
+            order,                           // hydrated order (with userId, vendorId, businessId, items.productId)
+            currency: pi.currency,           // e.g. 'usd' or 'inr'
+            customerEmails,
+            vendorEmails: uniqueVendorEmails,
+          });
+        } catch (mailErr) {
+          console.error("✉️ Failed to send order-paid emails:", mailErr);
+        }
       }
 
-      console.log(`✅ Stripe payment confirmed for ${orders.length} order(s)`);
+      console.log(`✅ Stripe payment confirmed and emails sent for ${orders.length} order(s)`);
       return res.json({ received: true });
     }
 

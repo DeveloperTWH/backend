@@ -313,3 +313,33 @@
    12. in index page hero section now add the btn loading blink effect till we get the login state of user if user not logedin btn visble in logedin not visble.
    13. Performed reconnaissance on https://crownstandard.ca Identified 4 potential security issues, reported findings for bug
 
+28-08-2025
+
+   1. Extended ranked Products aggregation to return firstEligible variant (price, salePrice, discountEndDate, onSale, effectivePrice, size, label, color, images, videos, rating rollups).
+   2. Fixed sale logic: use `salePrice` only when `discountEndDate > now`; also return both base `price` and `salePrice`+`discountEndDate`.
+   3. Updated ranked controller to accept/passthrough `excludeProductId`.
+   4. Added Similar Products API (separate): `GET /api/products/:id/similar` with middleware that sets category/subcategory + `excludeProductId`.
+   5. Integrated the SimilarProduct component with the new similar API (this task completed).
+   6. Integrated ShopProducts with ranked API; added Swiper image slider with autoplay & compact pagination dots.
+   7. Implemented equal-height product cards across slides; price row pinned to bottom.
+   8. Added multi-line ellipsis (…) for titles/descriptions (safe word breaks).
+   9. Hardened fetch: AbortController handling, loading skeletons, and retry UI.
+   10. Resolved Mongo aggregation var issues and polished sale badge/discount UI.
+
+
+02-09-2025
+
+   1. Added seedBusinessId and vendorFirst to res.locals.similar: seedBusinessId carries the seed product’s vendor so the controller can detect same-vendor items, and vendorFirst (default true, override with ?vendorFirst=0) tells the controller to show a top block of same-vendor products (seed excluded, sorted by score) before interleaving the rest by plan weight (cap applies only to “others”).
+
+03-09-2025
+
+   1. Created the mailer utility function which uses Nodemailer to send Business Approved email when an admin approves (or re-approves after unblock) a business to owner + business emails (deduped), with CTA to /partners/{slug}.
+   2. Created the mailer utility function which uses Nodemailer to send Business Blocked email when an admin blocks/disapproves a business to owner + business emails (deduped), optionally including the admin note/reason.
+   3. Created the mailer utility function which uses Nodemailer to send Order Confirmed (Customer) email with PDF invoice when Stripe `payment_intent.succeeded` marks the order as paid to the customer (userId.email).
+   4. Created the mailer utility function which uses Nodemailer to send Paid Order (Vendor) email with PDF invoice when Stripe `payment_intent.succeeded` marks the order as paid to the vendor/business (vendorId.email, businessId.email, businessId.owner.email; deduped).
+   5. Attempted approval without completed onboarding → 400 response, no state change, no email.
+   6. Blocked → approved (re-approval) → same Approved email with CTA /partners/{slug}.
+   7. PDF invoice (PDFKit) → items (name/SKU/size/color/qty), unit & line totals, grand total from `totalAmount` (minor→major), clean layout.
+   8. Branding & deliverability → CID logo, clear preheaders, `List-Unsubscribe` header, concise action-oriented copy.
+   9. Integrated Service Category Api In the Service page to Display the Service Managed by Admin Dashboard
+

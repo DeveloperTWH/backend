@@ -19,7 +19,7 @@ module.exports = async function attachSimilarQuery(req, res, next) {
     }
 
     // Fetch only taxonomy fields (lean & minimal projection)
-    const seed = await Product.findById(id, { categoryId: 1, subcategoryId: 1 }).lean();
+    const seed = await Product.findById(id, { categoryId: 1, subcategoryId: 1, businessId: 1 }).lean();
     if (!seed) {
       return res.status(404).json({ error: 'Product not found' });
     }
@@ -30,6 +30,8 @@ module.exports = async function attachSimilarQuery(req, res, next) {
       excludeProductId: String(id),
       page: String((req.query && req.query.page) || '1'),
       pageSize: String((req.query && req.query.pageSize) || '8'),
+      seedBusinessId: seed.businessId ? String(seed.businessId) : null,
+      vendorFirst: (req.query && (req.query.vendorFirst === '0' ? false : true)) ?? true
     };
 
     // Prefer subcategory when available, else fall back to category
