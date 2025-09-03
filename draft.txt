@@ -343,3 +343,21 @@
    8. Branding & deliverability → CID logo, clear preheaders, `List-Unsubscribe` header, concise action-oriented copy.
    9. Integrated Service Category Api In the Service page to Display the Service Managed by Admin Dashboard
 
+03-09-2025
+
+   1. Mailer Utility – Built orderMailer.js using Nodemailer to send order status emails (accepted/rejected) with Mosaic logo, polite wording, and a “View My Orders” button.
+   2. Reject Order Flow – Modified rejectOrder controller to trigger rejection email after saving the order and handle Stripe refund with correct vendor account.
+   3. Stripe Fix – Corrected Stripe Connect account reference to ensure refunds are processed from the vendor’s connected account.
+   4. Accept Order Flow – Modified acceptOrder controller to send acceptance email after stock adjustment and saving the order.
+   5. Removed dummy address (John Doe) → no hard-coded default in production.
+   6. Decided current flow → users must enter delivery details fresh each time (no saved addresses yet).
+   7. Fixed email code – added `axios`, made the Nodemailer transporter a singleton, and embedded the logo as a CID buffer so it always shows in inboxes.
+   8. HTML → PDF invoices – swapped out PDFKit for Puppeteer; added `utils/pdfFromHtml.js` and a clean, branded template in `utils/invoiceHtml.js`.
+   9. Invoice service – `services/invoiceService.js` renders a PDF from a populated order so any part of the app can reuse it.
+   10. Invoice controller – `controllers/invoiceController.js` streams the PDF, handles inline vs download, and basic id validation.
+   11. Download route – `GET /api/orders/:id/invoice.pdf?download=1` so customers/vendors can view or download their invoice directly.
+   12. Totals fix – smart `toMajor(...)` auto-detects if `totalAmount` is minor or major (using subtotal as a hint) and `showAdj` is a boolean, keeping Subtotal/Adjustments/Grand Total accurate.
+
+
+   Mosaic-biz-hub : Mailer Utility – Built orderMailer.js using Nodemailer to send order status emails (accepted/rejected) with Mosaic logo, polite wording, and a “View My Orders” button, Reject Order Flow – Modified rejectOrder controller to trigger rejection email after saving the order and handle Stripe refund with correct vendor account, Stripe Fix – Corrected Stripe Connect account reference to ensure refunds are processed from the vendor’s connected account, Accept Order Flow – Modified acceptOrder controller to send acceptance email after stock adjustment and saving the order, Removed dummy address (John Doe) → no hard-coded default in production, Decided current flow → users must enter delivery details fresh each time (no saved addresses yet), Fixed email code – added `axios`, made the Nodemailer transporter a singleton, and embedded the logo as a CID buffer so it always shows in inboxes, HTML → PDF invoices – swapped out PDFKit for Puppeteer; added `utils/pdfFromHtml.js` and a clean, branded template in `utils/invoiceHtml.js`, Invoice service – `services/invoiceService.js` renders a PDF from a populated order so any part of the app can reuse it, Invoice controller – `controllers/invoiceController.js` streams the PDF, handles inline vs download, and basic id validation, Download route – `GET /api/orders/:id/invoice.pdf?download=1` so customers/vendors can view or download their invoice directly, Totals fix – smart `toMajor(...)` auto-detects if `totalAmount` is minor or major (using subtotal as a hint) and `showAdj` is a boolean, keeping Subtotal/Adjustments/Grand Total accurate.
+

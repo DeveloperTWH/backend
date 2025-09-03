@@ -6,12 +6,14 @@ const authenticate = require('../middlewares/authenticate');
 const isBusinessOwner = require('../middlewares/isBusinessOwner')
 const isAdmin = require('../middlewares/isAdmin');
 const isCustomer = require('../middlewares/isCustomer');
+const { getInvoicePdf } = require('../controllers/invoiceController');
 
 
 
 router.post('/initiate', authenticate, initiateOrder);
 router.get('/retrieve-intent/:id', authenticate, retrieveIntent);
 router.get('/user', authenticate, getUserOrders);
+router.get('/:id/invoice.pdf', authenticate, getInvoicePdf);
 router.get('/vendor', authenticate, isBusinessOwner, getVendorOrders);
 router.put('/accept/:orderId', authenticate, isBusinessOwner, acceptOrder);
 router.put('/reject/:orderId', authenticate, isBusinessOwner, rejectOrder);

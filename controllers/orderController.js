@@ -95,6 +95,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const Order = require("../models/Order");
 const ProductVariant = require("../models/ProductVariant");
 const Business = require("../models/Business");
+const { sendOrderStatusEmail } = require("../utils/orderPhase");
 
 exports.initiateOrder = async (req, res) => {
   try {
@@ -161,7 +162,7 @@ exports.initiateOrder = async (req, res) => {
       if (!variant.allowBackorder && sizeObj.stock < quantity) {
         return res
           .status(400)
-          .json({ success: false, message: `Out of stock for size ${size}` });
+          .json({ success: false, message: `${variant.productId.title} is Out of stock for size ${size} remove it first` });
       }
 
       // Verify price (handles sale price with end date)
@@ -344,7 +345,7 @@ exports.acceptOrder = async (req, res) => {
     const vendorId = req.user.id;
     const orderId = req.params.orderId;
 
-    const order = await Order.findOne({ _id: orderId, vendorId });
+    const order = await Order.findOne({ _id: orderId, vendorId }).populate('userId');
     if (!order) {
       return res
         .status(404)
@@ -364,6 +365,12 @@ exports.acceptOrder = async (req, res) => {
       if (!variant) continue;
 
       const sizeObj = variant.sizes.find((s) => s.size === item.size);
+      if (sizeObj.stock === 0) {
+        return res.status(500).json({
+          success: false,
+          message: "Order Cannot Be Accepted - Item Out of Stock",
+        });
+      };
       if (sizeObj) {
         sizeObj.stock = Math.max(0, sizeObj.stock - item.quantity); // Prevent negative
       }
@@ -374,6 +381,16 @@ exports.acceptOrder = async (req, res) => {
     order.status = "accepted";
     order.statusHistory.push({ status: "accepted" });
     await order.save();
+
+    try {
+      console.log("sending email", order.userId.email)
+      const customerEmail = order.userId.email; // use whichever you store
+      if (customerEmail) {
+        await sendOrderStatusEmail(customerEmail, order._id.toString(), "accepted");
+      }
+    } catch (e) {
+      console.error("Failed to send acceptance email:", e);
+    }
 
     res.json({
       success: true,
@@ -391,7 +408,7 @@ exports.rejectOrder = async (req, res) => {
     const vendorId = req.user.id;
     const orderId = req.params.orderId;
 
-    const order = await Order.findOne({ _id: orderId, vendorId }).populate('businessId');
+    const order = await Order.findOne({ _id: orderId, vendorId }).populate('businessId').populate('userId');
     if (!order) {
       return res
         .status(404)
@@ -412,20 +429,22 @@ exports.rejectOrder = async (req, res) => {
     if (order.paymentStatus === "paid" && order.paymentId) {
       const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-      const vendorStripeAccountId = order.business.stripeConnectAccountId; // Vendor's Stripe Connect Account ID
+      const vendorStripeAccountId = order.businessId.stripeConnectAccountId; // Vendor's Stripe Connect Account ID
 
       try {
         // Create the refund from the vendor's Stripe account
-        const refund = await stripe.refunds.create(
-          {
-            payment_intent: order.paymentId,
-            amount: Math.round(order.totalAmount * 100), // Amount in cents
-            reason: "requested_by_customer", // Optionally, customize the reason
+        const refund = await stripe.refunds.create({
+          payment_intent: order.paymentId,               // pi_...
+          amount: Math.round(order.totalAmount * 100),   // in the smallest currency unit
+          reason: "requested_by_customer",
+          metadata: {
+            custom_reason: "rejected_by_merchant"
           },
-          {
-            stripeAccount: vendorStripeAccountId, // Ensure refund is processed from the vendor's account
-          }
-        );
+          // ensure funds are pulled back from the connected account & app fee is refunded
+          reverse_transfer: true,
+          refund_application_fee: true,
+        });
+
 
         // Update order and payment status
         order.paymentStatus = "refunded";
@@ -439,6 +458,16 @@ exports.rejectOrder = async (req, res) => {
     }
 
     await order.save();
+    try {
+      console.log("sending email", order.userId.email)
+      const customerEmail = order.userId.email; // use whichever you store
+      if (customerEmail) {
+        await sendOrderStatusEmail(customerEmail, order._id.toString(), "rejected");
+      }
+    } catch (e) {
+      console.error("Failed to send rejection email:", e);
+    }
+
     res.json({
       success: true,
       message: "Order rejected and refunded (if paid)",
@@ -596,16 +625,16 @@ exports.acceptReturn = async (req, res) => {
 
       try {
         // Refund the payment through Stripe Connect (vendor's account)
-        const refund = await stripe.refunds.create(
-          {
-            payment_intent: order.paymentId,
-            amount: Math.round(order.totalAmount * 100), // Convert to cents
-            reason: "requested_by_customer",
+        const refund = await stripe.refunds.create({
+          payment_intent: order.paymentId,
+          amount: Math.round(order.totalAmount * 100), // Convert to cents
+          reason: "requested_by_customer",
+          reverse_transfer: true,
+          refund_application_fee: true,
+          metadata: {
+            custom_reason: "return_accepted",
           },
-          {
-            stripeAccount: vendorStripeAccountId,  // Refund will be processed from the vendor's account
-          }
-        );
+        });
 
         // Step 3: After successful refund, update order status to 'refunded'
         order.paymentStatus = "refunded";  // Update payment status to refunded
@@ -782,10 +811,20 @@ exports.cancelOrderByUser = async (req, res) => {
     // (Assumes single PaymentIntent for the order. Adjust for partial refunds if needed.)
     if (order.paymentStatus === "paid" && order.paymentId) {
       try {
-        await stripe.refunds.create({
+        const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+        const refund = await stripe.refunds.create({
           payment_intent: order.paymentId,
-          // amount: Math.round(order.totalAmount * 100), // optional; full if omitted
+          // amount: Math.round(order.totalAmount * 100), // optional; omit for full refund
+          reason: "requested_by_customer",
+          reverse_transfer: true,
+          refund_application_fee: true,
+          metadata: {
+            custom_reason: "order_cancelled_by_user",
+            order_id: String(order._id),
+          },
         });
+
         order.paymentStatus = "refunded";
       } catch (err) {
         console.error("Stripe refund failed:", err);
