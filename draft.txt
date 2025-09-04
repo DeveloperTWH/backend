@@ -361,3 +361,32 @@
 
    Mosaic-biz-hub : Mailer Utility – Built orderMailer.js using Nodemailer to send order status emails (accepted/rejected) with Mosaic logo, polite wording, and a “View My Orders” button, Reject Order Flow – Modified rejectOrder controller to trigger rejection email after saving the order and handle Stripe refund with correct vendor account, Stripe Fix – Corrected Stripe Connect account reference to ensure refunds are processed from the vendor’s connected account, Accept Order Flow – Modified acceptOrder controller to send acceptance email after stock adjustment and saving the order, Removed dummy address (John Doe) → no hard-coded default in production, Decided current flow → users must enter delivery details fresh each time (no saved addresses yet), Fixed email code – added `axios`, made the Nodemailer transporter a singleton, and embedded the logo as a CID buffer so it always shows in inboxes, HTML → PDF invoices – swapped out PDFKit for Puppeteer; added `utils/pdfFromHtml.js` and a clean, branded template in `utils/invoiceHtml.js`, Invoice service – `services/invoiceService.js` renders a PDF from a populated order so any part of the app can reuse it, Invoice controller – `controllers/invoiceController.js` streams the PDF, handles inline vs download, and basic id validation, Download route – `GET /api/orders/:id/invoice.pdf?download=1` so customers/vendors can view or download their invoice directly, Totals fix – smart `toMajor(...)` auto-detects if `totalAmount` is minor or major (using subtotal as a hint) and `showAdj` is a boolean, keeping Subtotal/Adjustments/Grand Total accurate.
 
+04-09-2025 
+
+   mosaic : 
+
+   1. Address Line 2 search: Hooked Google Places Autocomplete to addr2Ref and built a formatter (route/neighborhood/sublocality) so street/locality auto-fills; Address Line 1 stays manual (house/apt).
+   2. Use my location: Added reverse-geocode via Google Geocoder on GPS coords to fill ZIP, city, state, country and compose Address Line 2 automatically.
+   3. US-only enforcement: Scoped Autocomplete to country: ["US"] and, after selection/geocode, checked countryShort !== "US" → show alert, clear address fields, keep country fixed to “United States.”
+   4. ZIP-first flow: Postal code comes first; when a valid US ZIP is typed we geocode it to auto-fill city/state. Non-US/invalid ZIPs are caught and cleared (with an alert).
+   5. Slug → ID in backend: Controller now accepts categorySlug/subcategorySlug, looks up Mongo _id from your ProductCategory/ProductSubcategory models, then calls the existing service unchanged.
+   6. Dynamic route on frontend: Read [productid] from the URL with useParams() and pass it as categorySlug so /furniture fetches that category directly.
+   7. Fixed API call: Corrected path to /api/products/ranked and normalized NEXT_PUBLIC_API_BASE_URL (no double slashes); added query params via URLSearchParams.
+   8. Grid wired to API: Replaced local JSON filter with a fetch to your RankedResponse; lightly filter client-side by price/brand before rendering.
+   9. Accurate discount badge: Recomputed % off as ((price - sale)/price)100 (no integer rounding) and formatted to 1 decimal only when needed (e.g., -0.5%).
+   10. Card UX polish: Kept drag-safe Swiper (no accidental clicks), clamped title/description lines, and showed price/rating consistently; optional sale badge appears when onSale is true.
+
+   crown-standard : (Listed today as mentioned)
+
+   1. Conducted a comprehensive review of Stripe payment flows for CrownStandard, focusing on marketplace/service scenarios and their implications for compliance, settlement timing, refunds, and financial reporting.
+
+   2. Performed a comparative evaluation of Authorization (hold) versus Capture (settled) models, detailing impacts on fund availability, authorization expiry risk, operational processes, and customer experience.
+
+   3. Adopted the payment strategy “Capture at checkout, transfer post-OTP”, selected for its timing flexibility, elimination of authorization-expiry exposure, and streamlined reconciliation.
+
+   4. Defined the end-to-end OTP-gated fund release process: customer payment, service fulfillment, OTP verification, remittance of 75% to the provider, and retention of 25% as the platform fee.
+
+   5. Standardized the use of `transfer_group` to associate the originating PaymentIntent/charge with all downstream transfers and potential reversals, ensuring traceability and auditability across the transaction lifecycle.
+
+   6. Produced an upper-level architecture for the payment flow, identifying principal actors (Customer, Platform, Provider), core services (Checkout, Orders, OTP, Payments, Webhooks), relevant data stores, and the event sequence (Charge → Platform Balance → OTP Validation → Provider Transfer → Payout).
+

@@ -3,6 +3,8 @@ const { fetchEligibleProducts } = require('../services/productListingService');
 const { fetchRemovalLogs } = require('../services/productListingDebugService');
 const { getVendorMetaForBusinesses } = require('../lib/listing/vendorMeta');
 const { baseScore, interleaveWeighted } = require('../lib/listing/ranking');
+const ProductCategory = require('../models/ProductCategory');
+const ProductSubcategory = require('../models/ProductSubcategory');
 
 // tiny helper: clip a number into a safe range (with default)
 const clip = (n, lo, hi, d) => {
@@ -26,8 +28,28 @@ async function listProductsRanked(req, res) {
     // Prefer locals from the middleware; fall back to query if present
     const sim = res.locals?.similar || {};
     const excludeId = sim.excludeProductId || excludeProductId;
-    const catId = sim.categoryId || categoryId;
-    const subId = sim.subcategoryId || subcategoryId
+    let catId = sim.categoryId || categoryId;
+    let subId = sim.subcategoryId || subcategoryId;
+
+
+    // + ADD
+    const { categorySlug, subcategorySlug } = req.query;
+
+    if (!catId && categorySlug) {
+      const cat = await ProductCategory.findOne({ slug: categorySlug }, { _id: 1 }).lean();
+      if (!cat) return res.status(404).json({ error: 'Unknown category slug' });
+      catId = String(cat._id);
+    }
+
+    if (!subId && subcategorySlug) {
+      // scope to category if available (helps correctness even if sub slugs are globally unique)
+      const subFilter = catId ? { slug: subcategorySlug, category: catId } : { slug: subcategorySlug };
+      const sub = await ProductSubcategory.findOne(subFilter, { _id: 1, category: 1 }).lean();
+      if (!sub) return res.status(404).json({ error: 'Unknown subcategory slug' });
+      subId = String(sub._id);
+      // if category wasn’t provided but sub was found, you may also backfill catId:
+      if (!catId && sub.category) catId = String(sub.category);
+    }
 
 
     const wantDebug = debug === '1' || debug === 'true';
@@ -39,7 +61,7 @@ async function listProductsRanked(req, res) {
     const t0 = Date.now();
 
     // Bound upstream work: enough headroom for interleave + cap + backfill
-    const fetchLimit = Math.max(50, pageSizeN * 10);    
+    const fetchLimit = Math.max(50, pageSizeN * 10);
 
     // Fetch eligible + (optional) debug removals in parallel
     const [products, removedAtAggregation] = await Promise.all([
