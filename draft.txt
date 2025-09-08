@@ -351,6 +351,13 @@
    4. Accept Order Flow – Modified acceptOrder controller to send acceptance email after stock adjustment and saving the order.
    5. Removed dummy address (John Doe) → no hard-coded default in production.
    6. Decided current flow → users must enter delivery details fresh each time (no saved addresses yet).
+
+
+
+   ---------- 
+
+
+   
    7. Fixed email code – added `axios`, made the Nodemailer transporter a singleton, and embedded the logo as a CID buffer so it always shows in inboxes.
    8. HTML → PDF invoices – swapped out PDFKit for Puppeteer; added `utils/pdfFromHtml.js` and a clean, branded template in `utils/invoiceHtml.js`.
    9. Invoice service – `services/invoiceService.js` renders a PDF from a populated order so any part of the app can reuse it.
@@ -434,3 +441,23 @@
    14. Hooked up Open Billing Portal on My Account to call ${apiBase}/api/billing-portal/session with businessId.
    15. Secured API routes with authenticate and isBusinessOwner middlewares (expects businessId in query/body).
    16. Finalized approach: one Stripe customer per business (supports vendors with multiple businesses cleanly).
+
+
+
+08-09-2025
+
+   1. Category & subcategory slugs: API now accepts categorySlug/subcategorySlug, resolves them to IDs, and backfills category from sub when needed.
+   2. Active subscriptions only: Products show only if the vendor’s subscription is active and endDate > now (expired subs hidden).
+   3. DB-side filtering: fetchEligibleProducts filters by brand (regex), minorityType (regex), and size (matches sizes.size) directly in Mongo, not just in UI.
+   4. URL-driven search state: Product page reads query params on load and navigation, so Back/Forward cycles through prior searches correctly.
+   5. Minority type by name: URLs like ?minorityType=African%20Americans are supported; client maps name → ID before fetching.
+   6. FilterSidebar updates: Added Subcategory dropdown, kept Brand and Size, removed Color since vendors store hex codes.
+   7. Subcategory data flow: Parent fetches subcategories for the current category and passes them into the sidebar for the dropdown.
+   8. API-bound filters from client: Client sends subcategorySlug, brand, minorityType, size to /api/ranked; only price range is filtered client-side.
+   9. New list APIs: Added /api/categories and /api/subcategories to power the dropdowns (optional q and categorySlug support).
+   10. Cleanups: Fixed categorySlug typo, standardized route to /api/subcategories, and removed stray console log.
+   11. Integrated getLoggedInCustomer in Navbar, added isCustomer state, and updated menus to show Orders + Logout for customers, Dashboard + Logout for others.
+   12. Improved Subscription & Billing by enhancing openBillingPortal with clear error handling for unconfigured Stripe portal and added a loading state in the button.
+   13. Reviewed backend API createBillingPortalSessionForBusiness, suggested better return_url and error responses, and identified that Stripe Customer Portal setup in test mode is required.
+   14. Removed Card Height Bug from the index page, the card with more content get's more height and the card with less content get's less height.
+

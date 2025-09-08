@@ -139,7 +139,38 @@ const getProductSubcategories = async (req, res) => {
 };
 
 
+const listSubcategories = async (req, res) => {
+  try {
+    const { categorySlug, categoryId, q } = req.query;
+
+    let catId = categoryId;
+    if (!catId && categorySlug) {
+      const cat = await ProductCategory.findOne(
+        { slug: String(categorySlug) },
+        { _id: 1 }
+      ).lean();
+      if (!cat) return res.status(404).json({ error: 'Unknown category slug' });
+      catId = String(cat._id);
+    }
+
+    const filter = {};
+    if (catId) filter.category = catId;
+    if (q) filter.name = { $regex: String(q), $options: 'i' };
+
+    const subs = await ProductSubcategory
+      .find(filter, { _id: 1, name: 1, slug: 1, category: 1 })
+      .sort({ name: 1 })
+      .lean();
+
+    return res.json(subs);
+  } catch (err) {
+    console.error('listSubcategories error:', err);
+    return res.status(500).json({ error: 'Failed to fetch subcategories' });
+  }
+};
 
 
 
-module.exports = { getAllCategoriesAdmin, getAllCategories, getProductCategories, getProductSubcategories };
+
+
+module.exports = { getAllCategoriesAdmin, getAllCategories, getProductCategories, getProductSubcategories,listSubcategories };

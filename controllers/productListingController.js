@@ -19,11 +19,15 @@ async function listProductsRanked(req, res) {
       categoryId,
       subcategoryId,
       excludeProductId,
+      brand,
+      minorityType,
+      size,
       page = 1,
       pageSize = 24,
       maxPerVendor = 3,
       debug // "1" | "true"
     } = req.query;
+
 
     // Prefer locals from the middleware; fall back to query if present
     const sim = res.locals?.similar || {};
@@ -65,7 +69,15 @@ async function listProductsRanked(req, res) {
 
     // Fetch eligible + (optional) debug removals in parallel
     const [products, removedAtAggregation] = await Promise.all([
-      fetchEligibleProducts({ categoryId: catId, subcategoryId: subId, excludeProductId: excludeId, fetchLimit }),
+      fetchEligibleProducts({
+        categoryId: catId,
+        subcategoryId: subId,
+        excludeProductId: excludeId,
+        brand: brand?.trim(),
+        minorityType: minorityType?.trim(),
+        size: size?.toString().trim().toUpperCase(),
+        fetchLimit
+      }),
       wantDebug ? fetchRemovalLogs({ categoryId: catId, subcategoryId: subId }) : Promise.resolve([])
     ]);
 
@@ -85,12 +97,19 @@ async function listProductsRanked(req, res) {
     const bizIds = [...new Set(products.map(p => String(p.businessId)))];
     const { vendorByBizId, weightByPlanId } = await getVendorMetaForBusinesses(bizIds);
 
-    // Score & bucket by plan
+    const eligible = products.filter(p => vendorByBizId.has(String(p.businessId)));
+
+    if (!eligible.length) {
+      const payload = { items: [], total: 0, page: pageNum, pageSize: pageSizeN, mix: {} };
+      if (wantDebug) payload.debug = { removedAtAggregation, removedByCap: [], notOnPage: [], timings: { totalMs: Date.now() - t0 } };
+      return res.json(payload);
+    }
+
     const byPlan = {};
     const now = Date.now();
-    for (const p of products) {
+    for (const p of eligible) {
       const vendor = vendorByBizId.get(String(p.businessId));
-      const planId = vendor?.planId || String(p.planId || 'UNKNOWN');
+      const planId = String(vendor.planId);
       const score = baseScore(p, vendor, now);
       (byPlan[planId] ||= []).push({ ...p, __score: score, planId, biz: { businessName: p.businessName } });
     }
@@ -104,7 +123,6 @@ async function listProductsRanked(req, res) {
       });
     }
 
-    // Interleave plan buckets by weight (falls back to equal if no weights)
     const interleaved = interleaveWeighted(byPlan, weightByPlanId);
     const tAfterInterleave = Date.now();
 

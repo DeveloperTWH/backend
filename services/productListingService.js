@@ -6,11 +6,12 @@ const Product = require('../models/Product');
 const toOid = (v) => (mongoose.isValidObjectId(v) ? new mongoose.Types.ObjectId(v) : null);
 
 /**
- * Fetch products eligible for ranking.
- * - Product: published & not deleted
- * - Variant: published & not deleted & (allowBackorder || totalStock > 0)
+ * Fetch products eligible for ranking (API-level filtered).
+ * - Product: published & not deleted (+ optional brand/minorityType filters)
+ * - Variant: published & not deleted & (allowBackorder || stock > 0)
+ *            and optionally constrained to a specific `size`
  * - Business: active
- * - Subscription: active
+ * - Subscription: status=active AND endDate > now
  *
  * Adds `firstEligible` to each item:
  *   {
@@ -23,12 +24,25 @@ const toOid = (v) => (mongoose.isValidObjectId(v) ? new mongoose.Types.ObjectId(
  * @param {Object} params
  * @param {string} [params.categoryId]
  * @param {string} [params.subcategoryId]
+ * @param {string} [params.excludeProductId]
+ * @param {string} [params.brand]          // case-insensitive match on Product.brand
+ * @param {string} [params.minorityType]   // case-insensitive match on Product.minorityType
+ * @param {string} [params.size]           // filters variants to sizes.size === SIZE (e.g., "M")
  * @param {number} [params.fetchLimit=240]
  */
-async function fetchEligibleProducts({ categoryId, subcategoryId, excludeProductId, fetchLimit = 240 }) {
+async function fetchEligibleProducts({
+  categoryId,
+  subcategoryId,
+  excludeProductId,
+  brand,
+  minorityType,
+  size,
+  fetchLimit = 240
+}) {
   const cat = categoryId ? toOid(categoryId) : null;
   const sub = subcategoryId ? toOid(subcategoryId) : null;
   const exclude = excludeProductId ? toOid(excludeProductId) : null;
+  const sizeUpper = size ? String(size).toUpperCase() : null;
 
   // If caller passed an invalid ObjectId, return empty (avoid full scans).
   if ((categoryId && !cat) || (subcategoryId && !sub)) return [];
@@ -43,9 +57,11 @@ async function fetchEligibleProducts({ categoryId, subcategoryId, excludeProduct
     ...(cat ? { categoryId: cat } : {}),
     ...(sub ? { subcategoryId: sub } : {}),
     ...(exclude ? { _id: { $ne: exclude } } : {}),
+    ...(brand ? { brand: { $regex: String(brand), $options: 'i' } } : {}),
+    ...(minorityType ? { minorityType: { $regex: String(minorityType), $options: 'i' } } : {}),
   };
 
-  const now = new Date(); // used in discountEndDate comparison
+  const now = new Date(); // used in discountEndDate comparison and subscription endDate
 
   const pipeline = [
     { $match: match },
@@ -54,7 +70,7 @@ async function fetchEligibleProducts({ categoryId, subcategoryId, excludeProduct
     { $sort: { createdAt: -1, _id: -1 } },
     { $limit: scanLimit },
 
-    // Variants: published & not deleted, then eligibility by stock/backorder
+    // Variants: published & not deleted, then eligibility by sizes (+ optional size filter)
     {
       $lookup: {
         from: 'productvariants',
@@ -62,7 +78,30 @@ async function fetchEligibleProducts({ categoryId, subcategoryId, excludeProduct
         pipeline: [
           { $match: { $expr: { $eq: ['$productId', '$$pid'] }, isPublished: true, isDeleted: false } },
 
-          // Sum stock across sizes (sizes[].stock assumed numeric; null → 0)
+          // Compute eligible sizes: (stock > 0 OR allowBackorder) AND (size == requested SIZE if provided)
+          {
+            $addFields: {
+              eligibleSizes: {
+                $filter: {
+                  input: '$sizes',
+                  as: 's',
+                  cond: {
+                    $and: [
+                      { $or: [{ $gt: ['$$s.stock', 0] }, '$allowBackorder'] },
+                      // inject optional size equality (built by Node when creating the pipeline)
+                      ...(sizeUpper ? [{ $eq: ['$$s.size', sizeUpper] }] : [])
+                    ]
+                  }
+                }
+              }
+            }
+          },
+
+          // Variant qualifies if it has at least one eligible size
+          { $addFields: { eligibleSizeCount: { $size: '$eligibleSizes' } } },
+          { $match: { eligibleSizeCount: { $gt: 0 } } },
+
+          // totalStock across ALL sizes (not only eligibleSizes) — useful for UI badges
           {
             $addFields: {
               totalStock: {
@@ -71,24 +110,7 @@ async function fetchEligibleProducts({ categoryId, subcategoryId, excludeProduct
             }
           },
 
-          // A variant is eligible if allowBackorder OR has any stock
-          { $addFields: { eligibleVariant: { $or: ['$allowBackorder', { $gt: ['$totalStock', 0] }] } } },
-          { $match: { eligibleVariant: true } },
-
-          // Compute eligible sizes: stock > 0 OR variant allows backorder
-          {
-            $addFields: {
-              eligibleSizes: {
-                $filter: {
-                  input: '$sizes',
-                  as: 's',
-                  cond: { $or: [{ $gt: ['$$s.stock', 0] }, '$allowBackorder'] }
-                }
-              }
-            }
-          },
-
-          // Take the first eligible size on this variant (natural order)
+          // Take the first eligible size on this variant
           { $addFields: { firstEligibleSize: { $arrayElemAt: ['$eligibleSizes', 0] } } },
 
           // Keep minimal fields needed upstream + for firstEligible
@@ -104,8 +126,6 @@ async function fetchEligibleProducts({ categoryId, subcategoryId, excludeProduct
               allowBackorder: 1,
               totalStock: 1,
               firstEligibleSize: 1
-              // size subdoc fields expected:
-              //   size, price(Decimal128|Number), salePrice(Decimal128|Number), discountEndDate(Date|ISO), stock
             }
           }
         ],
@@ -129,18 +149,20 @@ async function fetchEligibleProducts({ categoryId, subcategoryId, excludeProduct
     { $unwind: '$biz' },
     { $match: { 'biz.isActive': true } },
 
-    // Subscription must be active
+    // Subscription must be active AND not expired (endDate > now)
     {
       $lookup: {
         from: 'subscriptions',
         localField: 'biz.subscriptionId',
         foreignField: '_id',
         as: 'sub',
-        pipeline: [{ $project: { status: 1, subscriptionPlanId: 1 } }]
+        pipeline: [
+          { $project: { status: 1, subscriptionPlanId: 1, endDate: 1 } },
+          { $match: { status: 'active', endDate: { $gt: now } } }
+        ]
       }
     },
     { $unwind: '$sub' },
-    { $match: { 'sub.status': 'active' } },
 
     // Final projection (only what ranking & UI need)
     {

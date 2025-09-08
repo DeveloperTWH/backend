@@ -1,5 +1,6 @@
 const Stripe = require('stripe');
 const Business = require('../models/Business'); // adjust path if needed
+const Subscription = require('../models/Subscription'); // adjust path if needed
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
 
