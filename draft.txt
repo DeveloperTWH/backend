@@ -363,12 +363,28 @@
 
 04-09-2025 
 
-   mosaic : 
+
+
+
+
+
+
+
+
+   -----------------listed
+
+   mosaic-biz-hub : 
 
    1. Address Line 2 search: Hooked Google Places Autocomplete to addr2Ref and built a formatter (route/neighborhood/sublocality) so street/locality auto-fills; Address Line 1 stays manual (house/apt).
    2. Use my location: Added reverse-geocode via Google Geocoder on GPS coords to fill ZIP, city, state, country and compose Address Line 2 automatically.
    3. US-only enforcement: Scoped Autocomplete to country: ["US"] and, after selection/geocode, checked countryShort !== "US" → show alert, clear address fields, keep country fixed to “United States.”
    4. ZIP-first flow: Postal code comes first; when a valid US ZIP is typed we geocode it to auto-fill city/state. Non-US/invalid ZIPs are caught and cleared (with an alert).
+
+
+   ---------------listed
+
+
+
    5. Slug → ID in backend: Controller now accepts categorySlug/subcategorySlug, looks up Mongo _id from your ProductCategory/ProductSubcategory models, then calls the existing service unchanged.
    6. Dynamic route on frontend: Read [productid] from the URL with useParams() and pass it as categorySlug so /furniture fetches that category directly.
    7. Fixed API call: Corrected path to /api/products/ranked and normalized NEXT_PUBLIC_API_BASE_URL (no double slashes); added query params via URLSearchParams.
@@ -390,3 +406,31 @@
 
    6. Produced an upper-level architecture for the payment flow, identifying principal actors (Customer, Platform, Provider), core services (Checkout, Orders, OTP, Payments, Webhooks), relevant data stores, and the event sequence (Charge → Platform Balance → OTP Validation → Provider Transfer → Payout).
 
+05-09-2025
+
+   1. Added Finance link to Sidebar (partner dashboard) pointing to /partners/[businessId]/finance.
+   2. Created Finance page (finance/page.tsx) with embedded Stripe Connect components: Payments + Payouts.
+   3. Styled Finance page: quick stats cards (Next Payout (ETA), Available Balance, Pending Balance) and a sticky “Open Connect Dashboard” button.
+   4. Wired Finance page to external backend (apiBase) and added guards to prevent init before business data is ready.
+   5. Implemented Finance backend endpoints used by the page:
+
+      POST /stripe/account-session (Connect AccountSession client secret for components)
+      GET  /stripe/account-balance?account=...
+      GET  /stripe/last-payout?account=...
+      POST /stripe/express-login-link (opens Connect Dashboard)
+   6. Fixed JSON/content-type issues and added withCredentials where needed for external API calls.
+   7. Explained/test-mode behavior for balances and U.S. default payout timing (T+2 business days).
+   8. Added stripeCustomerId to Business model (+ index).
+   9. Updated Stripe webhook (checkout.session.completed) to save session.customer → business.stripeCustomerId and backfill when subscription already linked.
+   10. Built POST /stripe/backfill-customers to populate missing stripeCustomerId (supports batching / all).
+   11. Updated TypeScript Business interface to include optional stripeCustomerId.
+   12. Created /api endpoints for Subscription & Billing (external backend):
+
+      GET  /api/subscriptions/current?businessId=...
+      POST /api/subscriptions/:id/cancel (body: businessId, atPeriodEnd)
+      POST /api/subscriptions/:id/resume (body: businessId)
+      POST /api/billing-portal/session (body: businessId, resolves customer server-side)
+   13. Refactored My Account page to use those endpoints via apiBase, including withCredentials.
+   14. Hooked up Open Billing Portal on My Account to call ${apiBase}/api/billing-portal/session with businessId.
+   15. Secured API routes with authenticate and isBusinessOwner middlewares (expects businessId in query/body).
+   16. Finalized approach: one Stripe customer per business (supports vendors with multiple businesses cleanly).

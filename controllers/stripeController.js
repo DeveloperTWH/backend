@@ -78,11 +78,15 @@ exports.handleStripeWebhook = async (req, res) => {
         stripeSubscriptionId,
       });
       if (existingSubscription && existingSubscription.businessId) {
+        const existingBiz = await Business.findById(existingSubscription.businessId);
+        if (existingBiz && !existingBiz.stripeCustomerId && stripeCustomerId) {
+          existingBiz.stripeCustomerId = String(stripeCustomerId);
+          await existingBiz.save();
+        }
         console.error("This subscription is already linked to a business.");
-        return res
-          .status(400)
-          .send("This subscription is already linked to a business.");
+        return res.status(400).send("This subscription is already linked to a business.");
       }
+
 
       // Find the draft
       const draft = await BusinessDraft.findById(draftId);
@@ -154,6 +158,7 @@ exports.handleStripeWebhook = async (req, res) => {
         isActive: false, // Mark as inactive until admin approval
         subscriptionId: newSubscription._id,
         stripeSubscriptionId,
+        stripeCustomerId: stripeCustomerId ? String(stripeCustomerId) : undefined,
       });
 
       // Save the business

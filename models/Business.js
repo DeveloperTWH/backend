@@ -98,6 +98,10 @@ const businessSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    stripeCustomerId: {
+      type: String,
+      index: true,
+    },
     stripeConnectAccountId: { type: String },
     chargesEnabled: { type: Boolean, default: false },
     payoutsEnabled: { type: Boolean, default: false },

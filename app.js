@@ -50,6 +50,10 @@ const webhookRoutes = require('./routes/webhookRoutes');
 
 // Stripe connect 
 const connectRoutes = require('./routes/connectRoutes');
+const stripeNewRoutes = require('./routes/stripe.routes');
+
+// biling
+const apiRoutes = require('./routes/api.routes');
 
 
 
@@ -141,6 +145,15 @@ app.use('/api/connect', connectRoutes);
 
 
 // subscription 
+
+
+app.use('/stripe', stripeNewRoutes);
+
+
+
+// billing
+
+app.use('/api', apiRoutes);
 
 
 
