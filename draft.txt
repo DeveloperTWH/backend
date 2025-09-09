@@ -350,14 +350,7 @@
    3. Stripe Fix – Corrected Stripe Connect account reference to ensure refunds are processed from the vendor’s connected account.
    4. Accept Order Flow – Modified acceptOrder controller to send acceptance email after stock adjustment and saving the order.
    5. Removed dummy address (John Doe) → no hard-coded default in production.
-   6. Decided current flow → users must enter delivery details fresh each time (no saved addresses yet).
-
-
-
-   ---------- 
-
-
-   
+   6. Decided current flow → users must enter delivery details fresh each time (no saved addresses yet).  
    7. Fixed email code – added `axios`, made the Nodemailer transporter a singleton, and embedded the logo as a CID buffer so it always shows in inboxes.
    8. HTML → PDF invoices – swapped out PDFKit for Puppeteer; added `utils/pdfFromHtml.js` and a clean, branded template in `utils/invoiceHtml.js`.
    9. Invoice service – `services/invoiceService.js` renders a PDF from a populated order so any part of the app can reuse it.
@@ -367,6 +360,9 @@
 
 
    Mosaic-biz-hub : Mailer Utility – Built orderMailer.js using Nodemailer to send order status emails (accepted/rejected) with Mosaic logo, polite wording, and a “View My Orders” button, Reject Order Flow – Modified rejectOrder controller to trigger rejection email after saving the order and handle Stripe refund with correct vendor account, Stripe Fix – Corrected Stripe Connect account reference to ensure refunds are processed from the vendor’s connected account, Accept Order Flow – Modified acceptOrder controller to send acceptance email after stock adjustment and saving the order, Removed dummy address (John Doe) → no hard-coded default in production, Decided current flow → users must enter delivery details fresh each time (no saved addresses yet), Fixed email code – added `axios`, made the Nodemailer transporter a singleton, and embedded the logo as a CID buffer so it always shows in inboxes, HTML → PDF invoices – swapped out PDFKit for Puppeteer; added `utils/pdfFromHtml.js` and a clean, branded template in `utils/invoiceHtml.js`, Invoice service – `services/invoiceService.js` renders a PDF from a populated order so any part of the app can reuse it, Invoice controller – `controllers/invoiceController.js` streams the PDF, handles inline vs download, and basic id validation, Download route – `GET /api/orders/:id/invoice.pdf?download=1` so customers/vendors can view or download their invoice directly, Totals fix – smart `toMajor(...)` auto-detects if `totalAmount` is minor or major (using subtotal as a hint) and `showAdj` is a boolean, keeping Subtotal/Adjustments/Grand Total accurate.
+
+
+---------- 
 
 04-09-2025 
 
@@ -460,4 +456,17 @@
    12. Improved Subscription & Billing by enhancing openBillingPortal with clear error handling for unconfigured Stripe portal and added a loading state in the button.
    13. Reviewed backend API createBillingPortalSessionForBusiness, suggested better return_url and error responses, and identified that Stripe Customer Portal setup in test mode is required.
    14. Removed Card Height Bug from the index page, the card with more content get's more height and the card with less content get's less height.
+
+09-09-2025 (CrownStandard)
+
+   1. Project env set up (new repo, Next.js, TypeScript, ESLint rules).
+   2. TailwindCSS + PostCSS configured and working with brand CSS variables.
+   3. Global design tokens wired to Tailwind (bg-background, text-foreground, etc.).
+   4. Header component created and sized to match design.
+   5. Reusable CTAButton added; consistent lucide-react icon usage.
+   6. Home page (app/page.tsx) implemented per design.
+   7. “How to Get Started” page (app/how-to-get-started/page.tsx) implemented with sections, steps, icons, FAQ.
+   8. FAQ accordion upgraded with chevron toggle and section grouping.
+   9. ESLint configured globally (disabled react/no-unescaped-entities), cleaned unused imports.
+   10. Production build completed successfully and prepared for push and Deployed the Project in the netlify.
 
