@@ -384,7 +384,7 @@
    4. ZIP-first flow: Postal code comes first; when a valid US ZIP is typed we geocode it to auto-fill city/state. Non-US/invalid ZIPs are caught and cleared (with an alert).
 
 
-   ---------------listed
+   
 
 
 
@@ -408,6 +408,8 @@
    5. Standardized the use of `transfer_group` to associate the originating PaymentIntent/charge with all downstream transfers and potential reversals, ensuring traceability and auditability across the transaction lifecycle.
 
    6. Produced an upper-level architecture for the payment flow, identifying principal actors (Customer, Platform, Provider), core services (Checkout, Orders, OTP, Payments, Webhooks), relevant data stores, and the event sequence (Charge → Platform Balance → OTP Validation → Provider Transfer → Payout).
+
+---------------listed
 
 05-09-2025
 
@@ -470,3 +472,77 @@
    9. ESLint configured globally (disabled react/no-unescaped-entities), cleaned unused imports.
    10. Production build completed successfully and prepared for push and Deployed the Project in the netlify.
 
+10-09-2025
+
+   1. Merged plan limits into business data: After fetching, we inject imageLimit and videoLimit from the subscription plan directly into the returned business object so downstream components can read limits from props without re-checking the plan.
+   2. Enforced upload caps for media: Image/video inputs now respect imageLimit/videoLimit by slicing extra files and warning the user, preventing overflows in state and accidental over-uploads.
+   3. Hardened video upload function: The video handler specifically enforces the limit, converts blob URLs to files when needed, and resets the input so users can reselect the same files—this avoids stale selections and UX glitches.
+   4. Decimal-friendly pricing inputs: Price and sale price now use type="number" with step="0.01" and min="0", which lets users enter decimals reliably while keeping our model typed as numbers and compatible with backend validation.
+   5. Validation aligned with numeric types: The submit validator uses numeric checks (Number(...) + Number.isFinite) and enforces rules like “sale price must be less than price” and “each variant must have at least one image,” preventing bad payloads.
+   6. Floating label UX for fields: Price, sale price, stock, size, and SKU inputs were converted to floating labels using the peer placeholder trick, so labels remain visible on focus and values, improving clarity and reducing placeholder flicker.
+   7. Zero-display tweak for price: When the price is exactly 0, the input renders an empty string (instead of “0”) to avoid confusion during entry while still storing 0 correctly when applicable.
+   8. Enforced image/video limits on the Service creation page by enhancing its handleFileUpload to respect imageLimit/videoLimit.
+   9. Wired Google Places Autocomplete (REST v1) for the Street Address field: debounce, suggestions dropdown, details fetch, and auto-fill for city/state/zip/country.
+   10. Fixed the Places API sessionToken issue by sending it as a string (not an object) and passing it on the Place Details URL.
+   11. Ensured address auto-fill updates all fields at once by writing to a single setAddressFields(...).
+
+
+11-09-2025
+
+   1. Single-string address stored; commas disallowed.
+   2. Parser on edit splits into addr1, addr2, city, state, zip, country (country last → zip → state → city).
+   3. Three entry modes: manual, autocomplete, current location (reverse-geocode fills text only).
+   4. Frontend clears coords on text change and sends `[0,0]` when no coordinates.
+   5. Backend createService: accepts non-zero coords; otherwise geocodes `contact.address`.
+   6. Backend updateService: ignores incoming coords; if address text changed, forward-geocodes and updates location.
+   7. Use Current Location flow: geolocation → reverse-geocode → fill fields → store formatted address → set coords to `[0,0]`.
+   8. Google Places Autocomplete iplemented with debounce, session token, and place details mapping into our fields.
+   9. Built googlePlaces util with: dynamic script loader, session token handling, getPlaceSuggestions, getPlaceDetails, reverseGeocode, and geocodeByPostalCode.
+   10. Integrated this util into your business registration form page.
+   11. Added local state to hold address suggestions and dropdown visibility.
+   12. Enhanced handleChange to fetch and show suggestions when typing in the address field.
+   13. Created handlePickAddressSuggestion to fetch place details and auto-fill address, city, state, country.
+   14. Updated the address input in your mapped fields to show a clickable suggestions dropdown.
+
+
+12-09-2025
+
+   1. Fixed issues related to displaying videos and images in product galleries, ensuring proper video handling and thumbnails.
+   2. Implemented a solution where a square thumbnail with a play icon appears for videos, and clicking it opens the video in a large player.
+   3. Resolved the issue where changing the product variant didn't update the video thumbnail correctly.
+   4. Ensured that video thumbnails and main images switch correctly when variants change.
+   5. Modified the backend API to exclude orders with status: "created" while still respecting any status filter query parameter passed by the user.
+   6. Implemented the logic to control video playback with a play/pause toggle, without showing the default video controls.
+   7. Fixed the video thumbnail issue with the play/pause icon by ensuring it resets on variant change.
+   8. Migrated to the Mosaic domain.
+   9. Updated the user controller for the new domain to ensure the cookie works.
+   10. Made other required changes such as updating environment variables and changing the return URL.
+
+
+
+
+
+
+
+
+1. Slug → ID in backend: Controller now accepts categorySlug/subcategorySlug, looks up Mongo _id from your ProductCategory/ProductSubcategory models, then calls the existing service unchanged.
+2. Dynamic route on frontend: Read [productid] from the URL with useParams() and pass it as categorySlug so /furniture fetches that category directly.
+3. Fixed API call: Corrected path to /api/products/ranked and normalized NEXT_PUBLIC_API_BASE_URL (no double slashes); added query params via URLSearchParams.
+4. Grid wired to API: Replaced local JSON filter with a fetch to your RankedResponse; lightly filter client-side by price/brand before rendering.
+5. Accurate discount badge: Recomputed % off as ((price - sale)/price)100 (no integer rounding) and formatted to 1 decimal only when needed (e.g., -0.5%).
+6. Card UX polish: Kept drag-safe Swiper (no accidental clicks), clamped title/description lines, and showed price/rating consistently; optional sale badge appears when onSale is true.
+7. Added Finance link to Sidebar (partner dashboard) pointing to /partners/[businessId]/finance.
+8. Created Finance page (finance/page.tsx) with embedded Stripe Connect components: Payments + Payouts.
+9. Styled Finance page: quick stats cards (Next Payout (ETA), Available Balance, Pending Balance) and a sticky “Open Connect Dashboard” button.
+
+
+
+
+
+
+
+
+
+
+
+mosaic-biz-hub : Added Finance link to Sidebar (partner dashboard) pointing to /partners/[businessId]/finance, Created Finance page (finance/page.tsx) with embedded Stripe Connect components: Payments + Payouts, Styled Finance page: quick stats cards (Next Payout (ETA), Available Balance, Pending Balance) and a sticky “Open Connect Dashboard” button, Wired Finance page to external backend (apiBase) and added guards to prevent init before business data is ready, Implemented Finance backend endpoints used by the page: POST /stripe/account-session (Connect AccountSession client secret for components), GET  /stripe/account-balance?account=..., GET  /stripe/last-payout?account=..., POST /stripe/express-login-link (opens Connect Dashboard) Fixed JSON/content-type issues and added withCredentials where needed for external API calls, Explained/test-mode behavior for balances and U.S. default payout timing (T+2 business days), Added stripeCustomerId to Business model (+ index).

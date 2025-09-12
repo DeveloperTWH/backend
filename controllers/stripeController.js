@@ -134,6 +134,7 @@ exports.handleStripeWebhook = async (req, res) => {
       }
 
       // Create the business
+      console.log(draft.formData.zipCode);
       business = new Business({
         owner: ownerId,
         businessName,
@@ -145,6 +146,7 @@ exports.handleStripeWebhook = async (req, res) => {
           street: draft.formData.address || "",
           city: draft.formData.city || "",
           state: draft.formData.state || "",
+          zipCode: draft.formData.zipCode || "",
           country: draft.formData.country || "",
         },
         socialLinks: draft.formData.socialLinks || {},

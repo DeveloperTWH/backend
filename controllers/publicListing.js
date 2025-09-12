@@ -349,6 +349,7 @@ exports.getProductById = async (req, res) => {
           label: variant.label,
           allowBackorder: variant.allowBackorder,
           images: variant.images,
+          videos: variant.videos,
           averageRating: variant.averageRating,
           totalReviews: variant.totalReviews,
           sizes: variant.sizes?.map((size) => ({

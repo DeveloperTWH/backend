@@ -272,6 +272,7 @@ exports.updateService = async (req, res) => {
       'businessHours', 'contact', 'faq', 'videos', 'maxBookingsPerSlot'
     ];
 
+    const oldAddr = (service.contact?.address || '').trim();
     // Update basic fields
     updatableFields.forEach(field => {
       if (req.body[field] !== undefined) {
@@ -280,24 +281,18 @@ exports.updateService = async (req, res) => {
     });
 
     // 📍 Handle location update (coordinates or address)
-    if (
-      req.body.location?.coordinates &&
-      Array.isArray(req.body.location.coordinates) &&
-      req.body.location.coordinates.length === 2
-    ) {
-      service.location = {
-        type: 'Point',
-        coordinates: req.body.location.coordinates,
-      };
-    } else if (
-      req.body.contact?.address &&
-      req.body.contact.address !== service.contact.address
-    ) {
-      const geo = await geocodeAddress(req.body.contact.address);
-      service.location = {
-        type: 'Point',
-        coordinates: [geo.lng, geo.lat],
-      };
+    if (typeof req.body?.contact?.address === 'string') {
+      const newAddr = req.body.contact.address.trim();
+      
+      if (newAddr && newAddr !== oldAddr) {
+        const geo = await geocodeAddress(newAddr);
+        if (!geo || typeof geo.lat !== 'number' || typeof geo.lng !== 'number') {
+          return res.status(422).json({ message: 'Unable to geocode the provided address.' });
+        }
+        service.location = { type: 'Point', coordinates: [geo.lng, geo.lat] };
+        // Optional: normalize stored address from geocoder if you prefer
+        // if (geo.formatted) service.contact.address = geo.formatted;
+      }
     }
 
     // 🔁 Regenerate slug if title changed

@@ -57,6 +57,10 @@ const apiRoutes = require('./routes/api.routes');
 
 
 
+const googlePlace = require('./routes/googlePlace');
+
+
+
 
 
 const mongoSanitize = require('express-mongo-sanitize');
@@ -154,6 +158,11 @@ app.use('/stripe', stripeNewRoutes);
 // billing
 
 app.use('/api', apiRoutes);
+
+
+// Place Api
+
+app.use('/api/google-places', googlePlace)
 
 
 

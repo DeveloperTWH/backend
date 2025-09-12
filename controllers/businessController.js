@@ -385,6 +385,7 @@ exports.createBusinessDraft = async (req, res) => {
       !formData.address ||
       !formData.city ||
       !formData.state ||
+      !formData.zipCode ||
       !formData.country
     ) {
       return res
@@ -568,6 +569,7 @@ exports.retryCreateBusiness = async (req, res) => {
         city: formData.city || "",
         state: formData.state || "",
         country: formData.country || "",
+        zipCode: formData.zipCode || "",
       },
       socialLinks: formData.socialLinks || {},
       productCategories: formData.productCategories || [],

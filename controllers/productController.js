@@ -114,6 +114,7 @@ exports.createProductWithVariants = async (req, res) => {
       color: variant.color,
       label: variant.label || 'Size',
       images: variant.images || [],
+      videos: variant.videos || [],
       allowBackorder: !!variant.allowBackorder,
       sizes: (variant.sizes || []).map((s) => ({
         size: s.size,
@@ -273,6 +274,7 @@ exports.addVariants = async (req, res) => {
         discountEndDate: size.discountEndDate,
       })),
       images: variant.images,
+      videos: variant.videos,
       allowBackorder: variant.allowBackorder || false,
       isPublished: variant.isPublished || false,
       isDeleted: false,

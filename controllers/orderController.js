@@ -293,7 +293,7 @@ exports.getUserOrders = async (req, res) => {
     const userId = req.user.id;
     const status = req.query.status; // optional query param
 
-    const filter = { userId };
+    const filter = { userId, status: { $ne: "created" } };
     if (status) filter.status = status;
 
     const orders = await Order.find(filter)
