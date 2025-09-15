@@ -546,3 +546,11 @@
 
 
 mosaic-biz-hub : Added Finance link to Sidebar (partner dashboard) pointing to /partners/[businessId]/finance, Created Finance page (finance/page.tsx) with embedded Stripe Connect components: Payments + Payouts, Styled Finance page: quick stats cards (Next Payout (ETA), Available Balance, Pending Balance) and a sticky “Open Connect Dashboard” button, Wired Finance page to external backend (apiBase) and added guards to prevent init before business data is ready, Implemented Finance backend endpoints used by the page: POST /stripe/account-session (Connect AccountSession client secret for components), GET  /stripe/account-balance?account=..., GET  /stripe/last-payout?account=..., POST /stripe/express-login-link (opens Connect Dashboard) Fixed JSON/content-type issues and added withCredentials where needed for external API calls, Explained/test-mode behavior for balances and U.S. default payout timing (T+2 business days), Added stripeCustomerId to Business model (+ index).
+
+
+
+
+
+
+
+mosaic-biz-hub : Fixed issues related to displaying videos and images in product galleries, ensuring proper video handling and thumbnails, Implemented a solution where a square thumbnail with a play icon appears for videos, and clicking it opens the video in a large player, Resolved the issue where changing the product variant didn't update the video thumbnail correctly, Ensured that video thumbnails and main images switch correctly when variants change, Modified the backend API to exclude orders with status: "created" while still respecting any status filter query parameter passed by the user,Implemented the logic to control video playback with a play/pause toggle, without showing the default video controls, Fixed the video thumbnail issue with the play/pause icon by ensuring it resets on variant change, Migrated to the Mosaic domain, Updated the user controller for the new domain to ensure the cookie works, Made other required changes such as updating environment variables and changing the return URL ,Stripe Webhook endpoint updated with new url endpoint, removed cors error in the new domain.

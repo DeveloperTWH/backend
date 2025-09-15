@@ -23,7 +23,7 @@ exports.sendWelcomeEmail = async (to, vendorName) => {
         <p style="color: #555; font-size: 16px;">
           Explore, engage, and make the most out of your journey with us.
         </p>
-        <a href="https://app.minorityownedbusiness.info" 
+        <a href="https://app.mosaicbizhub.com" 
            style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #0d6efd; color: #fff; text-decoration: none; border-radius: 5px;">
            Visit Platform
         </a>
@@ -35,7 +35,7 @@ exports.sendWelcomeEmail = async (to, vendorName) => {
     attachments: [
       {
         filename: 'logo.png',
-        path: 'https://app.minorityownedbusiness.info/_next/image?url=%2Flogo.png&w=750&q=75',
+        path: 'https://app.mosaicbizhub.com/_next/image?url=%2Flogo.png&w=750&q=75',
         cid: 'platformLogo', // same CID as used in the <img src="cid:...">
       }
     ]

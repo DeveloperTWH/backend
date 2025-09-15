@@ -59,6 +59,8 @@ const apiRoutes = require('./routes/api.routes');
 
 const googlePlace = require('./routes/googlePlace');
 
+const authRoutes = require('./routes/authRoutes');
+
 
 
 
@@ -72,6 +74,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:8081',
   'https://app.minorityownedbusiness.info',
+  'https://app.mosaicbizhub.com',
   "http://192.168.1.50:3000",
   "exp://192.168.0.104:8081",
   "exp://192.168.0.104:3000",
@@ -163,6 +166,7 @@ app.use('/api', apiRoutes);
 // Place Api
 
 app.use('/api/google-places', googlePlace)
+app.use('/api/auth', authRoutes);
 
 
 

@@ -3,7 +3,7 @@ const nodemailer = require("nodemailer");
 
 const APP_NAME = process.env.APP_NAME || "Mosaic Biz Hub";
 const BASE_URL = process.env.FRONTEND_URL;
-const LOGO_URL = "https://app.minorityownedbusiness.info/_next/image?url=%2Flogo.png&w=750&q=75";
+const LOGO_URL = "https://app.mosaicbizhub.com/_next/image?url=%2Flogo.png&w=750&q=75";
 const ORDERS_URL = `${BASE_URL}/customer/order`;
 
 // Configure transporter (swap service/config as needed)

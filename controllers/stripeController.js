@@ -29,8 +29,8 @@ exports.createCheckoutSession = async (req, res) => {
       mode: "subscription",
       customer_email: draft.email,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: "https://app.minorityownedbusiness.info/partners",
-      cancel_url: "https://app.minorityownedbusiness.info/partners",
+      success_url: "https://app.mosaicbizhub.com/partners",
+      cancel_url: "https://app.mosaicbizhub.com/partners",
       metadata: {
         draftId: draft._id.toString(),
         ownerId: draft.owner.toString(),

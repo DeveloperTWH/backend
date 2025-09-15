@@ -1,7 +1,7 @@
 // mailer/businessStatusEmails.js
 const nodemailer = require("nodemailer");
 
-const APP_URL = process.env.FRONTEND_URL || "https://app.minorityownedbusiness.info";
+const APP_URL = process.env.FRONTEND_URL || "https://app.mosaicbizhub.com";
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || process.env.MAIL_USER;
 
 // If you already have a transporter elsewhere, delete this block and import that one.
@@ -137,7 +137,7 @@ async function sendApproved({ to, vendorName = "there", business }) {
     attachments: [
       {
         filename: "logo.png",
-        path: "https://app.minorityownedbusiness.info/_next/image?url=%2Flogo.png&w=750&q=75",
+        path: "https://app.mosaicbizhub.com/_next/image?url=%2Flogo.png&w=750&q=75",
         cid: "platformLogo",
       },
     ],
@@ -208,7 +208,7 @@ async function sendBlocked({ to, vendorName = "there", business, adminNote }) {
     attachments: [
       {
         filename: "logo.png",
-        path: "https://app.minorityownedbusiness.info/_next/image?url=%2Flogo.png&w=750&q=75",
+        path: "https://app.mosaicbizhub.com/_next/image?url=%2Flogo.png&w=750&q=75",
         cid: "platformLogo",
       },
     ],

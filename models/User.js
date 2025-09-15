@@ -16,8 +16,7 @@ const userSchema = new mongoose.Schema(
     },
     mobile: {
       type: String,
-      required: true,
-      unique: true,
+      required: function () { return this.provider === 'local'; },
       trim: true,
     },
     passwordHash: {
@@ -64,11 +63,33 @@ const userSchema = new mongoose.Schema(
     minorityType: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'MinorityType',
-      required: true, // if mandatory
+      required: function () { return this.provider === 'local'; }
     }
-
   },
   { timestamps: true }
+);
+
+/** === Indexes === **/
+
+// Unique email for everyone
+userSchema.index({ email: 1 }, { unique: true });
+
+// Unique mobile only when present and non-empty
+userSchema.index(
+  { mobile: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { mobile: { $type: 'string', $ne: '' } },
+  }
+);
+
+// One record per social provider account (when providerId exists)
+userSchema.index(
+  { provider: 1, providerId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { providerId: { $exists: true, $ne: '' } },
+  }
 );
 
 module.exports = mongoose.models.User || mongoose.model('User', userSchema);

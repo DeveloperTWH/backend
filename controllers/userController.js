@@ -48,7 +48,7 @@ exports.registerUser = async (req, res) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             // sameSite: 'none',
-            // domain: '.minorityownedbusiness.info',
+            // domain: '.mosaicbizhub.com',
             maxAge: 10 * 60 * 1000, // 10 minutes
         });
 
@@ -111,7 +111,7 @@ exports.verifyOtp = async (req, res) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             // sameSite: 'none',
-            // domain: '.minorityownedbusiness.info',
+            // domain: '.mosaicbizhub.com',
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
@@ -119,7 +119,7 @@ exports.verifyOtp = async (req, res) => {
             httpOnly: false,
             sameSite: 'strict',
             // sameSite: 'none',
-            // domain: '.minorityownedbusiness.info',
+            // domain: '.mosaicbizhub.com',
             secure: process.env.NODE_ENV === 'production',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -129,7 +129,7 @@ exports.verifyOtp = async (req, res) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             // sameSite: 'none',
-            // domain: '.minorityownedbusiness.info',
+            // domain: '.mosaicbizhub.com',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -195,7 +195,7 @@ exports.resendOtp = async (req, res) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             // sameSite: 'none',
-            // domain: '.minorityownedbusiness.info',
+            // domain: '.mosaicbizhub.com',
             maxAge: 10 * 60 * 1000,
         });
 
@@ -264,7 +264,7 @@ exports.loginUser = async (req, res) => {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'none',
-                domain: '.minorityownedbusiness.info',
+                domain: '.mosaicbizhub.com',
                 maxAge: 10 * 60 * 1000, // 10 minutes
             });
 
@@ -290,7 +290,7 @@ exports.loginUser = async (req, res) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             // sameSite: 'none',
-            // domain: '.minorityownedbusiness.info',
+            // domain: '.mosaicbizhub.com',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -298,7 +298,7 @@ exports.loginUser = async (req, res) => {
             httpOnly: false,
             sameSite: 'strict',
             // sameSite: 'none',
-            // domain: '.minorityownedbusiness.info',
+            // domain: '.mosaicbizhub.com',
             secure: process.env.NODE_ENV === 'production',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -308,7 +308,7 @@ exports.loginUser = async (req, res) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             // sameSite: 'none',
-            // domain: '.minorityownedbusiness.info',
+            // domain: '.mosaicbizhub.com',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -338,7 +338,7 @@ exports.logout = (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'none',
-    domain: '.minorityownedbusiness.info',
+    domain: '.mosaicbizhub.com',
     path: '/', // must match the original path
   });
 
@@ -346,7 +346,7 @@ exports.logout = (req, res) => {
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'none',
-    domain: '.minorityownedbusiness.info',
+    domain: '.mosaicbizhub.com',
     path: '/',
   });
 
@@ -354,7 +354,7 @@ exports.logout = (req, res) => {
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'none',
-    domain: '.minorityownedbusiness.info',
+    domain: '.mosaicbizhub.com',
     path: '/',
   });
 

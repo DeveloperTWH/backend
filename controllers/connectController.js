@@ -12,7 +12,7 @@ function buildUrl(base, businessId) {
 
 function getReturnAndRefreshUrls(businessId) {
   // Option A: FRONTEND_URL + path
-  const frontend = process.env.FRONTEND_URL; // e.g. https://app.minorityownedbusiness.info
+  const frontend = process.env.FRONTEND_URL; // e.g. https://app.mosaicbizhub.com
   const returnPath = process.env.CONNECT_RETURN_PATH || '/partners/connect/return';
   const refreshPath = process.env.CONNECT_REFRESH_PATH || '/partners/connect/refresh';
 
