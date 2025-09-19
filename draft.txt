@@ -554,3 +554,17 @@ mosaic-biz-hub : Added Finance link to Sidebar (partner dashboard) pointing to /
 
 
 mosaic-biz-hub : Fixed issues related to displaying videos and images in product galleries, ensuring proper video handling and thumbnails, Implemented a solution where a square thumbnail with a play icon appears for videos, and clicking it opens the video in a large player, Resolved the issue where changing the product variant didn't update the video thumbnail correctly, Ensured that video thumbnails and main images switch correctly when variants change, Modified the backend API to exclude orders with status: "created" while still respecting any status filter query parameter passed by the user,Implemented the logic to control video playback with a play/pause toggle, without showing the default video controls, Fixed the video thumbnail issue with the play/pause icon by ensuring it resets on variant change, Migrated to the Mosaic domain, Updated the user controller for the new domain to ensure the cookie works, Made other required changes such as updating environment variables and changing the return URL ,Stripe Webhook endpoint updated with new url endpoint, removed cors error in the new domain.
+
+
+
+mosaic-biz-hub : Standardized cookies (token, user_session, user_gender) and fixed multi–Set-Cookie issue (Domain Change), Introduced strong password validation on registration for vendor and customer, Added show/hide eye toggle for password fields, Met with Rakesh Sir; concluded there’s an issue in the business flow, Extracted application design and handed off to the Figma designer.
+
+
+
+1. Implemented multi-step business registration form structure
+2. Added left-side image section with responsive alignment
+3. Applied smooth slide-in animations for each step (basic, address, compliance, categories)
+4. Fixed layout shifting by using fixed-height container and `absolute` positioning
+5. Reworked layout to allow dynamic height growth instead of forced min-height (removed scrollbars on mobile)
+6. Added staggered animations and hover effects for plan selection cards
+7. Added animated tab transitions for “Choose a Plan” and “Existing Plan” headings

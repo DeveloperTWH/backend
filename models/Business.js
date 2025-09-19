@@ -102,6 +102,24 @@ const businessSchema = new mongoose.Schema(
       type: String,
       index: true,
     },
+    taxId: {
+      type: String,
+      index: true,
+      // required: true,
+    },
+    businessLicenseNumber: {
+      type: String,
+      index: true,
+      // required: true,
+    },
+    isFranchise: {
+      type: Boolean,
+      index: true,
+      default: false,
+    },
+    franchiseLocation: {
+      type: String,
+    },
     stripeConnectAccountId: { type: String },
     chargesEnabled: { type: Boolean, default: false },
     payoutsEnabled: { type: Boolean, default: false },
