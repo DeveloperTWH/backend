@@ -67,8 +67,14 @@ const authRoutes = require('./routes/authRoutes');
 
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
+const compression = require('compression');
 
 const app = express();
+
+// ⚡ Bolt: Add compression middleware to gzip response bodies.
+// This can significantly reduce the size of responses, leading to faster load times
+// for users on slower networks.
+app.use(compression());
 
 const allowedOrigins = [
   'http://localhost:3000',
