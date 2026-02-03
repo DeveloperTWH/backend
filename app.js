@@ -15,12 +15,12 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const publicListingRoutes = require('./routes/publicListing');
 const privateListingRoutes = require('./routes/privateListing');
 const businessProfileRoutes = require('./routes/businessProfileRoutes');
+const cmsRoutes = require('./routes/admin/cmsRoutes');
 
 
 
 
-// Content Management Route - FAQ / BLOG / TESTIMONIALS
-const cmsRoutes = require('./routes/cms/cmsRoutes');
+
 
 
 // admin Routes
@@ -136,6 +136,9 @@ app.use('/api/minority-types', minorityTypeRoutes);
 app.use('/api', uploadImageRoute);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api', categoryRoutes);
+
+app.use('/api/cms', cmsRoutes);
+
 
 
 //CMS Route's
