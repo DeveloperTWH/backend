@@ -103,57 +103,114 @@ const handleSubscriptionWebhook = async (req, res) => {
   let event;
 
   try {
-    if (!sig) {
-      event = JSON.parse(payload.toString());
-    } else {
-      event = stripe.webhooks.constructEvent(payload, sig, endpointSecret);
-    }
+    event = stripe.webhooks.constructEvent(payload, sig, endpointSecret);
   } catch (err) {
     console.error('Webhook error:', err);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  console.log('🔹 Received Stripe event type:', event.type);
+  console.log('🔹 Event data object:', event.data.object);
+
   switch (event.type) {
     case 'invoice.payment_succeeded':
       const invoice = event.data.object;
+      console.log('🔹 Stripe subscription ID:', invoice.subscription);
+
+      const subscription = await Subscription.findOne({
+        stripeSubscriptionId: invoice.subscription
+      });
+
+      if (!subscription) {
+        console.error('❌ Subscription not found for:', invoice.subscription);
+        break;
+      }
+
+      subscription.paymentStatus = 'COMPLETED';
+      subscription.status = 'active';
+      await subscription.save();
+      console.log(`✅ Subscription payment succeeded: ${subscription._id}`);
+      break;
+
+    case 'invoice.payment_failed':
+      const failedInvoice = event.data.object;
+
+      const failedSub = await Subscription.findOne({
+        stripeSubscriptionId: failedInvoice.subscription
+      });
+
+      if (!failedSub) {
+        console.error('❌ Failed subscription not found for:', failedInvoice.subscription);
+        break;
+      }
+
+      failedSub.paymentStatus = 'FAILED';
+      failedSub.status = 'cancelled';
+      await failedSub.save();
+      console.log(`❌ Subscription payment failed: ${failedSub._id}`);
+      break;
+
+    case 'charge.updated':
+      const charge = event.data.object;
       
-      if (invoice.subscription) {
+      if (charge.status === 'succeeded' && charge.metadata.subscriptionId) {
         try {
           const subscription = await Subscription.findOne({
-            stripeSubscriptionId: invoice.subscription
+            stripeSubscriptionId: charge.metadata.subscriptionId
           });
 
           if (subscription) {
             subscription.paymentStatus = 'COMPLETED';
             subscription.status = 'active';
             await subscription.save();
-            
-            console.log(`✅ Subscription payment succeeded: ${subscription._id}`);
+            console.log(`✅ Subscription charge updated - payment succeeded: ${subscription._id}`);
+          } else {
+            console.error('❌ Subscription not found for:', charge.metadata.subscriptionId);
           }
         } catch (error) {
-          console.error('Failed to update subscription:', error);
+          console.error('Error handling charge.updated:', error);
         }
       }
       break;
 
-    case 'invoice.payment_failed':
-      const failedInvoice = event.data.object;
+    case 'charge.succeeded':
+      const chargeSucceeded = event.data.object;
       
-      if (failedInvoice.subscription) {
+      if (chargeSucceeded.metadata.subscriptionId) {
         try {
           const subscription = await Subscription.findOne({
-            stripeSubscriptionId: failedInvoice.subscription
+            stripeSubscriptionId: chargeSucceeded.metadata.subscriptionId
           });
 
           if (subscription) {
-            subscription.paymentStatus = 'FAILED';
-            subscription.status = 'cancelled';
+            subscription.paymentStatus = 'COMPLETED';
+            subscription.status = 'active';
             await subscription.save();
-            
-            console.log(`❌ Subscription payment failed: ${subscription._id}`);
+            console.log(`✅ Subscription charge succeeded: ${subscription._id}`);
           }
         } catch (error) {
-          console.error('Failed to update failed subscription:', error);
+          console.error('Error handling charge.succeeded:', error);
+        }
+      }
+      break;
+
+    case 'payment_intent.succeeded':
+      const paymentIntentSucceeded = event.data.object;
+      
+      if (paymentIntentSucceeded.metadata.subscriptionId) {
+        try {
+          const subscription = await Subscription.findOne({
+            stripeSubscriptionId: paymentIntentSucceeded.metadata.subscriptionId
+          });
+
+          if (subscription) {
+            subscription.paymentStatus = 'COMPLETED';
+            subscription.status = 'active';
+            await subscription.save();
+            console.log(`✅ Subscription payment intent succeeded: ${subscription._id}`);
+          }
+        } catch (error) {
+          console.error('Error handling payment_intent.succeeded:', error);
         }
       }
       break;

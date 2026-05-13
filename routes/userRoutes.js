@@ -9,7 +9,7 @@ const router = express.Router();
 // Rate limiter for login
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 15,
   message: 'Too many login attempts. Please try again later.',
 });
 
@@ -51,6 +51,22 @@ router.post(
   '/resend-otp',
   [body('email').isEmail().withMessage('Valid email is required')],
   userController.resendOtp
+);
+
+router.post(
+  '/forgot-password',
+  [body('email').isEmail().normalizeEmail().withMessage('Valid email is required')],
+  userController.forgotPassword
+);
+
+router.post(
+  '/reset-password',
+  [
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
+    body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  ],
+  userController.resetPassword
 );
 
 

@@ -1,11 +1,27 @@
 const mongoose = require('mongoose');
 
 const bookingSchema = new mongoose.Schema({
-  serviceTitle: { type: String, required: true },
+  bookingType: {
+    type: String,
+    enum: ['service', 'food'],
+    default: 'service',
+  },
+  serviceTitle: {
+    type: String,
+    required: false,
+  },
   serviceId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Service',
-    required: true,
+    required: false,
+  },
+  foodTitle: {
+    type: String,
+  },
+  foodId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Food',
+    required: false,
   },
   customerId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -24,34 +40,63 @@ const bookingSchema = new mongoose.Schema({
   },
   businessId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Business",
-    required: true, // 🔥 REQUIRED to filter vendor orders by business
+    ref: 'Business',
+    required: true,
   },
-  serviceItems: [String],   //  service : [hair cut, Shaving, hair cleaing etc]
+  serviceItems: [String],
+  services: {
+    type: [String],
+    default: [],
+  },
   date: { type: Date, required: true },
-  time: { type: String, required: true },
-
+  time: { type: String, required: false },
+  slot: { type: String, required: false },
+  seats: {
+    type: String,
+    enum: ['upto 2', 'upto 4', 'upto 8', 'more than 10'],
+  },
   status: {
     type: String,
-    enum: ['created', 'Booked', 'confirmed', 'completed', 'cancelled'],
+    enum: [
+      'created',
+      'Booked',
+      'pending_vendor_action',
+      'payment_requested',
+      'approved',
+      'confirmed',
+      'completed',
+      'cancelled',
+      'rejected',
+    ],
     default: 'Booked',
   },
-
+  paymentLink: {
+    type: String,
+    trim: true,
+  },
+  paymentRequestedAt: {
+    type: Date,
+  },
+  vendorDecisionAt: {
+    type: Date,
+  },
+  vendorDecisionNote: {
+    type: String,
+    trim: true,
+  },
   notes: { type: String },
-
   paymentStatus: {
     type: String,
     enum: ['pending', 'paid', 'failed', 'refunded'],
     default: 'pending',
   },
   paymentId: {
-    type: String, // ID from Razorpay / Stripe / etc.
+    type: String,
   },
   amountPaid: {
     type: Number,
     min: 0,
   },
-
   isRefundRequested: {
     type: Boolean,
     default: false,
@@ -65,5 +110,33 @@ const bookingSchema = new mongoose.Schema({
     type: String,
   },
 }, { timestamps: true });
+
+bookingSchema.pre('validate', function (next) {
+  if (this.bookingType === 'service' && !this.status) {
+    this.status = 'pending_vendor_action';
+  }
+
+  if (this.bookingType === 'food' && !this.status) {
+    this.status = 'Booked';
+  }
+
+  if (!this.slot && this.time) {
+    this.slot = this.time;
+  }
+
+  if (!this.time && this.slot) {
+    this.time = this.slot;
+  }
+
+  if ((!this.services || this.services.length === 0) && Array.isArray(this.serviceItems) && this.serviceItems.length > 0) {
+    this.services = this.serviceItems;
+  }
+
+  if ((!this.serviceItems || this.serviceItems.length === 0) && Array.isArray(this.services) && this.services.length > 0) {
+    this.serviceItems = this.services;
+  }
+
+  next();
+});
 
 module.exports = mongoose.model('Booking', bookingSchema);

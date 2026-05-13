@@ -6,7 +6,12 @@ const { ensurePlanPrice } = require('../helpers/stripePlan'); // ← ADD THIS
 exports.createSubscription = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { planId } = req.body;
+    let { planId, applicationId } = req.body;
+
+    // Check query params if not in body (handles ?appId=... from frontend)
+    if (!applicationId) {
+      applicationId = req.query.applicationId || req.query.appId;
+    }
 
     if (!planId) {
       return res.status(400).json({
@@ -14,6 +19,13 @@ exports.createSubscription = async (req, res) => {
         message: 'planId is required'
       });
     }
+
+    // if (!applicationId) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'applicationId is required'
+    //   });
+    // }
 
     // Get plan
     const plan = await SubscriptionPlan.findById(planId);
@@ -80,11 +92,14 @@ exports.createSubscription = async (req, res) => {
       subscriptionPlanId: planId,
       stripeSubscriptionId: stripeSubscription.id,
       stripeCustomerId: customer.id,
-      paymentStatus: clientSecret ? 'PENDING' : 'COMPLETED',
+      applicationId,
+      // paymentStatus: clientSecret ? 'PENDING' : 'COMPLETED',
+      paymentStatus:'COMPLETED',
       payerEmail: req.user.email,
       startDate,
       endDate,
-      status: clientSecret ? 'pending' : 'active'
+      // status: clientSecret ? 'pending' : 'active'
+       status: 'active'
     });
 
     await subscription.save();

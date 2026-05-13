@@ -44,9 +44,6 @@ function wrapHtml({ title, bodyHtml }) {
                    style="display:inline-block;text-decoration:none;padding:12px 18px;border-radius:10px;background:#111827;color:#ffffff;font-weight:600;font-size:14px;">
                   View My Orders
                 </a>
-                <div style="margin-top:10px;font-size:12px;color:#6b7280;">
-                  or copy & paste: ${ORDERS_URL}
-                </div>
               </td>
             </tr>
             <tr>
@@ -85,20 +82,174 @@ function plainText({ title, lines = [] }) {
  * @param {string|number} orderId - Order reference
  * @param {"accepted"|"rejected"} status - Status to notify
  */
+// async function sendOrderStatusEmail(to, orderId, status) {
+//   const isAccepted = status === "accepted";
+//   const title = isAccepted
+//     ? `Order #${orderId} Accepted`
+//     : `Order #${orderId} Rejected`;
+
+//   const bodyHtml = isAccepted
+//     ? `
+//       <p>Great news! Your order <strong>#${orderId}</strong> has been <strong>accepted by our partner</strong> and is now moving forward.</p>
+//       <p>We’ll keep you updated as it progresses to shipping or pickup.</p>
+//     `
+//     : `
+//       <p>We’re sorry—your order <strong>#${orderId}</strong> has been <strong>rejected</strong>.</p>
+//       <p>We truly appreciate your interest and apologize for the inconvenience. If payment was captured, a refund will be processed shortly.</p>
+//     `;
+
+//   const html = wrapHtml({ title, bodyHtml });
+
+//   const text = isAccepted
+//     ? plainText({
+//         title,
+//         lines: [
+//           `Your order #${orderId} has been accepted.`,
+//           `We’ll notify you with shipping details soon.`,
+//         ],
+//       })
+//     : plainText({
+//         title,
+//         lines: [
+//           `Your order #${orderId} has been rejected.`,
+//           `We appreciate your interest and apologize for the inconvenience.`,
+//           `If payment was captured, a refund will be processed shortly.`,
+//         ],
+//       });
+
+//   const mailOptions = {
+//     from: `"${APP_NAME}" <${process.env.MAIL_USER}>`,
+//     to,
+//     subject: `${APP_NAME} • ${title}`,
+//     html,
+//     text,
+//   };
+
+//   try {
+//     await transporter.sendMail(mailOptions);
+//     console.log(`Order status email sent to ${to} for order ${orderId} (${status})`);
+//   } catch (err) {
+//     console.error("Error sending email:", err);
+//     throw err;
+//   }
+// }
+
+async function sendCustomerOrderPlacedEmail(to, order) {
+  const orderUrl = "https://app.mosaicbizhub.com/customer/order";
+
+  const html = wrapHtml({
+    title: "Order Placed Successfully",
+    bodyHtml: `
+      <p>Your order has been <strong>placed successfully</strong> 🎉</p>
+      <p>Total Amount: <strong>$${order.totalAmount}</strong></p>
+      <p>We’ll notify you once the vendor accepts your order.</p>
+
+      <div style="text-align:center; margin:30px 0;">
+        <a href="${orderUrl}" target="_blank"
+          style="
+            background:#C7A040;
+            color:#fff;
+            padding:12px 24px;
+            text-decoration:none;
+            border-radius:6px;
+            display:inline-block;
+          ">
+          View Your Order
+        </a>
+      </div>
+    `
+  });
+
+  await transporter.sendMail({
+    from: `"${APP_NAME}" <${process.env.MAIL_USER}>`,
+    to,
+    subject: `${APP_NAME} • Order Placed`,
+    html,
+  });
+}
+
+
+async function sendVendorNewOrderEmail(to, order) {
+  const orderUrl = "https://app.mosaicbizhub.com/partners/dashboard";
+
+  const html = wrapHtml({
+    title: "New Order Received",
+    bodyHtml: `
+      <p>You have received a <strong>new order</strong> 🛒</p>
+      <p>Total Amount: <strong>$${order.totalAmount}</strong></p>
+
+      <div style="text-align:center; margin:30px 0;">
+        <a href="${orderUrl}" target="_blank"
+          style="
+            background:#333;
+            color:#fff;
+            padding:12px 24px;
+            text-decoration:none;
+            border-radius:6px;
+            display:inline-block;
+          ">
+          View Order
+        </a>
+      </div>
+    `
+  });
+
+  await transporter.sendMail({
+    from: `"${APP_NAME}" <${process.env.MAIL_USER}>`,
+    to,
+    subject: `${APP_NAME} • New Order Received`,
+    html,
+  });
+}
+
 async function sendOrderStatusEmail(to, orderId, status) {
   const isAccepted = status === "accepted";
+
   const title = isAccepted
-    ? `Order #${orderId} Accepted`
-    : `Order #${orderId} Rejected`;
+    ? `Order Accepted`
+    : `Order Rejected`;
+
+  const orderUrl = "https://app.mosaicbizhub.com/customer/order";
 
   const bodyHtml = isAccepted
     ? `
-      <p>Great news! Your order <strong>#${orderId}</strong> has been <strong>accepted by our partner</strong> and is now moving forward.</p>
+      <p>Great news! Your order has been <strong>accepted by our partner</strong> and is now moving forward.</p>
       <p>We’ll keep you updated as it progresses to shipping or pickup.</p>
+
+      <div style="text-align:center; margin:30px 0;">
+        <a href="${orderUrl}" target="_blank"
+          style="
+            background:#C7A040;
+            color:#ffffff;
+            padding:14px 28px;
+            text-decoration:none;
+            border-radius:6px;
+            font-weight:600;
+            display:inline-block;
+          ">
+          View Your Orders
+        </a>
+      </div>
     `
     : `
-      <p>We’re sorry—your order <strong>#${orderId}</strong> has been <strong>rejected</strong>.</p>
-      <p>We truly appreciate your interest and apologize for the inconvenience. If payment was captured, a refund will be processed shortly.</p>
+      <p>We’re sorry—your order has been <strong>rejected</strong>.</p>
+      <p>We truly appreciate your interest and apologize for the inconvenience.</p>
+      <p>If payment was captured, a refund will be processed shortly.</p>
+
+      <div style="text-align:center; margin:30px 0;">
+        <a href="${orderUrl}" target="_blank"
+          style="
+            background:#C7A040;
+            color:#ffffff;
+            padding:14px 28px;
+            text-decoration:none;
+            border-radius:6px;
+            font-weight:600;
+            display:inline-block;
+          ">
+          View Your Orders
+        </a>
+      </div>
     `;
 
   const html = wrapHtml({ title, bodyHtml });
@@ -107,16 +258,18 @@ async function sendOrderStatusEmail(to, orderId, status) {
     ? plainText({
         title,
         lines: [
-          `Your order #${orderId} has been accepted.`,
-          `We’ll notify you with shipping details soon.`,
+          `Your order has been accepted.`,
+          `We’ll notify you with updates soon.`,
+          `View your orders: ${orderUrl}`,
         ],
       })
     : plainText({
         title,
         lines: [
-          `Your order #${orderId} has been rejected.`,
-          `We appreciate your interest and apologize for the inconvenience.`,
+          `Your order has been rejected.`,
+          `We apologize for the inconvenience.`,
           `If payment was captured, a refund will be processed shortly.`,
+          `View your orders: ${orderUrl}`,
         ],
       });
 
@@ -130,11 +283,104 @@ async function sendOrderStatusEmail(to, orderId, status) {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Order status email sent to ${to} for order ${orderId} (${status})`);
+    console.log(`Order status email sent to ${to} (${status})`);
   } catch (err) {
     console.error("Error sending email:", err);
     throw err;
   }
 }
 
-module.exports = { sendOrderStatusEmail };
+async function sendOrderUpdateEmail(to, status, trackingUrl = null) {
+  const orderUrl = "https://app.mosaicbizhub.com/customer/order";
+
+  let title = "";
+  let message = "";
+  let extraButton = "";
+
+  if (status === "shipped") {
+    title = "Your Order Has Been Shipped";
+
+    message = `
+      <p>Good news! Your order has been <strong>shipped</strong> and is on its way.</p>
+      <p>You can track your shipment using the link below.</p>
+    `;
+
+    // ✅ Add tracking button if URL exists
+    if (trackingUrl) {
+      extraButton = `
+        <div style="text-align:center; margin:20px 0;">
+          <a href="${trackingUrl}" target="_blank"
+            style="
+              background:#333;
+              color:#ffffff;
+              padding:12px 24px;
+              text-decoration:none;
+              border-radius:6px;
+              font-weight:600;
+              display:inline-block;
+            ">
+            Track Your Shipment
+          </a>
+        </div>
+      `;
+    }
+  }
+
+  if (status === "delivered") {
+    title = "Your Order Has Been Delivered";
+
+    message = `
+      <p>Your order has been <strong>successfully delivered</strong>.</p>
+      <p>We hope you enjoy your purchase. Thank you for choosing us!</p>
+    `;
+  }
+
+  const bodyHtml = `
+    ${message}
+    ${extraButton}
+
+    <div style="text-align:center; margin:30px 0;">
+      <a href="${orderUrl}" target="_blank"
+        style="
+          background:#C7A040;
+          color:#ffffff;
+          padding:14px 28px;
+          text-decoration:none;
+          border-radius:6px;
+          font-weight:600;
+          display:inline-block;
+        ">
+        View Your Orders
+      </a>
+    </div>
+  `;
+
+  const html = wrapHtml({ title, bodyHtml });
+
+  const textLines = [
+    status === "shipped"
+      ? "Your order has been shipped."
+      : "Your order has been delivered.",
+  ];
+
+  if (trackingUrl && status === "shipped") {
+    textLines.push(`Track your shipment: ${trackingUrl}`);
+  }
+
+  textLines.push(`View your orders: ${orderUrl}`);
+
+  const text = plainText({
+    title,
+    lines: textLines,
+  });
+
+  await transporter.sendMail({
+    from: `"${APP_NAME}" <${process.env.MAIL_USER}>`,
+    to,
+    subject: `${APP_NAME} • ${title}`,
+    html,
+    text,
+  });
+}
+
+module.exports = { sendOrderStatusEmail,sendOrderUpdateEmail,sendVendorNewOrderEmail,sendCustomerOrderPlacedEmail };

@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
+      // unique: true,
       lowercase: true,
       trim: true,
     },
@@ -48,6 +48,12 @@ const userSchema = new mongoose.Schema(
     otpExpiry: {
       type: Date,
     },
+    resetPasswordOtp: {
+      type: String,
+    },
+    resetPasswordOtpExpiry: {
+      type: Date,
+    },
     isOtpVerified: {
       type: Boolean,
       default: false,
@@ -62,8 +68,7 @@ const userSchema = new mongoose.Schema(
     },
     badge: {
   type: String,
-  enum: ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'],
-  default: 'Bronze'
+  enum: ['Silver', 'Gold', 'Platinum', 'Diamond']
 },
 totalPoints: {
   type: Number,
@@ -109,5 +114,12 @@ userSchema.index(
     partialFilterExpression: { providerId: { $exists: true, $ne: '' } },
   }
 );
+
+userSchema.pre('validate', function (next) {
+  if (this.badge === 'Bronze') {
+    this.badge = 'Silver';
+  }
+  next();
+});
 
 module.exports = mongoose.models.User || mongoose.model('User', userSchema);

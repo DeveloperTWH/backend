@@ -122,8 +122,7 @@ businessBio: {
 // Add these new fields:
 badge: {
   type: String,
-  enum: ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'],
-  default: 'Bronze'
+  enum: ['Silver', 'Gold', 'Platinum', 'Diamond']
 },
 
 totalPoints: {
@@ -203,6 +202,13 @@ businessProfileSchema.pre('save', function(next) {
   this.totalStep3Points = this.step3Questions
     .filter(q => q.isVerified)
     .reduce((sum, q) => sum + q.points, 0);
+  next();
+});
+
+businessProfileSchema.pre('validate', function(next) {
+  if (this.badge === 'Bronze') {
+    this.badge = 'Silver';
+  }
   next();
 });
 

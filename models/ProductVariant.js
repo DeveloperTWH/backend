@@ -10,6 +10,7 @@ const productVariantSchema = new mongoose.Schema({
   businessId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Business',
+    required: true,
   },
 
   ownerId: {
@@ -18,119 +19,62 @@ const productVariantSchema = new mongoose.Schema({
     required: true,
   },
 
-  color: {
+  /* ===============================
+     ATTRIBUTE COMBINATION
+     Example:
+     { Size: "Small", Color: "Black" }
+  =============================== */
+
+  attributes: {
+    type: Map,
+    of: String,
+    required: true
+  },
+
+  sku: {
     type: String,
     required: true,
-    trim: true,
-    lowercase: true,
+    unique: true,
   },
 
-  label: {
-    type: String,
+  price: {
+    type: mongoose.Schema.Types.Decimal128,
     required: true,
-    trim: true,
-    default: 'Size', // Now stored once per variant
   },
 
-  sizes: [
-    {
-      size: {
-        type: String,
-        required: true,
-        trim: true,
-        uppercase: true,
-      },
-      stock: {
-        type: Number,
-        required: true,
-        min: 0,
-      },
-      price: {
-        type: mongoose.Schema.Types.Decimal128,
-        required: true,
-        min: 0,
-      },
-      salePrice: {
-        type: mongoose.Schema.Types.Decimal128,
-        min: 0,
-      },
-      discountEndDate: {
-        type: Date,
-      },
-      sku: {
-        type: String,
-        required: true,
-        trim: true,
-        unique: true,
-      }
-    }
-  ],
-
-  isPublished: {
-    type: Boolean,
-    default: false,
-  },
-  isDeleted: {
-    type: Boolean,
-    default: false,
+  salePrice: {
+    type: mongoose.Schema.Types.Decimal128,
   },
 
-  weightInKg: mongoose.Schema.Types.Decimal128,
+  stock: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
 
-  dimensions: {
-    length: Number,
-    width: Number,
-    height: Number,
+  /* ===============================
+     VARIANT SHIPPING (optional override)
+  =============================== */
+
+  shipping: {
+    standard: Number,
+    overnight: Number,
+    local: Number
   },
 
   images: {
     type: [String],
-    required: true,
-    validate: {
-      validator: function (val) {
-        return Array.isArray(val) && val.length > 0;
-      },
-      message: 'At least one image is required.',
-    },
-  },
-  allowBackorder: {
-    type: Boolean,
-    default: false,
   },
 
-  videos: {
-    type: [String],
-    default: [],
-  },
-  averageRating: {
-    type: Number,
-    default: 0,
-  },
-  totalReviews: {
-    type: Number,
-    default: 0,
-  }
+  isPublished: { type: Boolean, default: false },
+  isDeleted: { type: Boolean, default: false },
 
 }, { timestamps: true });
 
-productVariantSchema.set('toJSON', {
-  transform: (doc, ret) => {
-    // Check if `sizes` exists and is an array, otherwise default to an empty array
-    ret.sizes = Array.isArray(ret.sizes) ? ret.sizes.map(s => ({
-      ...s,
-      price: parseFloat(s.price?.toString() || '0'),
-      salePrice: parseFloat(s.salePrice?.toString() || '0')
-    })) : [];  // If sizes is undefined, return an empty array
-
-    // Similarly, ensure `weightInKg` is defined and parsed
-    ret.weightInKg = parseFloat(ret.weightInKg?.toString() || '0');
-
-    return ret;
-  }
-});
-
-
-productVariantSchema.index({ productId: 1, isPublished: 1, isDeleted: 1 });
+productVariantSchema.index({ productId: 1 });
 productVariantSchema.index({ businessId: 1 });
+productVariantSchema.index({ sku: 1 });
 
-module.exports = mongoose.models.ProductVariant || mongoose.model('ProductVariant', productVariantSchema);
+module.exports =
+  mongoose.models.ProductVariant ||
+  mongoose.model('ProductVariant', productVariantSchema);

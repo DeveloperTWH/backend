@@ -20,6 +20,9 @@ const SubscriptionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+    applicationId: { //  helps to track the subsciption data with application
+    type: String,
+  },
   stripeCustomerId: { // Optional, helps with customer lookup
     type: String,
   },

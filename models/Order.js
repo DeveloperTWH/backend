@@ -32,6 +32,17 @@ const orderItemSchema = new Schema(
       type: Number,
       required: true,
     },
+    tax: {
+      categoryCode: String,
+      categoryLabel: String,
+      rate: { type: Number, default: 0 },
+      taxIncluded: { type: Boolean, default: true },
+      unitPriceExclTax: Number,
+      unitPriceInclTax: Number,
+      lineBaseAmount: Number,
+      lineTaxAmount: Number,
+      lineTotalAmount: Number,
+    },
     chargeId: { type: String }, // from payment_intent.succeeded (charge.id)
     transferId: { type: String }, // from charge.transfer if using direct/automatic transfers
     applicationFeeId: { type: String }, // if you query application_fee later
@@ -67,6 +78,24 @@ const orderSchema = new Schema(
     totalAmount: {
       type: Number, // stored in smallest currency unit (e.g. paise if INR)
       required: true,
+    },
+    subtotalAmount: {
+      type: Number,
+      required: true,
+    },
+    taxSummary: {
+      subtotalExclTaxAmount: {
+        type: Number,
+        default: 0,
+      },
+      taxTotal: {
+        type: Number,
+        default: 0,
+      },
+      taxIncluded: {
+        type: Boolean,
+        default: true,
+      },
     },
     currency: {
       type: String,
@@ -108,6 +137,32 @@ const orderSchema = new Schema(
       state: String,
       country: String,
       pincode: String,
+    },
+    shipping: {
+      deliverySpeed: {
+        type: String,
+        enum: ["standard", "express", "local"],
+      },
+      method: {
+        type: String,
+        enum: ["flat_rate", "quantity_based", "free_shipping"],
+      },
+      amount: {
+        type: Number,
+        default: 0,
+      },
+      freeShippingApplied: {
+        type: Boolean,
+        default: false,
+      },
+      freeShippingThreshold: {
+        type: Number,
+        default: null,
+      },
+      quantityTier: {
+        minQuantity: Number,
+        maxQuantity: Number,
+      },
     },
     paymentStatus: {
       type: String,

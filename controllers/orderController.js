@@ -93,19 +93,367 @@ const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const Order = require("../models/Order");
-const ProductVariant = require("../models/ProductVariant");
+const User = require("../models/User");
+const ProductVariant = require("../models/ProductVariant")  ;
 const Business = require("../models/Business");
-const { sendOrderStatusEmail } = require("../utils/orderPhase");
+const { sendOrderStatusEmail, sendOrderUpdateEmail, sendVendorNewOrderEmail, sendCustomerOrderPlacedEmail } = require("../utils/orderPhase");
+const {
+  calculateShippingForVendor,
+  normalizeDeliverySpeed,
+} = require("../utils/vendorShipping");
+const {
+  getResolvedTaxCategory,
+  getTaxRateForCategory,
+  buildTaxAwareAmounts,
+  extractTaxFromInclusiveAmount,
+  roundCurrency,
+} = require("../utils/vendorTax");
+
+const toNum = (value) => {
+  if (value && typeof value === "object" && value.$numberDecimal != null) {
+    return Number(value.$numberDecimal);
+  }
+
+  return value == null ? null : Number(value);
+};
+
+const getVariantAttribute = (variantDoc, key) => {
+  if (!variantDoc?.attributes) return null;
+
+  if (typeof variantDoc.attributes.get === "function") {
+    const direct = variantDoc.attributes.get(key);
+    if (direct != null) return direct;
+
+    const fallbackKey = Array.from(variantDoc.attributes.keys()).find(
+      (attrKey) =>
+        String(attrKey).toLowerCase() === String(key).toLowerCase()
+    );
+
+    return fallbackKey ? variantDoc.attributes.get(fallbackKey) : null;
+  }
+
+  const entries = Object.entries(variantDoc.attributes);
+  const match = entries.find(
+    ([attrKey]) => String(attrKey).toLowerCase() === String(key).toLowerCase()
+  );
+  return match ? match[1] : null;
+};
+
+const normalizeCapabilityStatus = (status) => {
+  return typeof status === "string" ? status.toLowerCase() : "inactive";
+};
+
+const getTransferCapabilityStatus = (account) => {
+  const capabilities = account?.capabilities || {};
+
+  return (
+    normalizeCapabilityStatus(capabilities.transfers) ||
+    normalizeCapabilityStatus(
+      capabilities?.stripe_balance?.stripe_transfers
+    ) ||
+    "inactive"
+  );
+};
+
+const resolveVariantSelection = (variantDoc, requestedValue) => {
+  const requested = requestedValue == null ? "" : String(requestedValue).trim();
+  const sizes = Array.isArray(variantDoc?.sizes) ? variantDoc.sizes : null;
+
+  if (sizes) {
+    const selectedSize = sizes.find((entry) => String(entry.size) === requested);
+    if (!selectedSize) return null;
+
+    return {
+      key: String(selectedSize.size),
+      stock: Number(selectedSize.stock || 0),
+      sku: selectedSize.sku || variantDoc.sku || null,
+      price: toNum(selectedSize.price),
+      salePrice: toNum(selectedSize.salePrice),
+      discountEndDate: selectedSize.discountEndDate || null,
+      allowBackorder: Boolean(variantDoc.allowBackorder),
+      stockSource: selectedSize,
+      usesNestedSizes: true,
+    };
+  }
+
+  const attributeSize = getVariantAttribute(variantDoc, "size");
+  const normalizedKey = requested || attributeSize || "default";
+
+  if (
+    attributeSize &&
+    requested &&
+    String(attributeSize).toLowerCase() !== requested.toLowerCase()
+  ) {
+    return null;
+  }
+
+  return {
+    key: String(normalizedKey),
+    stock: Number(variantDoc?.stock || 0),
+    sku: variantDoc?.sku || null,
+    price: toNum(variantDoc?.price),
+    salePrice: toNum(variantDoc?.salePrice),
+    discountEndDate: null,
+    allowBackorder: Boolean(variantDoc?.allowBackorder),
+    stockSource: variantDoc,
+    usesNestedSizes: false,
+  };
+};
+
+const resolveRequestedDeliverySpeed = (body) => {
+  return normalizeDeliverySpeed(
+    body?.deliverySpeed ||
+      body?.selectedDeliverySpeed ||
+      body?.deliveryOption ||
+      body?.speed ||
+      body?.shippingMethod ||
+      body?.shippingType ||
+      body?.shippingOption ||
+      body?.shipping?.deliverySpeed ||
+      body?.shipping?.selectedDeliverySpeed ||
+      body?.shipping?.speed ||
+      body?.shipping?.method ||
+      body?.shipping?.type
+  );
+};
+
+// exports.initiateOrder = async (req, res) => {
+//   try {
+//     const { items, shippingAddress, userNote } = req.body;
+//     const userId = req.user.id;
+
+//     if (!Array.isArray(items) || items.length === 0) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Items are required" });
+//     }
+
+//     if (
+//       !shippingAddress?.fullName ||
+//       !shippingAddress?.phone ||
+//       !shippingAddress?.addressLine1
+//     ) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Shipping address is incomplete" });
+//     }
+
+//     // Build vendor map (to detect multiple vendors) & validate each item
+//     const vendorItemMap = {};
+//     const seen = new Set();
+
+//     for (const item of items) {
+//       const { productId, variantId, size, quantity, price } = item;
+//       if (!productId || !variantId || !size || !quantity || !price) {
+//         return res
+//           .status(400)
+//           .json({ success: false, message: "Invalid item structure" });
+//       }
+
+//       const key = `${variantId}-${size}`;
+//       if (seen.has(key)) {
+//         return res
+//           .status(400)
+//           .json({ success: false, message: "Duplicate item in cart" });
+//       }
+//       seen.add(key);
+
+//       const variant = await ProductVariant.findById(variantId).populate(
+//         "productId"
+//       ); // ensures product linkage integrity
+
+//       if (
+//         !variant ||
+//         !variant.productId ||
+//         variant.productId._id.toString() !== productId
+//       ) {
+//         return res
+//           .status(404)
+//           .json({ success: false, message: "Product or variant not found" });
+//       }
+
+//       const selectedVariant = resolveVariantSelection(variant, size);
+//       if (!selectedVariant) {
+//         return res
+//           .status(400)
+//           .json({ success: false, message: `Size ${size} not available` });
+//       }
+
+//       if (!selectedVariant.allowBackorder && selectedVariant.stock < quantity) {
+//         return res
+//           .status(400)
+//           .json({ success: false, message: `${variant.productId.title} is Out of stock for size ${size} remove it first` });
+//       }
+
+//       // Verify price (handles sale price with end date)
+//       const discountEnd = selectedVariant.discountEndDate
+//         ? new Date(selectedVariant.discountEndDate)
+//         : null;
+//       const validDiscount = !!(
+//         selectedVariant.salePrice &&
+//         (!discountEnd || discountEnd.getTime() > Date.now())
+//       );
+//       const actualPrice = validDiscount
+//         ? Number(selectedVariant.salePrice)
+//         : Number(selectedVariant.price);
+//       if (Number(price) !== actualPrice) {
+//         return res
+//           .status(400)
+//           .json({ success: false, message: `Price mismatch for size ${size}` });
+//       }
+
+//       const vendorId = variant.ownerId.toString();
+
+//       // Collect items per vendor
+//       if (!vendorItemMap[vendorId]) {
+//         vendorItemMap[vendorId] = {
+//           businessId: variant.businessId,
+//           items: [],
+//         };
+//       }
+
+//       vendorItemMap[vendorId].items.push({
+//         productId,
+//         variantId,
+//         quantity,
+//         price: actualPrice,
+//         size,
+//         sku: selectedVariant.sku,
+//         color: variant.color || getVariantAttribute(variant, "color") || "default",
+//       });
+//     }
+
+//     // Enforce single-vendor checkout (for now)
+//     const vendorIds = Object.keys(vendorItemMap);
+//     if (vendorIds.length !== 1) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Single-vendor checkout only at this time.",
+//       });
+//     }
+
+//     // Compute totals and create a single order
+//     const vendorId = vendorIds[0];
+//     const { businessId, items: vendorItems } = vendorItemMap[vendorId];
+//     const totalAmount = vendorItems.reduce(
+//       (sum, i) => sum + i.price * i.quantity,
+//       0
+//     );
+
+//     // Load Business to get Connect account
+//     const business = await Business.findById(businessId);
+//     if (!business || !business.stripeConnectAccountId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Vendor is not connected to Stripe. Please contact support.",
+//       });
+//     }
+
+//     const account = await stripe.accounts.retrieve(business.stripeConnectAccountId);
+//     const transferCapability = getTransferCapabilityStatus(account);
+
+//     business.chargesEnabled = !!account.charges_enabled;
+//     business.payoutsEnabled = !!account.payouts_enabled;
+//     business.capabilities = {
+//       card_payments: normalizeCapabilityStatus(account?.capabilities?.card_payments),
+//       transfers: transferCapability,
+//     };
+//     business.onboardingStatus =
+//       business.chargesEnabled && business.payoutsEnabled && transferCapability === "active"
+//         ? "completed"
+//         : "requirements_due";
+//     if (business.onboardingStatus === "completed" && !business.onboardedAt) {
+//       business.onboardedAt = new Date();
+//     }
+//     await business.save();
+
+//     if (!business.chargesEnabled || transferCapability !== "active") {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Vendor Stripe onboarding is incomplete. The connected account can't receive transfers yet.",
+//       });
+//     }
+
+//     const groupOrderId = uuidv4();
+
+//     const order = await new Order({
+//       groupOrderId,
+//       userId,
+//       vendorId,
+//       businessId,
+//       items: vendorItems,
+//       totalAmount, // kept in major units (USD); Stripe gets cents below
+//       currency: "USD",
+//       status: "created",
+//       statusHistory: [{ status: "created" }],
+//       shippingAddress,
+//       userNote,
+//       paymentStatus: "pending",
+//       paymentMethod: "stripe",
+//     }).save();
+
+//     // Platform fee in cents (e.g., 50 => $0.50). Set via env.
+//     const platformFeeCents = Number.parseInt(
+//       process.env.PLATFORM_FEE_CENTS || "0"
+//     );
+
+//     // Create a vendor-directed PaymentIntent with Connect transfer
+//     const paymentIntent = await stripe.paymentIntents.create(
+//       {
+//         amount: Math.round(totalAmount * 100), // cents
+//         currency: "usd",
+//         metadata: {
+//           groupOrderId,
+//           orderId: order._id.toString(),
+//         },
+//         application_fee_amount: platformFeeCents,
+//         transfer_data: {
+//           destination: business.stripeConnectAccountId,
+//         },
+//       },
+//       {
+//         // Helps prevent accidental duplicate charges on retries
+//         idempotencyKey: `pi:${order._id.toString()}`,
+//       }
+//     );
+
+//     // Save PI id on order
+//     order.paymentId = paymentIntent.id;
+//     await order.save();
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "Order initialized",
+//       groupOrderId,
+//       orderId: order._id,
+//       clientSecret: paymentIntent.client_secret,
+//     });
+//   } catch (err) {
+//     console.error("Order initiation failed:", err);
+//     if (err?.code === "insufficient_capabilities_for_transfer") {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Vendor Stripe onboarding is incomplete. The connected account needs transfer capability enabled before checkout can start.",
+//       });
+//     }
+//     return res.status(500).json({ success: false, message: "Server error" });
+//   }
+// };
+
 
 exports.initiateOrder = async (req, res) => {
   try {
     const { items, shippingAddress, userNote } = req.body;
     const userId = req.user.id;
+    const deliverySpeed = resolveRequestedDeliverySpeed(req.body);
 
     if (!Array.isArray(items) || items.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Items are required" });
+      return res.status(400).json({
+        success: false,
+        message: "Items are required",
+      });
     }
 
     if (
@@ -113,77 +461,79 @@ exports.initiateOrder = async (req, res) => {
       !shippingAddress?.phone ||
       !shippingAddress?.addressLine1
     ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Shipping address is incomplete" });
+      return res.status(400).json({
+        success: false,
+        message: "Shipping address is incomplete",
+      });
     }
 
-    // Build vendor map (to detect multiple vendors) & validate each item
     const vendorItemMap = {};
     const seen = new Set();
 
     for (const item of items) {
       const { productId, variantId, size, quantity, price } = item;
+
       if (!productId || !variantId || !size || !quantity || !price) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid item structure" });
+        return res.status(400).json({
+          success: false,
+          message: "Invalid item structure",
+        });
       }
 
       const key = `${variantId}-${size}`;
       if (seen.has(key)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Duplicate item in cart" });
+        return res.status(400).json({
+          success: false,
+          message: "Duplicate item in cart",
+        });
       }
       seen.add(key);
 
       const variant = await ProductVariant.findById(variantId).populate(
         "productId"
-      ); // ensures product linkage integrity
+      );
 
       if (
         !variant ||
         !variant.productId ||
         variant.productId._id.toString() !== productId
       ) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Product or variant not found" });
+        return res.status(404).json({
+          success: false,
+          message: "Product or variant not found",
+        });
       }
 
-      const sizeObj = variant.sizes.find((s) => s.size === size);
-      if (!sizeObj) {
-        return res
-          .status(400)
-          .json({ success: false, message: `Size ${size} not available` });
+      const selectedVariant = resolveVariantSelection(variant, size);
+
+      if (!selectedVariant) {
+        return res.status(400).json({
+          success: false,
+          message: `Size ${size} not available`,
+        });
       }
 
-      if (!variant.allowBackorder && sizeObj.stock < quantity) {
-        return res
-          .status(400)
-          .json({ success: false, message: `${variant.productId.title} is Out of stock for size ${size} remove it first` });
+      if (!selectedVariant.allowBackorder && selectedVariant.stock < quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `${variant.productId.title} is out of stock for size ${size}`,
+        });
       }
 
-      // Verify price (handles sale price with end date)
-      const now = new Date();
-      const validDiscount = !!(
-        sizeObj.salePrice &&
-        sizeObj.discountEndDate &&
-        new Date(sizeObj.discountEndDate) > now
-      );
+      const discountEnd = selectedVariant.discountEndDate
+        ? new Date(selectedVariant.discountEndDate)
+        : null;
+
+      const validDiscount =
+        selectedVariant.salePrice &&
+        (!discountEnd || discountEnd.getTime() > Date.now());
+
       const actualPrice = validDiscount
-        ? Number(sizeObj.salePrice)
-        : Number(sizeObj.price);
-      if (Number(price) !== actualPrice) {
-        return res
-          .status(400)
-          .json({ success: false, message: `Price mismatch for size ${size}` });
-      }
+        ? Number(selectedVariant.salePrice)
+        : Number(selectedVariant.price);
 
       const vendorId = variant.ownerId.toString();
 
-      // Collect items per vendor
       if (!vendorItemMap[vendorId]) {
         vendorItemMap[vendorId] = {
           businessId: variant.businessId,
@@ -195,15 +545,20 @@ exports.initiateOrder = async (req, res) => {
         productId,
         variantId,
         quantity,
-        price: actualPrice,
+        submittedPrice: Number(price),
+        priceExclTax: actualPrice,
         size,
-        sku: sizeObj.sku,
-        color: variant.color,
+        sku: selectedVariant.sku,
+        taxCategory: getResolvedTaxCategory(variant.productId),
+        color:
+          variant.color ||
+          getVariantAttribute(variant, "color") ||
+          "default",
       });
     }
 
-    // Enforce single-vendor checkout (for now)
     const vendorIds = Object.keys(vendorItemMap);
+
     if (vendorIds.length !== 1) {
       return res.status(400).json({
         success: false,
@@ -211,22 +566,140 @@ exports.initiateOrder = async (req, res) => {
       });
     }
 
-    // Compute totals and create a single order
     const vendorId = vendorIds[0];
-    const { businessId, items: vendorItems } = vendorItemMap[vendorId];
-    const totalAmount = vendorItems.reduce(
-      (sum, i) => sum + i.price * i.quantity,
-      0
-    );
+    const { businessId, items: rawVendorItems } = vendorItemMap[vendorId];
 
-    // Load Business to get Connect account
+    // Load user + business
     const business = await Business.findById(businessId);
+    const user = await User.findById(userId).select("email");
+
     if (!business || !business.stripeConnectAccountId) {
       return res.status(400).json({
         success: false,
-        message: "Vendor is not connected to Stripe. Please contact support.",
+        message: "Vendor is not connected to Stripe.",
       });
     }
+
+    const account = await stripe.accounts.retrieve(
+      business.stripeConnectAccountId
+    );
+
+    const transferCapability = getTransferCapabilityStatus(account);
+
+    business.chargesEnabled = !!account.charges_enabled;
+    business.payoutsEnabled = !!account.payouts_enabled;
+    business.capabilities = {
+      card_payments: normalizeCapabilityStatus(
+        account?.capabilities?.card_payments
+      ),
+      transfers: transferCapability,
+    };
+
+    business.onboardingStatus =
+      business.chargesEnabled &&
+      business.payoutsEnabled &&
+      transferCapability === "active"
+        ? "completed"
+        : "requirements_due";
+
+    if (business.onboardingStatus === "completed" && !business.onboardedAt) {
+      business.onboardedAt = new Date();
+    }
+
+    await business.save();
+
+    if (!business.chargesEnabled || transferCapability !== "active") {
+      return res.status(400).json({
+        success: false,
+        message: "Vendor Stripe onboarding incomplete.",
+      });
+    }
+
+    const vendorItems = rawVendorItems.map((item) => {
+      const taxRate = getTaxRateForCategory(
+        business.taxSettings,
+        item.taxCategory
+      );
+      const taxPricing = buildTaxAwareAmounts({
+        priceExclTax: item.priceExclTax,
+        salePriceExclTax: null,
+        taxRate,
+      });
+      const unitPriceInclTax = taxPricing.priceInclTax ?? roundCurrency(item.priceExclTax);
+      const lineAmounts = extractTaxFromInclusiveAmount({
+        inclusiveAmount: unitPriceInclTax * Number(item.quantity || 0),
+        taxRate,
+      });
+      const submittedPrice = Number(item.submittedPrice);
+      const acceptsLegacyPrice =
+        Math.abs(submittedPrice - Number(item.priceExclTax || 0)) < 0.01;
+      const acceptsTaxInclusivePrice =
+        Math.abs(submittedPrice - Number(unitPriceInclTax || 0)) < 0.01;
+
+      if (!acceptsLegacyPrice && !acceptsTaxInclusivePrice) {
+        const error = new Error(`Price mismatch for size ${item.size}`);
+        error.statusCode = 400;
+        throw error;
+      }
+
+      return {
+        productId: item.productId,
+        variantId: item.variantId,
+        quantity: item.quantity,
+        price: unitPriceInclTax,
+        size: item.size,
+        sku: item.sku,
+        color: item.color,
+        tax: {
+          categoryCode: item.taxCategory?.code || null,
+          categoryLabel: item.taxCategory?.label || null,
+          rate: taxRate,
+          taxIncluded: true,
+          unitPriceExclTax: taxPricing.priceExclTax,
+          unitPriceInclTax,
+          lineBaseAmount: lineAmounts.amountExclTax,
+          lineTaxAmount: lineAmounts.taxAmount,
+          lineTotalAmount: lineAmounts.amountInclTax,
+        },
+      };
+    });
+
+    const subtotalAmount = vendorItems.reduce(
+      (sum, i) => sum + Number(i.tax?.lineTotalAmount || (i.price * i.quantity) || 0),
+      0
+    );
+    const subtotalExclTaxAmount = vendorItems.reduce(
+      (sum, i) => sum + Number(i.tax?.lineBaseAmount || 0),
+      0
+    );
+    const taxTotal = vendorItems.reduce(
+      (sum, i) => sum + Number(i.tax?.lineTaxAmount || 0),
+      0
+    );
+    const totalQuantity = vendorItems.reduce(
+      (sum, i) => sum + Number(i.quantity || 0),
+      0
+    );
+
+    let shippingCalculation;
+    try {
+      shippingCalculation = calculateShippingForVendor(
+        business.shippingSettings,
+        {
+          deliverySpeed,
+          subtotal: subtotalAmount,
+          totalQuantity,
+        }
+      );
+    } catch (shippingError) {
+      return res.status(400).json({
+        success: false,
+        message: shippingError.message,
+      });
+    }
+
+    const totalAmount =
+      subtotalAmount + Number(shippingCalculation.amount || 0);
 
     const groupOrderId = uuidv4();
 
@@ -236,25 +709,42 @@ exports.initiateOrder = async (req, res) => {
       vendorId,
       businessId,
       items: vendorItems,
-      totalAmount, // kept in major units (USD); Stripe gets cents below
+      subtotalAmount,
+      taxSummary: {
+        subtotalExclTaxAmount,
+        taxTotal,
+        taxIncluded: true,
+      },
+      totalAmount,
       currency: "USD",
       status: "created",
       statusHistory: [{ status: "created" }],
       shippingAddress,
+      shipping: {
+        deliverySpeed: shippingCalculation.deliverySpeed,
+        method: shippingCalculation.method,
+        amount: Number(shippingCalculation.amount || 0),
+        freeShippingApplied: Boolean(shippingCalculation.freeShippingApplied),
+        freeShippingThreshold: shippingCalculation.freeShippingThreshold,
+        quantityTier: shippingCalculation.matchedTier
+          ? {
+              minQuantity: shippingCalculation.matchedTier.minQuantity,
+              maxQuantity: shippingCalculation.matchedTier.maxQuantity,
+            }
+          : undefined,
+      },
       userNote,
       paymentStatus: "pending",
       paymentMethod: "stripe",
     }).save();
 
-    // Platform fee in cents (e.g., 50 => $0.50). Set via env.
     const platformFeeCents = Number.parseInt(
       process.env.PLATFORM_FEE_CENTS || "0"
     );
 
-    // Create a vendor-directed PaymentIntent with Connect transfer
     const paymentIntent = await stripe.paymentIntents.create(
       {
-        amount: Math.round(totalAmount * 100), // cents
+        amount: Math.round(totalAmount * 100),
         currency: "usd",
         metadata: {
           groupOrderId,
@@ -266,14 +756,39 @@ exports.initiateOrder = async (req, res) => {
         },
       },
       {
-        // Helps prevent accidental duplicate charges on retries
         idempotencyKey: `pi:${order._id.toString()}`,
       }
     );
 
-    // Save PI id on order
     order.paymentId = paymentIntent.id;
     await order.save();
+
+    // =========================
+    // 📧 EMAILS (CUSTOMER + VENDOR)
+    // =========================
+    try {
+      const orderUrlCustomer =
+        "https://app.mosaicbizhub.com/customer/order";
+
+      const orderUrlVendor =
+        "https://app.mosaicbizhub.com/partners/orders";
+
+      // 👤 CUSTOMER EMAIL
+      if (user?.email) {
+        await sendCustomerOrderPlacedEmail(user.email, order, orderUrlCustomer);
+      }
+
+      // 👨‍💼 VENDOR EMAIL
+      if (business?.email) {
+        await sendVendorNewOrderEmail(
+          business.email,
+          order,
+          orderUrlVendor
+        );
+      }
+    } catch (err) {
+      console.error("Email sending failed:", err);
+    }
 
     return res.status(201).json({
       success: true,
@@ -281,12 +796,55 @@ exports.initiateOrder = async (req, res) => {
       groupOrderId,
       orderId: order._id,
       clientSecret: paymentIntent.client_secret,
+      totals: {
+        subtotalExclTaxAmount,
+        subtotalAmount,
+        taxTotal,
+        shippingAmount: Number(shippingCalculation.amount || 0),
+        totalAmount,
+        deliverySpeed: shippingCalculation.deliverySpeed,
+        shippingMethod: shippingCalculation.method,
+        freeShippingApplied: Boolean(shippingCalculation.freeShippingApplied),
+      },
+      shipping: {
+        deliverySpeed: shippingCalculation.deliverySpeed,
+        amount: Number(shippingCalculation.amount || 0),
+        method: shippingCalculation.method,
+        freeShippingApplied: Boolean(shippingCalculation.freeShippingApplied),
+        freeShippingThreshold: shippingCalculation.freeShippingThreshold,
+        matchedTier: shippingCalculation.matchedTier || null,
+      },
+      taxSummary: {
+        subtotalExclTaxAmount,
+        subtotalInclTaxAmount: subtotalAmount,
+        taxTotal,
+        taxIncluded: true,
+      },
     });
   } catch (err) {
     console.error("Order initiation failed:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+
+    if (err?.statusCode === 400) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || "Invalid order payload",
+      });
+    }
+
+    if (err?.code === "insufficient_capabilities_for_transfer") {
+      return res.status(400).json({
+        success: false,
+        message: "Vendor Stripe onboarding incomplete.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
-};
+};  
+
 
 exports.getUserOrders = async (req, res) => {
   try {
@@ -364,16 +922,25 @@ exports.acceptOrder = async (req, res) => {
       const variant = await ProductVariant.findById(item.variantId);
       if (!variant) continue;
 
-      const sizeObj = variant.sizes.find((s) => s.size === item.size);
-      if (sizeObj.stock === 0) {
+      const selectedVariant = resolveVariantSelection(variant, item.size);
+      if (!selectedVariant) {
+        return res.status(500).json({
+          success: false,
+          message: "Order Cannot Be Accepted - Item configuration is invalid",
+        });
+      }
+
+      if (selectedVariant.stock === 0) {
         return res.status(500).json({
           success: false,
           message: "Order Cannot Be Accepted - Item Out of Stock",
         });
-      };
-      if (sizeObj) {
-        sizeObj.stock = Math.max(0, sizeObj.stock - item.quantity); // Prevent negative
       }
+
+      selectedVariant.stockSource.stock = Math.max(
+        0,
+        Number(selectedVariant.stockSource.stock || 0) - Number(item.quantity || 0)
+      );
 
       await variant.save();
     }
@@ -486,17 +1053,20 @@ exports.shipOrder = async (req, res) => {
     const { trackingId, trackingUrl, vendorNote } = req.body;
 
     if (!trackingId || !trackingUrl) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Tracking ID and URL are required" });
+      return res.status(400).json({
+        success: false,
+        message: "Tracking ID and URL are required",
+      });
     }
 
-    const order = await Order.findOne({ _id: orderId, vendorId });
+    const order = await Order.findOne({ _id: orderId, vendorId })
+      .populate("userId", "email"); // ✅ FIX
 
     if (!order) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Order not found or unauthorized" });
+      return res.status(404).json({
+        success: false,
+        message: "Order not found or unauthorized",
+      });
     }
 
     if (order.status !== "accepted") {
@@ -514,6 +1084,15 @@ exports.shipOrder = async (req, res) => {
 
     await order.save();
 
+    // ✅ FIX EMAIL SENDING
+    const email = order.userId?.email;
+
+    if (email) {
+      await sendOrderUpdateEmail(email, "shipped", trackingUrl);
+    } else {
+      console.error("Missing user email for order:", order._id);
+    }
+
     res.json({
       success: true,
       message: "Order marked as shipped",
@@ -525,33 +1104,47 @@ exports.shipOrder = async (req, res) => {
   }
 };
 
-
 exports.deliverOrder = async (req, res) => {
   try {
     const vendorId = req.user.id;
     const orderId = req.params.orderId;
 
-    const order = await Order.findOne({ _id: orderId, vendorId });
+    const order = await Order.findOne({ _id: orderId, vendorId })
+      .populate("userId", "email"); // ✅ IMPORTANT FIX
+
+    console.log("deliverOrder found order:", order);
+
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found or unauthorized" });
+      return res.status(404).json({
+        success: false,
+        message: "Order not found or unauthorized",
+      });
     }
 
     if (order.status !== "shipped") {
       return res.status(400).json({
         success: false,
-        message: 'Order must be shipped before it can be delivered',
+        message: "Order must be shipped before it can be delivered",
       });
     }
 
-    // Mark as delivered
     order.status = "delivered";
     order.statusHistory.push({ status: "delivered" });
 
     await order.save();
 
+    // ✅ FIX EMAIL
+    const email = order.userId?.email;
+
+    if (email) {
+      await sendOrderUpdateEmail(email, "delivered");
+    } else {
+      console.error("Missing user email for order:", order._id);
+    }
+
     res.json({
       success: true,
-      message: 'Order marked as delivered successfully',
+      message: "Order marked as delivered successfully",
       order,
     });
   } catch (err) {
@@ -560,8 +1153,6 @@ exports.deliverOrder = async (req, res) => {
   }
 };
 
-
-// Customer initiates return
 exports.initiateReturn = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -799,9 +1390,11 @@ exports.cancelOrderByUser = async (req, res) => {
         const variant = await ProductVariant.findById(item.variantId);
         if (!variant) continue;
 
-        const sizeObj = variant.sizes?.find((s) => s.size === item.size);
-        if (sizeObj) {
-          sizeObj.stock = Number(sizeObj.stock || 0) + Number(item.quantity || 0);
+        const selectedVariant = resolveVariantSelection(variant, item.size);
+        if (selectedVariant) {
+          selectedVariant.stockSource.stock =
+            Number(selectedVariant.stockSource.stock || 0) +
+            Number(item.quantity || 0);
         }
         await variant.save();
       }
@@ -852,3 +1445,98 @@ exports.cancelOrderByUser = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+
+
+
+
+
+
+// exports.shipOrder = async (req, res) => {
+//   try {
+//     const vendorId = req.user.id;
+//     const orderId = req.params.orderId;
+//     const { trackingId, trackingUrl, vendorNote } = req.body;
+
+//     if (!trackingId || !trackingUrl) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Tracking ID and URL are required" });
+//     }
+
+//     const order = await Order.findOne({ _id: orderId, vendorId });
+
+//     if (!order) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Order not found or unauthorized" });
+//     }
+
+//     if (order.status !== "accepted") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Only accepted orders can be shipped",
+//       });
+//     }
+
+//     order.trackingInfo = { trackingId, trackingUrl };
+//     if (vendorNote) order.vendorNote = vendorNote;
+
+//     order.status = "shipped";
+//     order.statusHistory.push({ status: "shipped" });
+
+//     await order.save();
+//     await sendOrderUpdateEmail(order.customerEmail, "shipped", trackingUrl);  
+
+//     res.json({
+//       success: true,
+//       message: "Order marked as shipped",
+//       order,
+//     });
+//   } catch (err) {
+//     console.error("Error in shipOrder:", err);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// };
+
+
+// exports.deliverOrder = async (req, res) => {
+//   try {
+//     const vendorId = req.user.id;
+//     const orderId = req.params.orderId;
+
+//     const order = await Order.findOne({ _id: orderId, vendorId });
+//     console.log("deliverOrder found order:", order) // Debug log
+//     if (!order) {
+//       return res.status(404).json({ success: false, message: "Order not found or unauthorized" });
+//     }
+
+//     if (order.status !== "shipped") {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Order must be shipped before it can be delivered',
+//       });
+//     }
+
+//     // Mark as delivered
+//     order.status = "delivered";
+//     await sendOrderUpdateEmail(order.customerEmail, "delivered");
+
+//     await order.save();
+//     await sendOrderUpdateEmail(order.customerEmail, "delivered");
+
+//     res.json({
+//       success: true,
+//       message: 'Order marked as delivered successfully',
+//       order,
+//     });
+//   } catch (err) {
+//     console.error("Error delivering order:", err);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// };
+
+
+// Customer initiates return
+

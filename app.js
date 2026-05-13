@@ -8,10 +8,12 @@ const vendorOnboardRoutes = require('./routes/vendorOnboarding.routes');
 const subscriptionPlanRoutes = require('./routes/subscriptionPlanRoutes')
 const productRoutes = require('./routes/productRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
+const foodRoutes = require('./routes/foodRoutes');
 const minorityTypeRoutes = require('./routes/minorityTypeRoutes');
 const uploadImageRoute = require('./routes/uploadImage')
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const subcategoryRoutes = require('./routes/subcategoryRoutes');
 const publicListingRoutes = require('./routes/publicListing');
 const privateListingRoutes = require('./routes/privateListing');
 const businessProfileRoutes = require('./routes/businessProfileRoutes');
@@ -31,8 +33,12 @@ const blogRoutes = require('./routes/admin/Blog/blogRoutes');
 const productCategoryRoutes = require('./routes/admin/productCategoryRoutes')
 const productSubcategoryRoutes = require('./routes/admin/productSubcategoryRoutes')
 const ServiceCategoryRoutes = require('./routes/admin/categoryRoutes')
+const categoryRequestRoutes = require('./routes/admin/categoryRequestRoutes');
+const serviceSubcategoryRoutes = require('./routes/admin/serviceSubcategoryRoutes');
 const foodCategoryRoutes = require('./routes/admin/foodCategoryRoutes')
+const foodSubcategoryRoutes = require('./routes/admin/foodSubcategoryRoutes');
 const adminBusinessRoutes = require('./routes/admin/businessRoutes')
+const adminProductRoutes = require('./routes/admin/adminProductRoutes')
 const vendorOnboardVerifyStage1Routes= require("./routes/vendorOnboarding.routes")
 
 
@@ -40,7 +46,9 @@ const vendorOnboardVerifyStage1Routes= require("./routes/vendorOnboarding.routes
 const wishlistRoutes = require('./routes/customer/wishlistRoutes');
 const cartRoutes = require('./routes/customer/cartRoutes');
 
+//discount route
 
+const discountRoutes = require('./routes/discounts');
 
 // Service Booking Route
 
@@ -63,8 +71,11 @@ const apiRoutes = require('./routes/api.routes');
 
 
 const googlePlace = require('./routes/googlePlace');
+const featuredProductRoutes = require('./routes/featuredProductRoutes');
+const contactInquiryRoutes = require('./routes/contactInquiryRoutes');
 
 const authRoutes = require('./routes/authRoutes');
+const enquiryRoutes = require('./routes/enquiryRoutes');
 
 
 
@@ -75,16 +86,20 @@ const xss = require('xss-clean');
 
 const app = express();
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:8081',
-  'https://app.minorityownedbusiness.info',
-  'https://app.mosaicbizhub.com',
-  "http://192.168.1.50:3000",
-  "exp://192.168.0.104:8081",
-  "exp://192.168.0.104:3000",
-  "exp://192.168.0.104:3001"
-];
+const allowedOrigins = Array.from(
+  new Set([
+    'https://www.mosaicbizhub.com',
+    'https://app.mosaicbizhub.com',
+    'http://localhost:3000',
+    'http://localhost:8081',
+    'https://app.minorityownedbusiness.info',
+    'http://192.168.1.50:3000',
+    'exp://192.168.0.104:8081',
+    'exp://192.168.0.104:3000',
+    'exp://192.168.0.104:3001',
+    process.env.FRONTEND_URL,
+  ].filter(Boolean))
+);
 app.set('trust proxy', 1);
 app.use(cors({
   origin: function (origin, callback) {
@@ -122,7 +137,7 @@ app.use('/api/subscription/webhook',
 app.use(express.json());
 
 
-
+app.use('/api/product', productRoutes);
 app.use('/api', publicListingRoutes);
 app.use('/api/private', privateListingRoutes);
 app.use('/api/users', userRoutes);
@@ -130,18 +145,19 @@ app.use('/api/business', businessRoutes);
 app.use('/api/vendor-onboarding', vendorOnboardRoutes);
 app.use('/admin/vendor-onboard-verify-stage1', vendorOnboardVerifyStage1Routes);
 app.use('/api/subscription-plans', subscriptionPlanRoutes);
-app.use('/api/product', productRoutes);
 app.use('/api/service', serviceRoutes);
+app.use('/api/food', foodRoutes);
 app.use('/api/minority-types', minorityTypeRoutes);
 app.use('/api', uploadImageRoute);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api', categoryRoutes);
+app.use('/api', subcategoryRoutes);
 
 app.use('/api/cms', cmsRoutes);
 
 
 
-//CMS Route's
+//CMS Route's For maneging the admin content
 app.use('/cms', cmsRoutes);
 
 
@@ -151,18 +167,24 @@ app.use('/admin/faqs', adminFaqRoutes);
 app.use('/api/admin/testimonials', testimonialRoutes);
 app.use('/admin/api/blogs', blogRoutes);
 app.use('/admin/api/business', adminBusinessRoutes);
+app.use('/admin/api/products', adminProductRoutes);
 app.use('/api/business-profile', businessProfileRoutes);
 app.use('/api/admin/category/product', productCategoryRoutes);
 app.use('/api/admin/category/product-subcategory', productSubcategoryRoutes);
 app.use('/api/admin/category/service', ServiceCategoryRoutes);
+app.use('/api/admin/category-requests', categoryRequestRoutes);
+app.use('/api/admin/category/service-subcategory', serviceSubcategoryRoutes);
 app.use('/api/admin/category/food', foodCategoryRoutes);
+app.use('/api/admin/category/food-subcategory', foodSubcategoryRoutes);
 // In app.js, add:
 const businessProfileVerifyRoutes = require('./routes/admin/businessProfileVerifyRoutes');
 app.use('/admin/business-profile-verify', businessProfileVerifyRoutes);
 
 
 
+// disount routes 
 
+app.use('/api/discounts', discountRoutes);
 
 
 // User Routes
@@ -195,13 +217,16 @@ app.use('/api', apiRoutes);
 // Place Api
 
 app.use('/api/google-places', googlePlace)
+app.use('/api', featuredProductRoutes);
+app.use('/api/contact-inquiry', contactInquiryRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/enquiries', enquiryRoutes);
 
 
 
 // Test route
 app.get('/', (req, res) => {
-  res.json({ message: 'Mosaic Biz Hub API is working' });
+  res.json({ message: 'Mosaic Biz Hub API is working 9 feb ' });
 });
 
 // require('./jobs/cleanupImages');

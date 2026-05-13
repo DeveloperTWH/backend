@@ -30,4 +30,11 @@ const reviewSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-module.exports = mongoose.model('Review', reviewSchema);
+reviewSchema.index(
+  { userId: 1, listingId: 1, listingType: 1 },
+  { unique: true }
+);
+
+module.exports =
+  mongoose.models.Review ||
+  mongoose.model('Review', reviewSchema);

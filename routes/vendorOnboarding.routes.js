@@ -16,6 +16,9 @@ const {
   markPaymentAsPaid,
   getStatusByApplicationId,
   getApplicationId,
+  getOnboardingData,
+  updateBusinessProfile,
+  patchBusinessProfile,
 } = require("../controllers/vendorOnboarding.controller");
 
 const {
@@ -34,6 +37,11 @@ router.post("/draft", authMiddleware, requireVerifiedVendor, saveDraft);
 router.get("/draft", authMiddleware, requireVerifiedVendor, getDraft);
 router.post('/stage1/mark-paid', authMiddleware, requireVerifiedVendor, markPaymentAsPaid);
 router.post("/submit", authMiddleware, requireVerifiedVendor, submitForReview);
+router.get("/onboarding-data", authMiddleware, requireVerifiedVendor, getOnboardingData);
+
+router.put("/business-profile", authMiddleware, requireVerifiedVendor, updateBusinessProfile);
+router.patch("/business-profile", authMiddleware, requireVerifiedVendor, patchBusinessProfile);
+
 // In routes/vendorOnboarding.routes.js, add:
 router.get('/status/:applicationId', getStatusByApplicationId);
 

@@ -1,11 +1,109 @@
 const express = require('express');
-const { createProductWithVariants, addVariants, updateVariant, deleteVariant, deleteProduct, getProductById, updateProduct,getVariantById  } = require('../controllers/productController');
+const { 
+  createProductWithVariants, 
+  addVariants, 
+  updateVariant, 
+  deleteVariant, 
+  deleteProduct, 
+  getProductById, 
+  updateProduct,
+  getVariantById, 
+  updateVariantStock,
+  getBusinessProducts,
+  getProductUploadUrl, 
+  getVariantImageUploadUrl  
+} = require('../controllers/productController');
 const authenticate = require('../middlewares/authenticate');
 const isBusinessOwner = require('../middlewares/isBusinessOwner');
-const { validateProductInput, validateVariantInput  } = require('../validators/productValidators');
+const isCustomer = require('../middlewares/isCustomer');
+const { listReviews, upsertReview, deleteReview } = require('../controllers/reviewController');
+const { 
+  validateProductInput, 
+  validateVariantInput, 
+  validateUpdateVariantInput  
+} = require('../validators/productValidators');
 
 const router = express.Router();
 
+// ============================================
+// SPECIAL ROUTES - MUST COME FIRST
+// ============================================
+
+/**
+ * @route   GET /api/products/upload-url
+ * @desc    Get pre-signed URL for product image upload
+ * @access  Private
+ */
+router.get(
+  '/upload-url',
+  authenticate,
+  getProductUploadUrl
+);
+
+/**
+ * @route   GET /api/products/variant-upload-url
+ * @desc    Get pre-signed URL for variant image upload
+ * @access  Private
+ */
+router.get(
+  '/variant-upload-url',
+  authenticate,
+  getVariantImageUploadUrl
+);
+
+/**
+ * @route   GET /api/products/business/:businessId
+ * @desc    Get all products for a business
+ * @access  Private
+ */
+router.get(
+  '/business/:businessId',
+  authenticate,
+  isBusinessOwner,
+  getBusinessProducts  // Note: This should be getBusinessProducts, not getProductById
+);
+
+router.get(
+  '/:productId/reviews',
+  listReviews('product')
+);
+
+router.post(
+  '/:productId/reviews',
+  authenticate,
+  isCustomer,
+  upsertReview('product')
+);
+
+router.delete(
+  '/:productId/reviews/:reviewId',
+  authenticate,
+  isCustomer,
+  deleteReview('product')
+);
+
+// ============================================
+// PRODUCT ROUTES WITH PARAMETERS
+// ============================================
+
+/**
+ * @route   POST /api/products
+ * @desc    Create a new product with variants
+ * @access  Private
+ */
+router.post(
+  '/',
+  authenticate,
+  isBusinessOwner,
+  // validateProductInput,
+  createProductWithVariants
+);
+
+/**
+ * @route   GET /api/products/:productId
+ * @desc    Get single product by ID with all variants
+ * @access  Private
+ */
 router.get(
   '/:productId',
   authenticate,
@@ -13,7 +111,11 @@ router.get(
   getProductById
 );
 
-
+/**
+ * @route   PUT /api/products/:productId
+ * @desc    Update a product
+ * @access  Private
+ */
 router.put(
   '/:productId',
   authenticate,
@@ -21,17 +123,27 @@ router.put(
   updateProduct
 );
 
-
-
-router.post(
-  '/',
+/**
+ * @route   DELETE /api/products/delete-product/:productId
+ * @desc    Soft delete a product and all its variants
+ * @access  Private
+ */
+router.delete(
+  '/delete-product/:productId',
   authenticate,
   isBusinessOwner,
-  validateProductInput,
-  createProductWithVariants
+  deleteProduct
 );
 
+// ============================================
+// VARIANT ROUTES
+// ============================================
 
+/**
+ * @route   GET /api/products/get-variant/:productId/:variantId
+ * @desc    Get a single variant by ID
+ * @access  Private
+ */
 router.get(
   '/get-variant/:productId/:variantId',
   authenticate,
@@ -39,43 +151,54 @@ router.get(
   getVariantById
 );
 
-
+/**
+ * @route   POST /api/products/add-variants/:productId
+ * @desc    Add variants to an existing product
+ * @access  Private
+ */
 router.post(
-  '/add-variants/:productId', // productId is passed in the URL to target a specific product
+  '/add-variants/:productId',
   authenticate,
   isBusinessOwner,
-  validateVariantInput, // Validation for variant fields
-  addVariants // Controller to handle adding variants
+  // validateVariantInput,
+  addVariants
 );
 
-
+/**
+ * @route   PUT /api/products/update-variant/:productId/:variantId
+ * @desc    Update a specific variant
+ * @access  Private
+ */
 router.put(
   '/update-variant/:productId/:variantId',
   authenticate,
   isBusinessOwner,
-  validateVariantInput, 
-  updateVariant 
+  // validateUpdateVariantInput,
+  updateVariant
 );
 
-
-router.delete(
-  '/delete-variant/:productId/:variantId', // productId and variantId in URL
+/**
+ * @route   PATCH /api/products/update-variantstock/:variantId
+ * @desc    Update variant stock (increment/decrement/set)
+ * @access  Private
+ */
+router.patch(
+  '/update-variantstock/:variantId',
   authenticate,
   isBusinessOwner,
-  deleteVariant // Controller to handle variant deletion
+  updateVariantStock
 );
 
-
-
+/**
+ * @route   DELETE /api/products/delete-variant/:productId/:variantId
+ * @desc    Soft delete a specific variant
+ * @access  Private
+ */
 router.delete(
-  '/delete-product/:productId', // productId in URL
+  '/delete-variant/:productId/:variantId',
   authenticate,
   isBusinessOwner,
-  deleteProduct // Controller to handle product deletion
+  deleteVariant
 );
-
-
-
-
 
 module.exports = router;

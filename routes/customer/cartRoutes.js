@@ -17,20 +17,20 @@ const authenticate = require("../../middlewares/authenticate")
 const isCustomer = require("../../middlewares/isCustomer")
 
 // Get Cart
-router.get('/', authenticate, isCustomer, getCart);
+router.get('/', authenticate, getCart);
 
 // Add Item to Cart
-router.post('/add', authenticate, isCustomer, addItemToCart);
+router.post('/add', authenticate, addItemToCart);
 
 // Update Cart Item
-router.put('/update/:cartItemId', authenticate, isCustomer, updateCartItem);
+router.put('/update/:cartItemId', authenticate, updateCartItem);
 
 // Remove Item from Cart
-router.delete('/remove/:cartItemId', authenticate, isCustomer, removeItemFromCart);
+router.delete('/remove/:cartItemId', authenticate, removeItemFromCart);
 
-router.put('/update-quantity', authenticate, isCustomer, updateCartItemByComposite);
+router.put('/update-quantity', authenticate, updateCartItemByComposite);
 
-router.delete('/remove', authenticate, isCustomer, removeItemByComposite);
+router.delete('/remove', authenticate, removeItemByComposite);
 
 // Products mini API
 router.get("/products/mini", getProductsMini);
@@ -41,7 +41,7 @@ router.get("/variants/mini", getVariantsMini);
 router.post("/variants/mini", getVariantsMini);
 
 
-router.get("/count", authenticate, isCustomer, getCount);
-router.post("/merge", authenticate, isCustomer, mergeGuestCart);
+router.get("/count", authenticate, getCount);
+router.post("/merge", authenticate, mergeGuestCart);
 
 module.exports = router;

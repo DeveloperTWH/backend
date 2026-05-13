@@ -1,6 +1,7 @@
 // controllers/admin/businessProfileVerifyController.js
 const BusinessProfile = require('../../models/BusinessProfile');
 const VendorOnboarding = require('../../models/VendorOnboardingStage1');
+const Business = require('../../models/Business');
 
 // Get pending business profiles for admin review
 const getPendingBusinessProfiles = async (req, res) => {
@@ -148,7 +149,7 @@ const finalizeBusinessProfile = async (req, res) => {
     const totalPoints = step1Points + step3Points;
 
     // Calculate badge based on updated criteria
-    let badge = 'Bronze'; // Default for < 30 points
+    let badge = null; // No badge for < 30 points
     if (totalPoints >= 80) badge = 'Diamond';
     else if (totalPoints >= 50) badge = 'Platinum';
     else if (totalPoints >= 40) badge = 'Gold';
@@ -170,6 +171,12 @@ const finalizeBusinessProfile = async (req, res) => {
       totalPoints: totalPoints,
       verificationStatus: 'completed'
     });
+
+    // Mirror final points/badge to Business for listing and filtering use-cases
+    await Business.findOneAndUpdate(
+      { owner: profile.userId._id },
+      { $set: { points: totalPoints, badge } }
+    );
 
     // Send approval email to vendor
     try {
@@ -193,7 +200,6 @@ const finalizeBusinessProfile = async (req, res) => {
         totalPoints,
         badge,
         badgeCriteria: {
-          'Bronze': '< 30 pts',
           'Silver': '30+ pts', 
           'Gold': '40+ pts',
           'Platinum': '50+ pts',

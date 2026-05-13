@@ -137,15 +137,33 @@ exports.updateSubscriptionPlan = async (req, res) => {
   }
 };
 
+// exports.listSubscriptionPlans = async (req, res) => {
+//   try {
+//     const plans = await SubscriptionPlan.find().sort({ createdAt: -1 });
+//     return res.status(200).json({ success: true, data: plans });
+//   } catch (err) {
+//     console.error('Error listing plans:', err);
+//     return res.status(500).json({ success: false, message: 'Internal server error' });
+//   }
+// };
+
 exports.listSubscriptionPlans = async (req, res) => {
   try {
-    const plans = await SubscriptionPlan.find().sort({ createdAt: -1 });
-    return res.status(200).json({ success: true, data: plans });
+    const plans = await SubscriptionPlan.find();
+
+    // Custom order
+    const order = ['Silver', 'Gold', 'Platinum'];
+    const sortedPlans = plans.sort(
+      (a, b) => order.indexOf(a.name) - order.indexOf(b.name)
+    );
+
+    return res.status(200).json({ success: true, data: sortedPlans });
   } catch (err) {
     console.error('Error listing plans:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
+
 
 exports.getSubscriptionPlan = async (req, res) => {
   try {

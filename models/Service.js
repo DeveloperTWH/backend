@@ -4,7 +4,8 @@ const slugify = require('slugify');
 const serviceSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true,
+    required: false, // Made optional
+    default: 'Service',
     trim: true,
   },
   slug: {
@@ -14,31 +15,62 @@ const serviceSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true,
+    required: false, // Made optional
+    default: '',
   },
   price: {
     type: Number,
-    required: true,
+    required: false, // Made optional
+    default: 0,
     min: 0,
   },
   duration: {
     type: String, // Example: '1 hour', '30 minutes'
-    required: true,
+    required: false, // Made optional
+    default: '',
   },
   services: [
     {
-      name: { type: String, required: true },
-    },
-  ],
-  categories: [
-    {
-      categoryId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'ServiceCategory',
+      name: {
+        type: String,
         required: true,
-      }
+        trim: true,
+      },
+      description: {
+        type: String,
+        trim: true,
+      },
+      image: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      images: {
+        type: [String],
+        default: [],
+      },
+      durationMinutes: {
+        type: Number,
+        required: true,
+        min: 1,
+      },
+      price: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
     },
   ],
+  categoryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ServiceCategory',
+    required: true,
+  },
+  subcategoryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ServiceSubcategory',
+    required: true,
+  },
   ownerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -52,7 +84,6 @@ const serviceSchema = new mongoose.Schema({
   minorityType: {
     type: String,
     trim: true,
-    required: true,
   },
   isPublished: {
     type: Boolean,
@@ -60,21 +91,25 @@ const serviceSchema = new mongoose.Schema({
   },
   coverImage: {
     type: String,
-    required: true,
   },
   images: {
     type: [String],
-    required: true,
-    validate: {
-      validator: function (val) {
-        return val.length > 0;
-      },
-      message: 'At least one image is required.',
-    },
+    default: [],
   },
   maxBookingsPerSlot: {
     type: Number,
-    default: 1, // Default = only one person can book per slot
+    default: 1,
+  },
+  bookingToolLink: {
+    type: String,
+    trim: true,
+    validate: {
+      validator: function (v) {
+        if (!v) return true;
+        return /^https?:\/\/.+\..+/.test(v);
+      },
+      message: 'Please enter a valid URL (must start with http or https).'
+    }
   },
   videos: {
     type: [String],
@@ -82,13 +117,7 @@ const serviceSchema = new mongoose.Schema({
   },
   features: {
     type: [String],
-    required: true,
-    validate: {
-      validator: function (val) {
-        return val.length > 0;
-      },
-      message: 'At least one feature is required.',
-    },
+    default: [],
   },
   amenities: [
     {
@@ -100,25 +129,20 @@ const serviceSchema = new mongoose.Schema({
     {
       day: { type: String, required: true },
       hours: { type: String, required: true },
+      closed: { type: Boolean, default: false },
     },
   ],
+  // Simplified location - just a string for map link
   location: {
-    type: {
-      type: String,
-      enum: ['Point'],
-      required: true,
-      default: 'Point'
-    },
-    coordinates: {
-      type: [Number], // [longitude, latitude]
-      required: true
-    }
+    type: String,
+    default: '',
   },
+  // Make contact fields optional
   contact: {
-    phone: { type: String, required: true },
-    email: { type: String, required: true },
-    address: { type: String, required: true },
-    website: { type: String },
+    phone: { type: String, default: '' },
+    email: { type: String, default: '' },
+    address: { type: String, default: '' },
+    website: { type: String, default: '' },
   },
   faq: [
     {
@@ -136,6 +160,11 @@ const serviceSchema = new mongoose.Schema({
     min: 0,
     max: 5,
   },
+  badge: {
+    type: String,
+    enum: ['gold', 'silver', 'bronze'],
+    trim: true,
+  },
 }, { timestamps: true });
 
 // Generate slug before save
@@ -146,7 +175,6 @@ serviceSchema.pre('save', async function (next) {
   let slug = baseSlug;
   let counter = 1;
 
-  // Use mongoose.models to avoid circular reference
   const ServiceModel = mongoose.models.Service || this.constructor;
 
   while (await ServiceModel.exists({ slug })) {
@@ -156,7 +184,6 @@ serviceSchema.pre('save', async function (next) {
   this.slug = slug;
   next();
 });
-
 
 // Method to calculate total reviews and average rating
 serviceSchema.methods.calculateRatings = async function () {
@@ -174,7 +201,7 @@ serviceSchema.methods.calculateRatings = async function () {
   await this.save();
 };
 
-// Post-save hook to automatically update ratings when a Review is added/updated
+// Post-save hook to automatically update ratings
 serviceSchema.post('save', async function (doc, next) {
   if (doc.isModified('totalReviews') || doc.isModified('averageRating')) {
     await doc.calculateRatings();
@@ -184,7 +211,6 @@ serviceSchema.post('save', async function (doc, next) {
 
 // Indexes for faster queries
 serviceSchema.index({ ownerId: 1 });
-serviceSchema.index({ location: '2dsphere' });
-serviceSchema.index({ 'categories.categoryId': 1 });
+serviceSchema.index({ categoryId: 1 });
 
 module.exports = mongoose.model('Service', serviceSchema);

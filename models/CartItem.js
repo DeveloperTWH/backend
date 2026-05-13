@@ -12,6 +12,16 @@ const cartItemSchema = new Schema(
       type: String,
       required: true
     },
+    shippingMethod: {
+      type: String,
+      enum: ['standard', 'overnight', 'local'],
+      default: 'standard',
+    },
+    shippingCharge: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   { timestamps: true }
 );

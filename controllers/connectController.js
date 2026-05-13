@@ -3,6 +3,19 @@ const Stripe = require('stripe');
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const Business = require('../models/Business');
 
+function normalizeCapabilityStatus(status) {
+  return typeof status === 'string' ? status.toLowerCase() : 'inactive';
+}
+
+function getTransferCapabilityStatus(account) {
+  const capabilities = account?.capabilities || {};
+  return (
+    normalizeCapabilityStatus(capabilities.transfers) ||
+    normalizeCapabilityStatus(capabilities?.stripe_balance?.stripe_transfers) ||
+    'inactive'
+  );
+}
+
 /** Build RETURN/REFRESH URLs with businessId appended */
 function buildUrl(base, businessId) {
   const url = new URL(base);
@@ -102,16 +115,18 @@ exports.getStatus = async (req, res) => {
 
     const account = await stripe.accounts.retrieve(business.stripeConnectAccountId);
 
+    const transferCapability = getTransferCapabilityStatus(account);
     business.chargesEnabled = !!account.charges_enabled;
     business.payoutsEnabled = !!account.payouts_enabled;
-    if (account.capabilities) {
-      business.capabilities = {
-        card_payments: account.capabilities.card_payments || 'inactive',
-        transfers: account.capabilities.transfers || 'inactive',
-      };
-    }
+    business.capabilities = {
+      card_payments: normalizeCapabilityStatus(account?.capabilities?.card_payments),
+      transfers: transferCapability,
+    };
 
-    const completed = account.charges_enabled && account.payouts_enabled;
+    const completed =
+      account.charges_enabled &&
+      account.payouts_enabled &&
+      transferCapability === 'active';
     business.onboardingStatus = completed ? 'completed' : 'requirements_due';
     if (completed && !business.onboardedAt) business.onboardedAt = new Date();
 

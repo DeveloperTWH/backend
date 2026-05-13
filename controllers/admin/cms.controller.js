@@ -80,3 +80,35 @@ exports.getPublicCMSBySlug = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch CMS content' });
   }
 };
+
+exports.updateHowItWorksSection = async (req, res) => {
+  try {
+    const { section } = req.params;
+    const { title, content, icon, isActive } = req.body;
+    
+    const cms = await CMS.findOneAndUpdate(
+      { slug: 'how_it_works' },
+      { 
+        [`sections.${section}`]: { title, content, icon, isActive },
+        lastUpdatedBy: req.user?.id 
+      },
+      { new: true, upsert: true }
+    );
+    
+    res.json({ success: true, data: cms });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to update section' });
+  }
+};
+
+exports.getHowItWorks = async (req, res) => {
+  try {
+    const cms = await CMS.findOne({ slug: 'how_it_works', isActive: true })
+      .select('-lastUpdatedBy -__v');
+    
+    if (!cms) return res.status(404).json({ success: false, message: 'Content not found' });
+    res.json({ success: true, data: cms });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to fetch content' });
+  }
+};
