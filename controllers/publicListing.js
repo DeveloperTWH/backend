@@ -1083,18 +1083,21 @@ if (price) {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     let products = await Product.find(filters)
-      .select('title description coverImage slug brand categoryId subcategoryId price businessId')
+      // .select('title description coverImage slug brand categoryId subcategoryId price businessId')
+              .populate('businessId', 'businessName')
+        .populate('categoryId', 'name')
+        .populate('subcategoryId', 'name')
       .sort(sortOption)
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
     
-    // console.log(products)
+
 
 
     const businessIds = [...new Set(
       products
-        .map((product) => product.businessId?.toString())
+        .map((product) => product.businessId?._id?.toString?.() || product.businessId?.toString?.())
         .filter(Boolean)
     )];
 
@@ -1116,7 +1119,12 @@ if (price) {
       categoryId: product.categoryId,
       subcategoryId: product.subcategoryId,
       price: product.price,
-      badge: badgeByBusinessId.get(product.businessId?.toString()) || null,
+      totalReviews : product.totalReviews,
+      averageRating : product.averageRating,
+      badge:
+        badgeByBusinessId.get(
+          product.businessId?._id?.toString?.() || product.businessId?.toString?.()
+        ) || null,
     }));
 
     const total = await Product.countDocuments(filters);
@@ -1200,60 +1208,57 @@ exports.getProductsByFilters = async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // First get products without populating variants to avoid ObjectId errors
+    // First fetch products, then attach published variants by productId.
+    // This avoids relying on a `product.variants` array that may be absent or stale.
     let products = await Product.find(filters)
-      .select('title description coverImage variants slug')
+      .select('title description coverImage slug')
       .sort(sortOption)
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
 
-    // Manually fetch variants for each product
-    for (let product of products) {
-      if (product.variants && product.variants.length > 0) {
-        // Check if variants are ObjectIds (references) or embedded objects
-        const firstVariant = product.variants[0];
-        if (typeof firstVariant === 'string' || (firstVariant && firstVariant.toString)) {
-          // Variants are references - fetch them
-          try {
-            // Filter out invalid ObjectIds
-            const validVariantIds = product.variants.filter(id => {
-              if (typeof id === 'string') {
-                return /^[0-9a-fA-F]{24}$/.test(id); // Valid ObjectId format
-              }
-              return true;
-            });
-            
-            if (validVariantIds.length > 0) {
-              const variants = await ProductVariant.find({
-                _id: { $in: validVariantIds },
-                isPublished: true,
-                isDeleted: false
-              }).select('color price salePrice sku images videos totalReviews averageRating sizes').lean();
-              
-              product.variants = variants.map(variant => {
-                if (Array.isArray(variant.sizes)) {
-                  variant.sizes = variant.sizes.map(size => ({
-                    ...size,
-                    price: parseFloat(size?.price?.$numberDecimal || size?.price || 0),
-                    salePrice: parseFloat(size?.salePrice?.$numberDecimal || size?.salePrice || 0),
-                  }));
-                }
-                return variant;
-              });
-            } else {
-              product.variants = [];
-            }
-          } catch (variantError) {
-            console.log('Error fetching variants for product:', product._id, variantError.message);
-            product.variants = [];
-          }
-        }
-        // If variants are already embedded objects, keep them as is
-      } else {
-        product.variants = [];
+    const productIds = products.map((product) => product._id).filter(Boolean);
+    const variants = productIds.length
+      ? await ProductVariant.find({
+          productId: { $in: productIds },
+          isPublished: true,
+          isDeleted: false,
+        })
+          .select('productId color price salePrice sku images videos totalReviews averageRating sizes')
+          .lean()
+      : [];
+
+    const variantsByProductId = new Map();
+
+    for (const variant of variants) {
+      const productIdKey = variant.productId?.toString?.();
+      if (!productIdKey) continue;
+
+      const normalizedVariant = {
+        ...variant,
+        sizes: Array.isArray(variant.sizes)
+          ? variant.sizes.map((size) => ({
+              ...size,
+              price: parseFloat(size?.price?.$numberDecimal || size?.price || 0),
+              salePrice:
+                size?.salePrice == null
+                  ? null
+                  : parseFloat(size?.salePrice?.$numberDecimal || size?.salePrice || 0),
+            }))
+          : [],
+      };
+
+      if (!variantsByProductId.has(productIdKey)) {
+        variantsByProductId.set(productIdKey, []);
       }
+
+      variantsByProductId.get(productIdKey).push(normalizedVariant);
     }
+
+    products = products.map((product) => ({
+      ...product,
+      variants: variantsByProductId.get(product._id?.toString?.()) || [],
+    }));
 
     // Filter out products with no variants
     products = products.filter(product => product.variants && product.variants.length > 0);
