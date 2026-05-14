@@ -63,7 +63,7 @@ function clearCookieWithSharedOptions(res, name, { httpOnly = true } = {}) {
 
         await newUser.save();
 
-        console.log(`🔐 OTP for ${email} is: ${otp}`);
+        // console.log(`🔐 OTP for ${email} is: ${otp}`);
         
         // Handle email sending failure gracefully
         try {
