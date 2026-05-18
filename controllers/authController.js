@@ -86,6 +86,16 @@ function clearCookie(res, name) {
     setCookie(res, name, '', { maxAge: 0 });
 }
 
+function getServerAssignedOAuthRole(existingUser) {
+    if (!existingUser) return 'customer';
+
+    if (['admin', 'business_owner', 'customer'].includes(existingUser.role)) {
+        return existingUser.role;
+    }
+
+    return 'customer';
+}
+
 function mintSessionJWT(user) {
     // short-lived session token (1h)
     return jwt.sign({ sub: user._id.toString(), role: user.role }, JWT_SECRET, { expiresIn: '1h' });
@@ -112,13 +122,11 @@ function setAuthCookies(res, user, sessionJwt, ttlSeconds = 7 * 24 * 60 * 60) {
 
 /**
  * GET /api/auth/google
- * q: role=business_owner|customer
  * q: redirect=<absolute URL to send user back to>
  */
 exports.startGoogleAuth = (req, res) => {
-    const role = (req.query.role || 'customer').toString();
     const redirect = (req.query.redirect || FRONTEND_URL).toString();
-    const state = Buffer.from(JSON.stringify({ role, redirect })).toString('base64');
+    const state = Buffer.from(JSON.stringify({ redirect })).toString('base64');
 
     const url = oauth.generateAuthUrl({
         access_type: 'offline',
@@ -138,7 +146,7 @@ exports.handleGoogleCallback = async (req, res) => {
     try {
         const code = String(req.query.code || '');
         const rawState = String(req.query.state || '');
-        const { role, redirect } = JSON.parse(Buffer.from(rawState, 'base64').toString());
+        const { redirect } = JSON.parse(Buffer.from(rawState, 'base64').toString());
 
         const { tokens } = await oauth.getToken(code);
         const idToken = tokens.id_token;
@@ -155,13 +163,14 @@ exports.handleGoogleCallback = async (req, res) => {
 
         // upsert by google id or email
         let user = await User.findOne({ $or: [{ provider: 'google', providerId: googleId }, { email }] });
+        const assignedRole = getServerAssignedOAuthRole(user);
 
         if (!user) {
             user = await User.create({
                 name,
                 email,
                 profileImage,
-                role: role === 'business_owner' ? 'business_owner' : 'customer',
+                role: assignedRole,
                 provider: 'google',
                 providerId: googleId,
                 isOtpVerified: true,
@@ -170,9 +179,6 @@ exports.handleGoogleCallback = async (req, res) => {
             user.provider = 'google';
             user.providerId = googleId;
             if (!user.profileImage && profileImage) user.profileImage = profileImage;
-            if (['customer', 'business_owner'].includes(role) && user.role !== 'admin') {
-                user.role = role;
-            }
             await user.save();
         }
 
