@@ -18,6 +18,82 @@ const s3Client = new S3Client({
   },
 });
 
+const DEFAULT_PRODUCT_SHIPPING = { standard: 0, overnight: 0, local: 0 };
+
+const toShippingNumber = (value) => {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const hasOwnShippingField = (shipping, field) =>
+  Object.prototype.hasOwnProperty.call(shipping, field);
+
+const normalizeProductShipping = (incomingShipping, existingShipping = DEFAULT_PRODUCT_SHIPPING) => {
+  if (incomingShipping === undefined) {
+    return existingShipping || { ...DEFAULT_PRODUCT_SHIPPING };
+  }
+
+  if (!incomingShipping || typeof incomingShipping !== "object" || Array.isArray(incomingShipping)) {
+    return existingShipping || { ...DEFAULT_PRODUCT_SHIPPING };
+  }
+
+  const base = {
+    ...DEFAULT_PRODUCT_SHIPPING,
+    ...(existingShipping || {}),
+  };
+
+  for (const field of ["standard", "overnight", "local"]) {
+    if (hasOwnShippingField(incomingShipping, field)) {
+      const parsed = toShippingNumber(incomingShipping[field]);
+      base[field] = parsed !== undefined ? parsed : base[field];
+    }
+  }
+
+  return base;
+};
+
+const normalizeVariantShipping = (incomingShipping, existingShipping) => {
+  if (incomingShipping === undefined) {
+    return existingShipping === undefined ? null : existingShipping;
+  }
+
+  if (incomingShipping === null) {
+    return null;
+  }
+
+  if (!incomingShipping || typeof incomingShipping !== "object" || Array.isArray(incomingShipping)) {
+    return existingShipping === undefined ? null : existingShipping;
+  }
+
+  const hasAnyKnownField = ["standard", "overnight", "local"].some((field) =>
+    hasOwnShippingField(incomingShipping, field)
+  );
+
+  if (!hasAnyKnownField) {
+    return null;
+  }
+
+  const base = {
+    standard: 0,
+    overnight: 0,
+    local: 0,
+    ...(existingShipping || {}),
+  };
+
+  for (const field of ["standard", "overnight", "local"]) {
+    if (hasOwnShippingField(incomingShipping, field)) {
+      const parsed = toShippingNumber(incomingShipping[field]);
+      base[field] = parsed !== undefined ? parsed : base[field];
+    }
+  }
+
+  return base;
+};
+
 
 /**
  * Generate SKU for variant
@@ -116,7 +192,7 @@ exports.createProductWithVariants = async (req, res) => {
       ownerId: userId,
       businessId,
       attributes: attributes || [],
-      shipping: shipping || { standard: 0, overnight: 0, local: 0 },
+      shipping: normalizeProductShipping(shipping),
       coverImage,
       galleryImages: galleryImages || [],
       metaFields: metaFields || [],
@@ -170,7 +246,7 @@ for (const variant of variants) {
       ? Decimal128.fromString(variant.salePrice.toString())
       : null,
     stock: variant.stock || 0,
-    shipping: variant.shipping || { standard: 0, overnight: 0, local: 0 },
+    shipping: normalizeVariantShipping(variant.shipping),
     images: variant.images || [],
     isPublished: isPublished || false,
   });
@@ -570,7 +646,7 @@ exports.updateProduct = async (req, res) => {
     product.subcategoryId = subcategoryId || product.subcategoryId;
     product.taxCategory = taxCategory !== undefined ? (taxCategory || null) : product.taxCategory;
     product.attributes = attributes || product.attributes;
-    product.shipping = shipping || product.shipping;
+    product.shipping = normalizeProductShipping(shipping, product.shipping);
     product.coverImage = coverImage || product.coverImage;
     product.galleryImages = galleryImages || product.galleryImages;
     product.metaFields = metaFields || product.metaFields;
@@ -617,8 +693,10 @@ exports.updateProduct = async (req, res) => {
               ? Decimal128.fromString(variant.salePrice.toString())
               : null;
             existingVariant.stock = variant.stock || 0;
-            existingVariant.shipping =
-              variant.shipping || { standard: 0, overnight: 0, local: 0 };
+            existingVariant.shipping = normalizeVariantShipping(
+              variant.shipping,
+              existingVariant.shipping
+            );
             existingVariant.images = variant.images || [];
             existingVariant.isPublished =
               isPublished !== undefined ? isPublished : existingVariant.isPublished;
@@ -658,7 +736,7 @@ exports.updateProduct = async (req, res) => {
               ? Decimal128.fromString(variant.salePrice.toString())
               : null,
             stock: variant.stock || 0,
-            shipping: variant.shipping || { standard: 0, overnight: 0, local: 0 },
+            shipping: normalizeVariantShipping(variant.shipping),
             images: variant.images || [],
             isPublished: isPublished || false
           });
@@ -957,7 +1035,7 @@ exports.addVariants = async (req, res) => {
         price: variant.price,
         salePrice: variant.salePrice,
         stock: variant.stock || 0,
-        shipping: variant.shipping || null,
+        shipping: normalizeVariantShipping(variant.shipping),
         images: variant.images || [],
         isPublished: product.isPublished,
       };
@@ -1032,7 +1110,9 @@ exports.updateVariant = async (req, res) => {
     if (price !== undefined) variant.price = price;
     if (salePrice !== undefined) variant.salePrice = salePrice;
     if (stock !== undefined) variant.stock = stock;
-    if (shipping) variant.shipping = shipping;
+    if (shipping !== undefined) {
+      variant.shipping = normalizeVariantShipping(shipping, variant.shipping);
+    }
     if (images) variant.images = images;
     if (isPublished !== undefined) variant.isPublished = isPublished;
 

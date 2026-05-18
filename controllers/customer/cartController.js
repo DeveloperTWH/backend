@@ -419,9 +419,13 @@ const getCart = async (req, res) => {
             const shippingMethod = ['standard', 'overnight', 'local'].includes(cartItem.shippingMethod)
                 ? cartItem.shippingMethod
                 : 'standard';
-            const shippingCharge = Number(
-                cartItem.shippingCharge != null ? cartItem.shippingCharge : (shipping[shippingMethod] || 0)
-            );
+            const shippingCharge = (() => {
+                const stored = cartItem.shippingCharge != null ? Number(cartItem.shippingCharge) : null;
+                // Only trust a stored value that is genuinely > 0.
+                // A value of 0 usually means the item was synced from a guest cart without a charge.
+                if (stored !== null && stored > 0) return stored;
+                return Number(shipping[shippingMethod] || 0);
+            })();
 
 
             // Return only necessary details (price is calculated on the frontend)
@@ -774,7 +778,40 @@ const getProductsMini = async (req, res, next) => {
             .select("_id title coverImage businessId slug")
             .lean();
 
-        res.json(products);
+        const businessIds = [...new Set(
+            products
+                .map((product) => product.businessId?.toString())
+                .filter(Boolean)
+        )];
+
+        const businesses = businessIds.length
+            ? await Business.find({ _id: { $in: businessIds } })
+                .select("_id businessName slug shippingSettings")
+                .lean()
+            : [];
+
+        const businessById = new Map(
+            businesses.map((business) => [String(business._id), business])
+        );
+
+        const out = products.map((product) => {
+            const business = businessById.get(String(product.businessId)) || null;
+
+            return {
+                ...product,
+                business: business
+                    ? {
+                        _id: business._id,
+                        businessName: business.businessName,
+                        slug: business.slug,
+                        shippingSettings: business.shippingSettings || null,
+                    }
+                    : null,
+                businessShippingSettings: business?.shippingSettings || null,
+            };
+        });
+
+        res.json(out);
     } catch (err) {
         next(err);
     }
@@ -906,7 +943,7 @@ async function ensureSingleActiveCartReplace(userId, businessId) {
     // find any open cart for the user
     let cart = await Cart.findOne({ userId, isBooked: false });
 
-    // none → create
+    // none â†’ create
     if (!cart) {
         return await Cart.create({
             userId,
@@ -917,7 +954,7 @@ async function ensureSingleActiveCartReplace(userId, businessId) {
         });
     }
 
-    // if cart is for a different business → delete existing line items and reuse cart with new business
+    // if cart is for a different business â†’ delete existing line items and reuse cart with new business
     if (String(cart.businessId) !== String(businessId)) {
         if (Array.isArray(cart.items) && cart.items.length) {
             await CartItem.deleteMany({ _id: { $in: cart.items } });
@@ -934,7 +971,56 @@ async function ensureSingleActiveCartReplace(userId, businessId) {
     return cart;
 }
 
+/**
+ * Look up the product's effective per-item shipping rate for a given method.
+ * Used during guest-cart merge where no shippingCharge was stored by the frontend.
+ */
+async function resolveShippingChargeForMerge(productId, variantId, shippingMethod) {
+    try {
+        const method = ['standard', 'overnight', 'local'].includes(shippingMethod)
+            ? shippingMethod
+            : 'standard';
 
+        // Fetch variant shipping first (highest priority)
+        if (variantId) {
+            const variant = await ProductVariant.findById(variantId)
+                .select('shipping')
+                .lean();
+            const variantShipping = normalizeShipping(variant?.shipping);
+            if (variantShipping && variantShipping[method] > 0) {
+                return variantShipping[method];
+            }
+        }
+
+        // Fall back to product-level shipping
+        const product = await Product.findById(productId)
+            .select('shipping businessId')
+            .lean();
+        if (!product) return 0;
+
+        const productShipping = normalizeShipping(product.shipping);
+        if (productShipping && productShipping[method] > 0) {
+            return productShipping[method];
+        }
+
+        // Last resort: business flat-rate settings
+        const business = product.businessId
+            ? await Business.findById(product.businessId)
+                .select('shippingSettings')
+                .lean()
+            : null;
+
+        const settings = business?.shippingSettings;
+        if (!settings?.method || !settings?.flatRate) return 0;
+
+        // map 'overnight' -> 'express' for flatRate key lookup
+        const speedKey = method === 'overnight' ? 'express' : method;
+        const rate = settings.flatRate[speedKey];
+        return rate != null ? Number(rate) : 0;
+    } catch {
+        return 0;
+    }
+}
 
 mergeGuestCart = async (req, res) => {
     try {
@@ -950,7 +1036,7 @@ mergeGuestCart = async (req, res) => {
         // upsert items (productId + variantId + size unique within THIS cart)
         for (const it of items) {
             if (!it || !it.productId || !it.variantId) continue;
-            // DB expects `variant` (string) — map incoming `size` → `variant`
+            // DB expects `variant` (string) â€” map incoming `size` â†’ `variant`
             const variantStr = String(it.size ?? it?.variant?.size ?? "").trim();
             if (!variantStr) continue;
             const inc = Math.max(1, Number(it.quantity || 1))
@@ -968,9 +1054,11 @@ mergeGuestCart = async (req, res) => {
 
             if (existing) {
                 existing.quantity = Math.max(1, Number(existing.quantity || 0) + inc);
-                existing.shippingCharge = Number(it.shippingCharge || existing.shippingCharge || 0);
+                // Recompute from product/business settings - never trust guest's stored 0
+                existing.shippingCharge = await resolveShippingChargeForMerge(it.productId, it.variantId, shippingMethod);
                 await existing.save();
             } else {
+                const computedShipping = await resolveShippingChargeForMerge(it.productId, it.variantId, shippingMethod);
                 const created = await CartItem.create({
                     productId: it.productId,
                     variantId: it.variantId,
@@ -978,7 +1066,7 @@ mergeGuestCart = async (req, res) => {
                     userId,                      // required
                     variant: variantStr,         // required (string)
                     shippingMethod,
-                    shippingCharge: Number(it.shippingCharge || 0),
+                    shippingCharge: computedShipping,   // computed from DB, not guest's 0
                     quantity: inc,
                 });
                 await Cart.updateOne({ _id: cart._id }, { $addToSet: { items: created._id } });
