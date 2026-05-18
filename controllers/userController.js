@@ -27,6 +27,10 @@ function clearCookieWithSharedOptions(res, name, { httpOnly = true } = {}) {
     });
 }
 
+function getSafePublicRole(role) {
+    return role === 'business_owner' ? 'business_owner' : 'customer';
+}
+
  exports.registerUser = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -35,6 +39,7 @@ function clearCookieWithSharedOptions(res, name, { httpOnly = true } = {}) {
 
     try {
         const { name, email, password, role, mobile, gender, minorityType  } = req.body;
+        const safeRole = getSafePublicRole(role);
 
         const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
         if (existingUser) {
@@ -53,7 +58,7 @@ function clearCookieWithSharedOptions(res, name, { httpOnly = true } = {}) {
             email,
             passwordHash,
             mobile,
-            role,
+            role: safeRole,
             gender,
             minorityType,
             otp: otpHash,

@@ -1,4 +1,57 @@
 const User = require("../../models/User");
+const bcrypt = require("bcryptjs");
+const { validationResult } = require("express-validator");
+
+// POST /admin/users/admins
+exports.createAdminUser = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const { name, email, password, mobile, gender, minorityType } = req.body;
+
+    const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists with email or mobile",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const user = await User.create({
+      name,
+      email,
+      passwordHash,
+      mobile,
+      gender,
+      minorityType,
+      role: "admin",
+      isOtpVerified: true,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Admin user created successfully",
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("createAdminUser error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 
 // GET /admin/users
 exports.getAllUsers = async (req, res) => {

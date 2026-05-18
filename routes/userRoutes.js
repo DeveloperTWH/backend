@@ -20,7 +20,7 @@ router.post(
     body('name').notEmpty().trim().withMessage('Name is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('mobile').trim().notEmpty().withMessage('Mobile number is required').isMobilePhone('any').withMessage('Enter a valid mobile number'),
-    body('role').isIn(['admin', 'customer', 'business_owner']).withMessage('Invalid role'),
+    body('role').optional().isIn(['customer', 'business_owner']).withMessage('Invalid role'),
   ],
   userController.registerUser
 );
