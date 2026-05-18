@@ -6,16 +6,44 @@ const authenticate = require('../middlewares/authenticate')
 
 const router = express.Router();
 
-// Rate limiter for login
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 15,
-  message: 'Too many login attempts. Please try again later.',
-});
+function buildAuthLimiter(max, message) {
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message,
+    },
+  });
+}
+
+// Rate limiters for sensitive auth flows
+const registerLimiter = buildAuthLimiter(
+  5,
+  'Too many registration attempts. Please try again later.'
+);
+
+const loginLimiter = buildAuthLimiter(
+  15,
+  'Too many login attempts. Please try again later.'
+);
+
+const otpVerifyLimiter = buildAuthLimiter(
+  10,
+  'Too many OTP verification attempts. Please try again later.'
+);
+
+const otpResendLimiter = buildAuthLimiter(
+  5,
+  'Too many OTP resend attempts. Please try again later.'
+);
 
 // Register route
 router.post(
   '/register',
+  registerLimiter,
   [
     body('name').notEmpty().trim().withMessage('Name is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
@@ -40,6 +68,7 @@ router.post('/logout', userController.logout);
 
 router.post(
   '/verify-otp',
+  otpVerifyLimiter,
   [
     body('email').isEmail().withMessage('Valid email is required'),
     body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
@@ -49,6 +78,7 @@ router.post(
 
 router.post(
   '/resend-otp',
+  otpResendLimiter,
   [body('email').isEmail().withMessage('Valid email is required')],
   userController.resendOtp
 );
