@@ -10,7 +10,7 @@ This document tracks security checklist remediation items, their repository evid
 | 11 | Duplicate payment/webhook handlers documented | Pending: no PR link available from local workspace | `faf432f3562a9e8473dcb8adc13caf20b33d52b0` | N/A for runtime behavior. Documentation verified in repo. | 2026-05-19 |
 | 12 | Backend README created | Pending: no PR link available from local workspace | `18554f2c28738f8b21a8f91ca36e2ab1f46325e4` | N/A for runtime behavior. README verified in repo. | 2026-05-19 |
 | 13 | Environment/setup checklist created | Pending: no PR link available from local workspace | `0f7b7a0976a4b79818fc53c369037706ef1f57c0` | N/A for runtime behavior. `.env.example` and `SETUP.md` verified in repo. | 2026-05-19 |
-| 17 | Tracking document created | Pending: no PR link available from local workspace | Pending until this document commit is created | N/A. Document created in repo and awaiting commit. | 2026-05-19 |
+| 17 | Tracking document created | Pending: no PR link available from local workspace | `aec0e1af4e5bf26caa74a15154b09f13e9e1b647` | N/A. Tracking document created and committed in repo. | 2026-05-19 |
 
 ## Evidence details
 
