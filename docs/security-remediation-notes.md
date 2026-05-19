@@ -15,6 +15,8 @@ This is the single consolidated remediation document for the completed security 
 | 11 | Duplicate payment/webhook handlers documented | Pending: no PR link available from local workspace | `faf432f3562a9e8473dcb8adc13caf20b33d52b0` | Documentation verified in repository. | 2026-05-19 |
 | 12 | Backend README created | Pending: no PR link available from local workspace | `18554f2c28738f8b21a8f91ca36e2ab1f46325e4` | README verified in repository. | 2026-05-19 |
 | 13 | Environment/setup checklist created | Pending: no PR link available from local workspace | `0f7b7a0976a4b79818fc53c369037706ef1f57c0` | `.env.example` and `SETUP.md` verified in repository. | 2026-05-19 |
+| 14 | Staging environment documented | Pending: no PR link available from local workspace | Pending until this note is committed | No staging environment exists currently. Documented in this remediation file instead of a separate `STAGING.md`. | 2026-05-19 |
+| 16 | Staging-dependent validation/deployment evidence | Pending: no PR link available from local workspace | Pending until this note is committed | No staging environment exists currently, so staging-only validation evidence is not available. | 2026-05-19 |
 | 17 | Tracking document created | Pending: no PR link available from local workspace | `c601ee04619e279bd3335e4fd380d9c837158f70` | Tracking information merged into this document. | 2026-05-19 |
 
 ## Item 1: Hardcoded secret removed from active auth flow
@@ -170,6 +172,47 @@ This is the single consolidated remediation document for the completed security 
 
 - Production should inject secrets through deployment configuration or a secret manager, not from a developer `.env`.
 - Any credentials that have already been shared outside a secure local environment should be rotated.
+
+## Item 14: Staging environment documented
+
+### Fix summary
+
+- There is currently no dedicated staging environment for this backend.
+- To avoid confusion from extra files, the staging-status note is documented in this single remediation document instead of creating a separate `STAGING.md`.
+- Because no staging environment exists, there are no staging URLs, no staging-only test accounts, and no separate QA expectation sheet to attach at this time.
+
+### Validation
+
+- Environment status verified from the current project workflow and repository context.
+- No staging environment artifact exists today to validate against.
+
+### Deployment notes
+
+- When a staging environment is introduced, document these fields immediately:
+  - base URL
+  - admin/business/customer test accounts
+  - webhook endpoints and secrets
+  - QA smoke-test expectations
+
+## Item 16: Staging-dependent validation/deployment evidence
+
+### Fix summary
+
+- Staging-dependent proof cannot be provided today because the project does not currently have a staging environment.
+- Local repository checks and local runtime validation were used instead where possible.
+
+### Validation
+
+- This limitation is explicitly documented so the client understands why staging screenshots, staging URLs, and staging test execution evidence are absent.
+
+### Deployment notes
+
+- Once a staging environment exists, replace any staging-related `Pending` entries in this document with:
+  - staging URL
+  - test account reference
+  - date of staging validation
+  - screenshot or log evidence
+  - tester/owner name if needed for audit traceability
 
 ## Item 17: Tracking document created
 
