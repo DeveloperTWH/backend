@@ -1,5 +1,9 @@
 # Stripe Webhook Remediation
 
+Related reference:
+
+- See `docs/stripe-handler-ownership-map.md` for the full route-to-handler, secret, and flow-ownership mapping across Stripe payment and webhook controllers.
+
 ## Canonical order-payment webhook path
 
 - Authoritative endpoint: `/api/webhooks/stripe`
