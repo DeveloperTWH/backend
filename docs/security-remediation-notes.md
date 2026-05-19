@@ -15,8 +15,8 @@ This is the single consolidated remediation document for the completed security 
 | 11 | Duplicate payment/webhook handlers documented | Pending: no PR link available from local workspace | `faf432f3562a9e8473dcb8adc13caf20b33d52b0` | Documentation verified in repository. | 2026-05-19 |
 | 12 | Backend README created | Pending: no PR link available from local workspace | `18554f2c28738f8b21a8f91ca36e2ab1f46325e4` | README verified in repository. | 2026-05-19 |
 | 13 | Environment/setup checklist created | Pending: no PR link available from local workspace | `0f7b7a0976a4b79818fc53c369037706ef1f57c0` | `.env.example` and `SETUP.md` verified in repository. | 2026-05-19 |
-| 14 | Staging environment documented | Pending: no PR link available from local workspace | Pending until this note is committed | No staging environment exists currently. Documented in this remediation file instead of a separate `STAGING.md`. | 2026-05-19 |
-| 16 | Staging-dependent validation/deployment evidence | Pending: no PR link available from local workspace | Pending until this note is committed | No staging environment exists currently, so staging-only validation evidence is not available. | 2026-05-19 |
+| 14 | Staging environment documented | Pending: no PR link available from local workspace | `58e16d67dc416a96cbf3f14dc9f8c685ed02bfe8` | No staging environment exists currently. Documented in this remediation file instead of a separate `STAGING.md`. | 2026-05-19 |
+| 16 | Staging-dependent validation/deployment evidence | Pending: no PR link available from local workspace | `58e16d67dc416a96cbf3f14dc9f8c685ed02bfe8` | No staging environment exists currently, so staging-only validation evidence is not available. | 2026-05-19 |
 | 17 | Tracking document created | Pending: no PR link available from local workspace | `c601ee04619e279bd3335e4fd380d9c837158f70` | Tracking information merged into this document. | 2026-05-19 |
 
 ## Item 1: Hardcoded secret removed from active auth flow
