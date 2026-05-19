@@ -114,7 +114,7 @@ Add only the values needed for the features you plan to run locally. Some flows 
 | `CONNECT_RETURN_URL` | Optional | Absolute return URL override for Stripe Connect |
 | `CONNECT_REFRESH_URL` | Optional | Absolute refresh URL override for Stripe Connect |
 
-See [docs/stripe-handler-ownership-map.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/stripe-handler-ownership-map.md:1) for current Stripe route, handler, and secret ownership.
+See [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/security-remediation-notes.md:1) for current remediation status, including Stripe route, handler, and secret ownership.
 
 ### AWS S3
 
@@ -189,8 +189,7 @@ See [docs/stripe-handler-ownership-map.md](C:/Users/Asus/OneDrive/Desktop/TWH-pr
 
 ## Related documentation
 
-- [docs/stripe-webhook-remediation.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/stripe-webhook-remediation.md:1)
-- [docs/stripe-handler-ownership-map.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/stripe-handler-ownership-map.md:1)
+- [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/security-remediation-notes.md:1)
 
 ## Deployment notes
 

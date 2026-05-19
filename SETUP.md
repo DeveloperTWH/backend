@@ -100,8 +100,7 @@ npm run dev
 ## Related docs
 
 - [README.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/README.md:1)
-- [docs/stripe-webhook-remediation.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/stripe-webhook-remediation.md:1)
-- [docs/stripe-handler-ownership-map.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/stripe-handler-ownership-map.md:1)
+- [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/security-remediation-notes.md:1)
 
 ## Deployment notes
 
