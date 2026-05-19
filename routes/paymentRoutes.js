@@ -1,6 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { createPaymentIntent, handleStripeWebhook } = require('../controllers/paymentController');
+const { createPaymentIntent } = require('../controllers/paymentController');
 const { body } = require('express-validator');
 
 
@@ -24,8 +24,5 @@ paymentRouter.post(
   ],
   createPaymentIntent
 );
-
-// Webhook route to handle Stripe events
-paymentRouter.post('/stripe-webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
 module.exports = paymentRouter;

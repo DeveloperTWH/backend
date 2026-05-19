@@ -12,7 +12,6 @@ const {
   submitForReview,
   createVerificationPayment,
   getPaymentStatus,
-  handleVendorPaymentWebhook,
   markPaymentAsPaid,
   getStatusByApplicationId,
   getApplicationId,
@@ -50,9 +49,6 @@ router.get('/applicationId',authMiddleware,getApplicationId);
 router.get("/stage1/upload-url", authMiddleware, requireVerifiedVendor, getStage1UploadUrl);
 router.post("/stage1/create-payment", authMiddleware, requireVerifiedVendor, createVerificationPayment);
 router.get("/stage1/payment-status", authMiddleware, requireVerifiedVendor, getPaymentStatus);
-
-// ===== WEBHOOK ROUTE (No Auth) =====
-router.post("/webhook/payment", express.raw({ type: 'application/json' }), handleVendorPaymentWebhook);
 
 // ===== ADMIN ROUTES (Require Admin Role) =====
 router.get('/pending', authenticate, isAdmin, getPendingApplications);

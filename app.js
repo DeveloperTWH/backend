@@ -126,6 +126,7 @@ const { handleSubscriptionWebhook } = require('./controllers/webhookController')
 
 
 app.use('/api/stripe', stripeRoutes);
+app.use('/api/webhooks', webhookRoutes);
 app.use('/api/vendor-onboarding/webhook/payment', 
   express.raw({ type: 'application/json' }), 
   handleVendorPaymentWebhook
@@ -197,7 +198,6 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/bookings', bookingRoutes)
-app.use('/api/webhooks', webhookRoutes);
 app.use('/api/connect', connectRoutes);
 
 
