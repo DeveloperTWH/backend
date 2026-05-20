@@ -12,7 +12,6 @@ const {
   submitForReview,
   createVerificationPayment,
   getPaymentStatus,
-  markPaymentAsPaid,
   getStatusByApplicationId,
   getApplicationId,
   getOnboardingData,
@@ -34,7 +33,6 @@ const {
 // ===== VENDOR ROUTES (Require Vendor Role) =====
 router.post("/draft", authMiddleware, requireVerifiedVendor, saveDraft);
 router.get("/draft", authMiddleware, requireVerifiedVendor, getDraft);
-router.post('/stage1/mark-paid', authMiddleware, requireVerifiedVendor, markPaymentAsPaid);
 router.post("/submit", authMiddleware, requireVerifiedVendor, submitForReview);
 router.get("/onboarding-data", authMiddleware, requireVerifiedVendor, getOnboardingData);
 

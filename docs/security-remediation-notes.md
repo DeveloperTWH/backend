@@ -9,6 +9,7 @@ This is the single consolidated remediation document for the completed security 
 | 1 | Hardcoded secret removed from active auth flow | Pending: no PR link available from local workspace | `2b9e5624124b400eb38630210385a54111fa0bc2` | Environment-based JWT secret verified locally. | 2026-05-19 |
 | 3 | Admin route authorization enforced | Pending: no PR link available from local workspace | `9b57a4129f74ca93cb29de0b0224f7f0e2919ad8` | Unauthorized admin creation blocked successfully. Authorized admin creation verified. | 2026-05-19 |
 | 4 | OAuth role escalation prevented | Pending: no PR link available from local workspace | `1ab53662b886d7b615c06c39561e593a74230a50` | Querystring role tampering validation completed locally. | 2026-05-19 |
+| 5 | Vendor verification test bypass removed | Pending: no PR link available from local workspace | Pending until this note is committed | Manual bypass route removed. Payment status now remains pending until Stripe webhook processing. Live Stripe test evidence still pending. | 2026-05-20 |
 | 7 | Auth endpoints rate-limited | Pending: no PR link available from local workspace | `e5672ff241b5b381c15fde5b49fc41f217c687c2` | Register and OTP rate-limit validation completed locally. | 2026-05-19 |
 | 8 | OTP logging removed | Pending: no PR link available from local workspace | `2566c4d5060fc204c9b7f83e5e0afdb53d1670bb` | OTP values confirmed removed from logs. | 2026-05-19 |
 | 9 | Cookie/session behavior standardized | Pending: no PR link available from local workspace | Pending until this note is committed | Shared backend cookie helper verified locally. Production-style cross-domain cookie flags verified from env-based configuration. | 2026-05-19 |
@@ -66,6 +67,37 @@ This is the single consolidated remediation document for the completed security 
 
 - Querystring tampering validation completed locally.
 - OAuth role escalation to `business_owner` or `admin` is no longer accepted through the login URL alone.
+
+## Item 5: Vendor verification test bypass removed
+
+### Fix summary
+
+- Removed the fake vendor verification payment route `POST /api/vendor-onboarding/stage1/mark-paid`.
+- Removed the `manual_update` payment-status bypass from the vendor onboarding controller.
+- Updated `createVerificationPayment` so it creates a Stripe payment intent but leaves the onboarding payment state as `pending`.
+- Restored mandatory payment validation in `submitForReview`, so onboarding cannot be submitted until the verification payment status is `paid`.
+- Restricted unsigned vendor-payment webhook payloads to local development only; non-development environments now require the `stripe-signature` header.
+
+### Validation
+
+- Route-level validation confirmed the `mark-paid` endpoint is no longer mounted.
+- Local boot validation passed after the refactor.
+- Code-path validation confirmed:
+  - payment creation now stores `verificationPayment.status = pending`
+  - successful submission requires `verificationPayment.status = paid`
+  - non-development webhook requests without a Stripe signature are rejected
+- Local signed webhook simulation passed:
+  - a signed `payment_intent.succeeded` vendor verification event returned `200 { received: true }`
+  - the mocked onboarding record was updated from `pending` to `paid`
+- Live Stripe test payment evidence is still pending because this workspace cannot trigger external Stripe delivery on its own.
+
+### Deployment notes
+
+- Because there is no staging environment today, the “fake payment route inaccessible in staging” proof is represented by the route removal in code rather than a staging URL test.
+- After deployment, capture a real Stripe test payment for closure:
+  - Stripe payment intent or event ID
+  - webhook delivery result
+  - application log showing the vendor verification payment was marked paid
 
 ## Item 7: Auth endpoints rate-limited
 

@@ -852,74 +852,6 @@ exports.patchBusinessProfile = async (req, res) => {
 
 
 //payment controllers
-// exports.createVerificationPayment = async (req, res) => {
-//   try {
-//     const userId = req.user._id;
-
-//     // Find onboarding record
-//     const onboarding = await VendorOnboarding.findOne({ userId });
-    
-//     if (!onboarding) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Please save your onboarding draft first"
-//       });
-//     }
-
-//     // Check if already paid
-//     if (onboarding.verificationPayment?.status === "paid") {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Verification fee already paid"
-//       });
-//     }
-
-
-
-//     // Create Stripe Payment Intent
-//     const paymentIntent = await stripe.paymentIntents.create({
-//       amount: 2499, // $24.99 in cents
-//       currency: 'usd',
-//       metadata: {
-//         userId: userId.toString(),
-//         type: 'vendor_verification',
-//         applicationId: onboarding.applicationId || 'N/A'
-//       },
-//       description: 'Vendor Onboarding Verification Fee'
-//     });
-
-//     // Update onboarding record
-//     onboarding.verificationPayment = {
-//       provider: 'stripe',
-//       paymentIntentId: paymentIntent.id,
-//       amount: 2400,
-//       currency: 'usd',
-//       status: 'pending'
-//     };
-//     onboarding.status = 'payment_pending';
-
-//     await onboarding.save();
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Payment intent created successfully",
-//       data: {
-//         clientSecret: paymentIntent.client_secret,
-//         amount: 2400,
-//         currency: 'usd'
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error("Payment creation error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Failed to create payment"
-//     });
-//   }
-// };
-
-
 exports.createVerificationPayment = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -933,7 +865,6 @@ exports.createVerificationPayment = async (req, res) => {
       });
     }
 
-    // Already paid check
     if (onboarding.verificationPayment?.status === "paid") {
       return res.status(400).json({
         success: false,
@@ -941,7 +872,6 @@ exports.createVerificationPayment = async (req, res) => {
       });
     }
 
-    // ✅ Create PaymentIntent (still created for future real flow)
     const paymentIntent = await stripe.paymentIntents.create({
       amount: 2499,
       currency: 'usd',
@@ -953,32 +883,30 @@ exports.createVerificationPayment = async (req, res) => {
       description: 'Vendor Onboarding Verification Fee - $24.99'
     });
 
-    // ✅ AUTO MARK AS PAID (TEMP LOGIC)
     onboarding.verificationPayment = {
       provider: 'stripe',
       paymentIntentId: paymentIntent.id,
       amount: 24.99,
       amount_cents: 2499,
       currency: 'usd',
-      status: 'paid',
-      paidAt: new Date()
+      status: 'pending',
+      paidAt: null
     };
 
-    // ✅ IMPORTANT CHANGE
-    onboarding.status = 'submitted';   // 🔥 was "draft"
-    onboarding.submittedAt = new Date();
+    onboarding.status = 'payment_pending';
+    onboarding.submittedAt = undefined;
 
     await onboarding.save();
 
     return res.status(200).json({
       success: true,
-      message: "Payment successful and application submitted",
+      message: "Payment intent created successfully. Complete payment to continue.",
       data: {
         clientSecret: paymentIntent.client_secret,
         amount: 24.99,
         currency: 'usd',
-        status: 'paid',
-        applicationStatus: 'submitted'
+        status: 'pending',
+        applicationStatus: 'payment_pending'
       }
     });
 
@@ -990,77 +918,6 @@ exports.createVerificationPayment = async (req, res) => {
     });
   }
 };
-
-// exports.createVerificationPayment = async (req, res) => {
-//   try {
-//     const userId = req.user._id;
-
-//     // Find onboarding record
-//     const onboarding = await VendorOnboarding.findOne({ userId });
-    
-//     if (!onboarding) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Please save your onboarding draft first"
-//       });
-//     }
-
-//     // Check if already paid
-//     if (onboarding.verificationPayment?.status === "paid") {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Verification fee already paid"
-//       });
-//     }
-
-//     // Create Stripe Payment Intent - $24.99 = 2499 cents
-//     const paymentIntent = await stripe.paymentIntents.create({
-//       amount: 2499, // ✅ $24.99 in cents (Stripe expects cents)
-//       currency: 'usd',
-//       metadata: {
-//         userId: userId.toString(),
-//         type: 'vendor_verification',
-//         applicationId: onboarding.applicationId || 'N/A'
-//       },
-//       description: 'Vendor Onboarding Verification Fee - $24.99'
-//     });
-
-//     // Update onboarding record with payment intent - CONSISTENT amount
-//     onboarding.verificationPayment = {
-//       provider: 'stripe',
-//       paymentIntentId: paymentIntent.id,
-//       amount: 24.99, // ✅ Store in dollars for readability in DB
-//       amount_cents: 2499, // ✅ Optional: store both for clarity
-//       currency: 'usd',
-//       status: 'paid', // Auto-mark as paid for testing
-//       paidAt: new Date()
-//     };
-//     onboarding.status = 'draft';
-
-//     await onboarding.save();
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Payment intent created and auto-paid for testing",
-//       data: {
-//         clientSecret: paymentIntent.client_secret,
-//         amount: 24.99, // ✅ Send dollars to frontend for display
-//         amount_cents: 2499, // ✅ Optional: send cents if frontend needs it
-//         currency: 'usd',
-//         status: 'paid'
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error("Payment creation error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Failed to create payment"
-//     });
-//   }
-// };
-
-
 
 /* =====================================================
    STRIPE WEBHOOK HANDLER FOR VENDOR VERIFICATION PAYMENTS
@@ -1074,12 +931,13 @@ exports.handleVendorPaymentWebhook = async (req, res) => {
   let event;
 
   try {
-    // Skip signature verification for testing when no signature provided
     if (!sig) {
-      console.log('No signature provided - using payload directly for testing');
+      if (process.env.NODE_ENV !== 'development') {
+        return res.status(400).send('Webhook Error: stripe-signature header is required');
+      }
+      console.log('No signature provided - using payload directly for local development testing');
       event = JSON.parse(payload.toString());
     } else {
-      // Verify webhook signature in production
       event = stripe.webhooks.constructEvent(payload, sig, endpointSecret);
     }
   } catch (err) {
@@ -1087,30 +945,29 @@ exports.handleVendorPaymentWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle the event
   switch (event.type) {
-    case 'payment_intent.succeeded':
+    case 'payment_intent.succeeded': {
       const paymentIntent = event.data.object;
-      
+
       if (paymentIntent.metadata.type === 'vendor_verification') {
         try {
           const userId = paymentIntent.metadata.userId;
-          
-          const onboarding = await VendorOnboarding.findOne({ 
+
+          const onboarding = await VendorOnboarding.findOne({
             userId,
-            'verificationPayment.paymentIntentId': paymentIntent.id 
+            'verificationPayment.paymentIntentId': paymentIntent.id
           });
 
           if (onboarding) {
             onboarding.verificationPayment.status = 'paid';
             onboarding.verificationPayment.paidAt = new Date();
             onboarding.status = 'draft';
-            
+
             await onboarding.save();
-            
-            console.log(`✅ Vendor verification payment succeeded for user ${userId}`);
+
+            console.log(`Vendor verification payment succeeded for user ${userId}`);
           } else {
-            console.log(`❌ No onboarding record found for payment ${paymentIntent.id}`);
+            console.log(`No onboarding record found for payment ${paymentIntent.id}`);
           }
         } catch (error) {
           console.error('Failed to update vendor verification payment:', error);
@@ -1118,26 +975,27 @@ exports.handleVendorPaymentWebhook = async (req, res) => {
         }
       }
       break;
+    }
 
-    case 'payment_intent.payment_failed':
+    case 'payment_intent.payment_failed': {
       const failedPaymentIntent = event.data.object;
-      
+
       if (failedPaymentIntent.metadata.type === 'vendor_verification') {
         try {
           const userId = failedPaymentIntent.metadata.userId;
-          
-          const onboarding = await VendorOnboarding.findOne({ 
+
+          const onboarding = await VendorOnboarding.findOne({
             userId,
-            'verificationPayment.paymentIntentId': failedPaymentIntent.id 
+            'verificationPayment.paymentIntentId': failedPaymentIntent.id
           });
 
           if (onboarding) {
             onboarding.verificationPayment.status = 'failed';
-            onboarding.status = 'draft';
-            
+            onboarding.status = 'payment_pending';
+
             await onboarding.save();
-            
-            console.log(`❌ Vendor verification payment failed for user ${userId}`);
+
+            console.log(`Vendor verification payment failed for user ${userId}`);
           }
         } catch (error) {
           console.error('Failed to update vendor verification payment failure:', error);
@@ -1145,6 +1003,7 @@ exports.handleVendorPaymentWebhook = async (req, res) => {
         }
       }
       break;
+    }
 
     default:
       console.log(`Unhandled event type: ${event.type}`);
@@ -1172,7 +1031,7 @@ exports.getPaymentStatus = async (req, res) => {
 
     const paymentData = {
       required: true,
-      amount: 2400,
+      amount: 2499,
       currency: 'usd',
       status: onboarding.verificationPayment?.status || 'not_started',
       paidAt: onboarding.verificationPayment?.paidAt || null,
@@ -1240,15 +1099,15 @@ if (
     /* ------------------------------
        PAYMENT VALIDATION (MANDATORY)
     ------------------------------ */
-    // if (
-    //   !onboarding.verificationPayment ||
-    //   onboarding.verificationPayment.status !== "paid"
-    // ) {
-    //   return res.status(402).json({
-    //     success: false,
-    //     message: "Verification payment must be completed before submission",
-    //   });
-    // }
+    if (
+      !onboarding.verificationPayment ||
+      onboarding.verificationPayment.status !== "paid"
+    ) {
+      return res.status(402).json({
+        success: false,
+        message: "Verification payment must be completed before submission",
+      });
+    }
 
     /* ------------------------------
        FORM VALIDATION (STRICT)
@@ -1428,49 +1287,6 @@ if (
 // Direct update payment status to paid (for testing)
 
 
-exports.markPaymentAsPaid = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    
-    const onboarding = await VendorOnboarding.findOne({ userId });
-    
-    if (!onboarding) {
-      return res.status(404).json({
-        success: false,
-        message: 'Onboarding record not found'
-      });
-    }
-
-    // Update payment status directly
-    onboarding.verificationPayment = {
-      provider: 'stripe',
-      paymentIntentId: 'manual_update',
-      amount: 2400,
-      currency: 'usd',
-      status: 'paid',
-      paidAt: new Date()
-    };
-    onboarding.status = 'draft';
-
-    await onboarding.save();
-
-    return res.json({
-      success: true,
-      message: 'Payment status updated to paid successfully',
-      data: {
-        status: onboarding.verificationPayment.status,
-        paidAt: onboarding.verificationPayment.paidAt
-      }
-    });
-
-  } catch (error) {
-    console.error('Mark payment as paid error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to update payment status'
-    });
-  }
-};
 
 exports.getStatusByApplicationId = async (req, res) => {
   try {
@@ -1805,4 +1621,6 @@ exports.getApplicationId = async (req, res) => {
     });
   }
 };
+
+
 
