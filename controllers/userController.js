@@ -3,29 +3,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const { sendOtpEmail, sendWelcomeEmail, sendPasswordResetOtpEmail } = require('../utils/mailer');
-
-const isProd = process.env.NODE_ENV === 'production';
-
-function getCookieOptions(maxAge, { httpOnly = true } = {}) {
-    return {
-        httpOnly,
-        secure: isProd,
-        sameSite: isProd ? 'none' : 'lax',
-        domain: isProd ? '.mosaicbizhub.com' : undefined,
-        path: '/',
-        maxAge,
-    };
-}
-
-function clearCookieWithSharedOptions(res, name, { httpOnly = true } = {}) {
-    res.clearCookie(name, {
-        httpOnly,
-        secure: isProd,
-        sameSite: isProd ? 'none' : 'lax',
-        domain: isProd ? '.mosaicbizhub.com' : undefined,
-        path: '/',
-    });
-}
+const {
+    getCookieOptions,
+    clearCookie,
+    setAuthCookies,
+    clearAuthCookies,
+} = require('../utils/cookieHelper');
 
 function getSafePublicRole(role) {
     return role === 'business_owner' ? 'business_owner' : 'customer';
@@ -143,17 +126,9 @@ exports.verifyOtp = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        res.cookie('token', token, getCookieOptions(7 * 24 * 60 * 60 * 1000));
+        setAuthCookies(res, token, user, 7 * 24 * 60 * 60 * 1000);
 
-        res.cookie('user_session', 'true', getCookieOptions(7 * 24 * 60 * 60 * 1000, {
-            httpOnly: false,
-        }));
-
-        res.cookie('user_gender', user.gender || '', getCookieOptions(7 * 24 * 60 * 60 * 1000, {
-            httpOnly: false,
-        }));
-
-        clearCookieWithSharedOptions(res, 'otpPending');
+        clearCookie(res, 'otpPending');
 
         res.status(200).json({
             success: true,
@@ -697,22 +672,7 @@ exports.loginUser = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        const cookieOptions = getCookieOptions(7 * 24 * 60 * 60 * 1000);
-
-        // Token cookie
-        res.cookie('token', token, cookieOptions);
-
-        // User session cookie (frontend accessible)
-        res.cookie('user_session', 'true', {
-            ...cookieOptions,
-            httpOnly: false,
-        });
-
-        // User gender cookie (frontend accessible)
-        res.cookie('user_gender', user.gender || '', {
-            ...cookieOptions,
-            httpOnly: false,
-        });
+        setAuthCookies(res, token, user, 7 * 24 * 60 * 60 * 1000);
 
         res.status(200).json({
             success: true,
@@ -736,10 +696,8 @@ exports.loginUser = async (req, res) => {
 
 
 exports.logout = (req, res) => {
-  clearCookieWithSharedOptions(res, 'token');
-  clearCookieWithSharedOptions(res, 'user_session', { httpOnly: false });
-  clearCookieWithSharedOptions(res, 'user_gender', { httpOnly: false });
-  clearCookieWithSharedOptions(res, 'otpPending');
+  clearAuthCookies(res);
+  clearCookie(res, 'otpPending');
 
   res.status(200).json({ message: 'Logged out successfully' });
 };

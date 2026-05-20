@@ -42,6 +42,7 @@ npm run dev
 - Set `JWT_SECRET`.
 - Set `FRONTEND_URL`.
 - Set `PORT` if you do not want the default `3001`.
+- Set `COOKIE_DOMAIN`, `COOKIE_SECURE`, and `COOKIE_SAMESITE` only if you need to override the default environment-based cookie behavior.
 
 ### Stripe
 

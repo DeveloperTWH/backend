@@ -98,6 +98,9 @@ Add only the values needed for the features you plan to run locally. Some flows 
 | `MONGODB_URI` | Yes | MongoDB connection string |
 | `FRONTEND_URL` | Recommended | Frontend base URL used in CORS and generated links |
 | `JWT_SECRET` | Yes | JWT signing/verification secret |
+| `COOKIE_DOMAIN` | Optional | Cookie domain override; defaults to `.mosaicbizhub.com` in production and unset locally |
+| `COOKIE_SECURE` | Optional | Cookie `Secure` override; defaults to `true` in production and `false` locally |
+| `COOKIE_SAMESITE` | Optional | Cookie `SameSite` override; defaults to `none` when secure cookies are enabled, otherwise `lax` |
 
 ### Stripe
 

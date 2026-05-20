@@ -1,8 +1,13 @@
 // controllers/authController.js
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
-const cookie = require('cookie');
 const User = require('../models/User');
+const {
+    setCookie,
+    clearCookie,
+    setAuthCookies: setSharedAuthCookies,
+    clearAuthCookies,
+} = require('../utils/cookieHelper');
 
 // const IS_PROD = process.env.NODE_ENV === 'production';
 
@@ -22,8 +27,6 @@ const User = require('../models/User');
 // TEMP_COOKIE_NAME=mbh_tmp
 // TEMP_COOKIE_TTL_SEC=900
 
-const IS_PROD = false; // force dev behavior
-
 const {
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
@@ -32,23 +35,11 @@ const {
     FRONTEND_URL = 'http://localhost:3000',
     JWT_SECRET,
 
-    // === Cookie flags for localhost ===
-    // no domain, not secure, SameSite=strict
-    COOKIE_DOMAIN = undefined,
-    COOKIE_SAMESITE = 'strict',
-    COOKIE_SECURE = false,
-
     // profile completion (optional)
     REQUIRE_PROFILE_COMPLETION = 'false',
     TEMP_COOKIE_NAME = 'mbh_tmp',
     TEMP_COOKIE_TTL_SEC = 15 * 60,
 } = process.env;
-
-// fixed cookie names
-const TOKEN_COOKIE_NAME = 'token';
-const USER_SESSION_COOKIE_NAME = 'user_session';
-const USER_GENDER_COOKIE_NAME = 'user_gender';
-
 
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !API_BASE_URL || !FRONTEND_URL || !JWT_SECRET) {
     throw new Error('Missing env: GOOGLE_CLIENT_ID/SECRET, API_BASE_URL, FRONTEND_URL, JWT_SECRET');
@@ -59,32 +50,6 @@ const oauth = new OAuth2Client(
     GOOGLE_CLIENT_SECRET,
     `${API_BASE_URL}/api/auth/google/callback`
 );
-
-// cookie helper (cookie.serialize uses seconds for maxAge)
-function setCookie(res, name, val, opts = {}) {
-    const cookieStr = cookie.serialize(name, val, {
-        httpOnly: true,           // default; can be overridden by opts.httpOnly
-        secure: false,            // localhost
-        sameSite: 'strict',       // localhost
-        domain: undefined,        // localhost
-        path: '/',
-        ...opts,                  // e.g., { httpOnly:false, maxAge: ... }
-    });
-
-    const prev = res.getHeader('Set-Cookie');
-    if (!prev) {
-        res.setHeader('Set-Cookie', cookieStr);
-    } else if (Array.isArray(prev)) {
-        res.setHeader('Set-Cookie', [...prev, cookieStr]);
-    } else {
-        res.setHeader('Set-Cookie', [prev, cookieStr]);
-    }
-}
-
-
-function clearCookie(res, name) {
-    setCookie(res, name, '', { maxAge: 0 });
-}
 
 function getServerAssignedOAuthRole(existingUser) {
     if (!existingUser) return 'customer';
@@ -103,21 +68,7 @@ function mintSessionJWT(user) {
 
 // set token + user_session + user_gender (7d default)
 function setAuthCookies(res, user, sessionJwt, ttlSeconds = 7 * 24 * 60 * 60) {
-    // 1) token: HttpOnly
-    setCookie(res, TOKEN_COOKIE_NAME, sessionJwt, {
-        httpOnly: true,
-        maxAge: ttlSeconds,
-    });
-    // 2) user_session: readable
-    setCookie(res, USER_SESSION_COOKIE_NAME, 'true', {
-        httpOnly: false,
-        maxAge: ttlSeconds,
-    });
-    // 3) user_gender: readable
-    setCookie(res, USER_GENDER_COOKIE_NAME, user.gender || 'male', {
-        httpOnly: false,
-        maxAge: ttlSeconds,
-    });
+    setSharedAuthCookies(res, sessionJwt, user, ttlSeconds * 1000);
 }
 
 /**
@@ -272,9 +223,7 @@ exports.completeGoogleProfile = async (req, res) => {
 
 /** Optional: logout — clears all three cookies + temp */
 exports.logout = async (_req, res) => {
-    clearCookie(res, TOKEN_COOKIE_NAME);
-    clearCookie(res, USER_SESSION_COOKIE_NAME);
-    clearCookie(res, USER_GENDER_COOKIE_NAME);
+    clearAuthCookies(res);
     clearCookie(res, TEMP_COOKIE_NAME);
     res.json({ success: true });
 };

@@ -11,6 +11,7 @@ This is the single consolidated remediation document for the completed security 
 | 4 | OAuth role escalation prevented | Pending: no PR link available from local workspace | `1ab53662b886d7b615c06c39561e593a74230a50` | Querystring role tampering validation completed locally. | 2026-05-19 |
 | 7 | Auth endpoints rate-limited | Pending: no PR link available from local workspace | `e5672ff241b5b381c15fde5b49fc41f217c687c2` | Register and OTP rate-limit validation completed locally. | 2026-05-19 |
 | 8 | OTP logging removed | Pending: no PR link available from local workspace | `2566c4d5060fc204c9b7f83e5e0afdb53d1670bb` | OTP values confirmed removed from logs. | 2026-05-19 |
+| 9 | Cookie/session behavior standardized | Pending: no PR link available from local workspace | Pending until this note is committed | Shared backend cookie helper verified locally. Production-style cross-domain cookie flags verified from env-based configuration. | 2026-05-19 |
 | 10 | Canonical Stripe webhook path identified | Pending: no PR link available from local workspace | `d6aed10b3fa5392980339cdae88d3a996aa2268d` | Local signed webhook simulation passed. Deployed Stripe delivery log capture still pending. | 2026-05-19 |
 | 11 | Duplicate payment/webhook handlers documented | Pending: no PR link available from local workspace | `faf432f3562a9e8473dcb8adc13caf20b33d52b0` | Documentation verified in repository. | 2026-05-19 |
 | 12 | Backend README created | Pending: no PR link available from local workspace | `18554f2c28738f8b21a8f91ca36e2ab1f46325e4` | README verified in repository. | 2026-05-19 |
@@ -91,6 +92,33 @@ This is the single consolidated remediation document for the completed security 
 ### Validation
 
 - OTP values were confirmed absent from logs during local validation.
+
+## Item 9: Cookie/session behavior standardized
+
+### Fix summary
+
+- Added a centralized backend cookie helper in `utils/cookieHelper.js`.
+- Removed the forced development behavior from `controllers/authController.js`, including the old `const IS_PROD = false`.
+- Standardized login, logout, OTP-verification login, Google OAuth session cookies, and cookie clearing to use the same environment-based rules.
+- Cookie behavior is now controlled by `NODE_ENV` plus optional `COOKIE_DOMAIN`, `COOKIE_SECURE`, and `COOKIE_SAMESITE` overrides.
+
+### Validation
+
+- App boot validation passed after the refactor.
+- Local helper validation confirmed:
+  - development-style defaults resolve to `secure: false`, `sameSite: lax`, no domain
+  - production-style defaults resolve to `secure: true`, `sameSite: none`, `domain: .mosaicbizhub.com`
+- Login/logout cookie persistence was standardized at the backend controller level.
+- Full cross-domain browser persistence was not tested in this workspace because the referenced frontend file `mosaic-biz-frontend/middleware.ts` is not present in this repository.
+
+### Deployment notes
+
+- If the frontend is deployed on a different subdomain, production should use secure cookies and a matching domain policy.
+- If environment-specific overrides are needed, use:
+  - `COOKIE_DOMAIN`
+  - `COOKIE_SECURE`
+  - `COOKIE_SAMESITE`
+- The frontend middleware/session handling in the separate frontend repository should be reviewed to match the standardized backend cookie behavior.
 
 ## Item 10: Canonical Stripe webhook path identified
 
