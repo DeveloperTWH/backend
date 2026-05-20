@@ -10,6 +10,7 @@ This is the single consolidated remediation document for the completed security 
 | 3 | Admin route authorization enforced | Pending: no PR link available from local workspace | `9b57a4129f74ca93cb29de0b0224f7f0e2919ad8` | Unauthorized admin creation blocked successfully. Authorized admin creation verified. | 2026-05-19 |
 | 4 | OAuth role escalation prevented | Pending: no PR link available from local workspace | `1ab53662b886d7b615c06c39561e593a74230a50` | Querystring role tampering validation completed locally. | 2026-05-19 |
 | 5 | Vendor verification test bypass removed | Pending: no PR link available from local workspace | `73a19b365e8240f7215f7d7eb9121b3d5fdb81b3` | Manual bypass route removed. Payment status now remains pending until Stripe webhook processing. Live Stripe test evidence still pending. | 2026-05-20 |
+| 6 | Payment amount is server-derived | Pending: no PR link available from local workspace | Pending until this note is committed | Tampered client amount rejected locally. Matching request charged the server-derived order total successfully. | 2026-05-20 |
 | 7 | Auth endpoints rate-limited | Pending: no PR link available from local workspace | `e5672ff241b5b381c15fde5b49fc41f217c687c2` | Register and OTP rate-limit validation completed locally. | 2026-05-19 |
 | 8 | OTP logging removed | Pending: no PR link available from local workspace | `2566c4d5060fc204c9b7f83e5e0afdb53d1670bb` | OTP values confirmed removed from logs. | 2026-05-19 |
 | 9 | Cookie/session behavior standardized | Pending: no PR link available from local workspace | Pending until this note is committed | Shared backend cookie helper verified locally. Production-style cross-domain cookie flags verified from env-based configuration. | 2026-05-19 |
@@ -98,6 +99,29 @@ This is the single consolidated remediation document for the completed security 
   - Stripe payment intent or event ID
   - webhook delivery result
   - application log showing the vendor verification payment was marked paid
+
+## Item 6: Payment amount is server-derived
+
+### Fix summary
+
+- `createPaymentIntent` no longer trusts `amount` from the request body.
+- The backend now loads the order by `orderId` and derives the Stripe charge amount from `order.totalAmount`.
+- Currency is derived from the saved order record.
+- If the client still sends `amount` or `currency`, the backend now rejects the request when those values do not match the server-derived order values.
+
+### Validation
+
+- Local boot validation passed after the refactor.
+- Controller-level tamper test passed:
+  - a modified client amount returned `400` with `Client payment amount does not match the server-derived order total.`
+- Controller-level success test passed:
+  - an order with `totalAmount = 24.99` produced a Stripe payment intent request for `2499` cents
+  - the response returned the derived amount and currency from the order record
+
+### Deployment notes
+
+- Frontend clients should treat the backend as the source of truth and send `orderId`; any displayed amount should be informational only.
+- If legacy frontend code still sends `amount` or `currency`, those fields must match the order record or the backend will reject the request.
 
 ## Item 7: Auth endpoints rate-limited
 

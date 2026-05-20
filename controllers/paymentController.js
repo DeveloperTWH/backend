@@ -1,5 +1,18 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // Stripe secret key
 const { validationResult } = require('express-validator');
+const Order = require('../models/Order');
+
+function normalizeCurrency(currency) {
+  return String(currency || 'usd').trim().toLowerCase();
+}
+
+function toStripeAmount(totalAmount) {
+  const numericTotal = Number(totalAmount);
+  if (!Number.isFinite(numericTotal) || numericTotal <= 0) {
+    return null;
+  }
+  return Math.round(numericTotal * 100);
+}
 
 // Create Payment Intent
 const createPaymentIntent = async (req, res) => {
@@ -9,15 +22,36 @@ const createPaymentIntent = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { amount, currency, paymentMethodId, orderId } = req.body;
+  const { amount, currency, orderId } = req.body;
 
   try {
-    // Create payment intent with Stripe API
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+
+    const derivedAmount = toStripeAmount(order.totalAmount);
+    if (!derivedAmount) {
+      return res.status(400).json({ message: 'Order total is invalid.' });
+    }
+
+    const derivedCurrency = normalizeCurrency(order.currency);
+    const requestedAmount = amount === undefined ? undefined : Number(amount);
+    const requestedCurrency = currency === undefined ? undefined : normalizeCurrency(currency);
+
+    if (requestedAmount !== undefined && !Number.isNaN(requestedAmount)) {
+      if (Math.round(requestedAmount * 100) !== derivedAmount) {
+        return res.status(400).json({ message: 'Client payment amount does not match the server-derived order total.' });
+      }
+    }
+
+    if (requestedCurrency !== undefined && requestedCurrency !== derivedCurrency) {
+      return res.status(400).json({ message: 'Client payment currency does not match the order currency.' });
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount * 100,
-      currency,
-      // payment_method: paymentMethodId,
-      // confirm: true,
+      amount: derivedAmount,
+      currency: derivedCurrency,
       metadata: { orderId },
       automatic_payment_methods: {
         enabled: true,
@@ -25,9 +59,14 @@ const createPaymentIntent = async (req, res) => {
       },
     });
 
+    order.paymentId = paymentIntent.id;
+    await order.save();
 
-    // Send the client secret to the frontend to complete the payment
-    res.status(200).json({ clientSecret: paymentIntent.client_secret });
+    res.status(200).json({
+      clientSecret: paymentIntent.client_secret,
+      amount: derivedAmount,
+      currency: derivedCurrency,
+    });
   } catch (error) {
     console.error('Stripe payment intent creation failed:', error);
 

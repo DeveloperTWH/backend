@@ -17,10 +17,9 @@ paymentRouter.post(
   '/create-payment-intent',
   paymentLimiter,
   [
-    body('amount').isInt({ min: 1 }).withMessage('Amount must be a positive integer'),
-    body('currency').isString().isLength({ min: 3, max: 3 }).withMessage('Currency code must be 3 characters'),
-    // body('paymentMethodId').notEmpty().withMessage('Payment method is required'),
     body('orderId').isMongoId().withMessage('Invalid Order ID format'),
+    body('amount').optional().isNumeric().withMessage('Amount must be numeric when provided'),
+    body('currency').optional().isString().isLength({ min: 3, max: 3 }).withMessage('Currency code must be 3 characters when provided'),
   ],
   createPaymentIntent
 );
