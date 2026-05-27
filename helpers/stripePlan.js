@@ -6,13 +6,43 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
  * Creates them on Stripe if missing, saves to Mongo, and returns { productId, priceId }.
  */
 async function ensurePlanPrice(plan) {
-  // If price already exists, just return it
+  // Reuse a stored price only if it still exists in the current Stripe account.
   if (plan.stripePriceId) {
-    return { productId: plan.stripeProductId, priceId: plan.stripePriceId };
+    try {
+      const existingPrice = await stripe.prices.retrieve(plan.stripePriceId);
+      if (!existingPrice.deleted) {
+        plan.stripeProductId = existingPrice.product;
+        if (plan.isModified('stripeProductId')) {
+          await plan.save();
+        }
+
+        return { productId: plan.stripeProductId, priceId: plan.stripePriceId };
+      }
+    } catch (error) {
+      if (error.code !== 'resource_missing') {
+        throw error;
+      }
+
+      // The saved Stripe IDs are stale for this account; clear them and recreate below.
+      plan.stripePriceId = undefined;
+    }
   }
 
   // Create/reuse Product
   let productId = plan.stripeProductId;
+  if (productId) {
+    try {
+      await stripe.products.retrieve(productId);
+    } catch (error) {
+      if (error.code !== 'resource_missing') {
+        throw error;
+      }
+
+      productId = undefined;
+      plan.stripeProductId = undefined;
+    }
+  }
+
   if (!productId) {
     const product = await stripe.products.create({
       name: plan.name,

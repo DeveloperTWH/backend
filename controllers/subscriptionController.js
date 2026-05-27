@@ -36,10 +36,10 @@ exports.createSubscription = async (req, res) => {
       });
     }
 
-    // ✅ FIX: Ensure Stripe price exists
-    await ensurePlanPrice(plan);
+    // Ensure the Stripe price exists in the active Stripe account.
+    const { priceId } = await ensurePlanPrice(plan);
 
-    if (!plan.stripePriceId) {
+    if (!priceId) {
       return res.status(500).json({
         success: false,
         message: 'Failed to create Stripe price for plan'
@@ -56,7 +56,7 @@ exports.createSubscription = async (req, res) => {
     // Create subscription with incomplete status
     const stripeSubscription = await stripe.subscriptions.create({
       customer: customer.id,
-      items: [{ price: plan.stripePriceId }],
+      items: [{ price: priceId }],
       payment_behavior: 'default_incomplete',
       payment_settings: { save_default_payment_method: 'on_subscription' },
       expand: ['latest_invoice.payment_intent'],
@@ -82,6 +82,8 @@ exports.createSubscription = async (req, res) => {
       clientSecret = paymentIntent.client_secret;
     }
 
+    const requiresPayment = plan.price > 0;
+
     // Create local subscription
     const startDate = new Date();
     const endDate = new Date();
@@ -93,13 +95,11 @@ exports.createSubscription = async (req, res) => {
       stripeSubscriptionId: stripeSubscription.id,
       stripeCustomerId: customer.id,
       applicationId,
-      // paymentStatus: clientSecret ? 'PENDING' : 'COMPLETED',
-      paymentStatus:'COMPLETED',
+      paymentStatus: requiresPayment ? 'PENDING' : 'COMPLETED',
       payerEmail: req.user.email,
       startDate,
       endDate,
-      // status: clientSecret ? 'pending' : 'active'
-       status: 'active'
+      status: requiresPayment ? 'pending' : 'active'
     });
 
     await subscription.save();

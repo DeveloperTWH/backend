@@ -742,6 +742,17 @@ exports.initiateOrder = async (req, res) => {
       process.env.PLATFORM_FEE_CENTS || "0"
     );
 
+    console.log("Initiating order payment intent", {
+      orderId: order._id.toString(),
+      groupOrderId,
+      businessId: business?._id?.toString?.() || String(businessId),
+      vendorId: vendorId?.toString?.() || String(vendorId),
+      stripeConnectAccountId: business?.stripeConnectAccountId || null,
+      amountCents: Math.round(totalAmount * 100),
+      currency: "usd",
+      platformFeeCents,
+    });
+
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount: Math.round(totalAmount * 100),
@@ -759,6 +770,13 @@ exports.initiateOrder = async (req, res) => {
         idempotencyKey: `pi:${order._id.toString()}`,
       }
     );
+
+    console.log("Order payment intent created", {
+      orderId: order._id.toString(),
+      paymentIntentId: paymentIntent.id,
+      clientSecretPresent: Boolean(paymentIntent.client_secret),
+      stripeConnectAccountId: business?.stripeConnectAccountId || null,
+    });
 
     order.paymentId = paymentIntent.id;
     await order.save();
@@ -823,6 +841,13 @@ exports.initiateOrder = async (req, res) => {
     });
   } catch (err) {
     console.error("Order initiation failed:", err);
+    console.error("Order initiation Stripe details:", {
+      type: err?.type,
+      code: err?.code,
+      message: err?.message,
+      statusCode: err?.statusCode,
+      requestId: err?.requestId,
+    });
 
     if (err?.statusCode === 400) {
       return res.status(400).json({

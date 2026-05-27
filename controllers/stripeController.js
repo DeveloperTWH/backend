@@ -45,7 +45,7 @@ exports.createCheckoutSession = async (req, res) => {
   }
 };
 
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const endpointSecret = process.env.STRIPE_BUSINESS_DRAFT_WEBHOOK_SECRET;
 
 exports.handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];

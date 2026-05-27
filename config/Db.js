@@ -10,6 +10,11 @@ const connectDB = async () => {
     console.log('MongoDB connected');
   } catch (err) {
     console.error('DB connection error:', err.message);
+    if (err?.name === 'MongooseServerSelectionError') {
+      console.error(
+        'Atlas connectivity hint: the app can resolve your cluster but cannot reach a writable primary node. Check Atlas Network Access, local firewall/VPN, and outbound access to port 27017.'
+      );
+    }
     throw err;
   }
 };

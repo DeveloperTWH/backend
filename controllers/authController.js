@@ -1,4 +1,3 @@
-// controllers/authController.js
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
@@ -8,24 +7,6 @@ const {
     setAuthCookies: setSharedAuthCookies,
     clearAuthCookies,
 } = require('../utils/cookieHelper');
-
-// const IS_PROD = process.env.NODE_ENV === 'production';
-
-// ===== Required ENV =====
-// GOOGLE_CLIENT_ID
-// GOOGLE_CLIENT_SECRET
-// API_BASE_URL              e.g., https://api.mosaicbizhub.com
-// FRONTEND_URL              e.g., https://app.mosaicbizhub.com
-// JWT_SECRET
-//
-// ===== Cookie behavior (same pattern as your login route) =====
-// Dev:    SameSite=strict, Secure=false, no Domain
-// Prod:   SameSite=None,   Secure=true,  Domain=.mosaicbizhub.com
-//
-// ===== Optional: profile completion (collect mobile/minorityType after Google) =====
-// REQUIRE_PROFILE_COMPLETION=true|false
-// TEMP_COOKIE_NAME=mbh_tmp
-// TEMP_COOKIE_TTL_SEC=900
 
 const {
     GOOGLE_CLIENT_ID,
@@ -66,7 +47,6 @@ function mintSessionJWT(user) {
     return jwt.sign({ sub: user._id.toString(), role: user.role }, JWT_SECRET, { expiresIn: '1h' });
 }
 
-// set token + user_session + user_gender (7d default)
 function setAuthCookies(res, user, sessionJwt, ttlSeconds = 7 * 24 * 60 * 60) {
     setSharedAuthCookies(res, sessionJwt, user, ttlSeconds * 1000);
 }
@@ -221,7 +201,7 @@ exports.completeGoogleProfile = async (req, res) => {
     }
 };
 
-/** Optional: logout — clears all three cookies + temp */
+/** Optional: logout - clears all three cookies + temp */
 exports.logout = async (_req, res) => {
     clearAuthCookies(res);
     clearCookie(res, TEMP_COOKIE_NAME);
