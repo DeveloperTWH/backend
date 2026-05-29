@@ -299,15 +299,11 @@ exports.loginUser = async (req, res) => {
     }
 
     try {
-        const { email, password, role } = req.body;
+        const { email, password } = req.body;
 
         const user = await User.findOne({ email });
         if (!user || !user.passwordHash) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-
-        if (role && user.role !== role) {
-            return res.status(401).json({ success: false, message: 'Invalid role for this account' });
         }
 
         if (user.isDeleted) {
