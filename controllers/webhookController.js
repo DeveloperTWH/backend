@@ -72,7 +72,6 @@ const handleStripeWebhook = async (req, res) => {
       console.log('Order payment succeeded event', {
         paymentIntentId: paymentIntent.id,
         orderId,
-        metadata: paymentIntent.metadata,
       });
 
       // Update order status to 'paid' and 'completed'
@@ -105,7 +104,6 @@ const handleStripeWebhook = async (req, res) => {
       console.log('Order payment failed event', {
         paymentIntentId: failedPaymentIntent.id,
         orderId: failedOrderId,
-        metadata: failedPaymentIntent.metadata,
       });
 
       // Update order status to 'failed'
@@ -148,7 +146,6 @@ const handleStripeWebhook = async (req, res) => {
       console.log('Order refund event', {
         chargeId: chargeRefunded.id,
         orderId: refundedOrderId,
-        metadata: chargeRefunded.metadata,
       });
 
       // Update order status to refunded
@@ -206,8 +203,6 @@ const handleSubscriptionWebhook = async (req, res) => {
   }
 
   console.log('🔹 Received Stripe event type:', event.type);
-  console.log('🔹 Event data object:', event.data.object);
-
   switch (event.type) {
     case 'customer.created':
       console.log(`Ignoring Stripe event type: ${event.type}`);

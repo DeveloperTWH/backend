@@ -13,7 +13,6 @@ const parseRequestBody = (req, res, next) => {
       req.body.variants = JSON.parse(req.body.variants);
     }
 
-     console.log('After parsing:', req.body);
     next();
   } catch (error) {
     console.error('Error during body parsing:', error);

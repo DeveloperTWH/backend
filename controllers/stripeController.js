@@ -95,7 +95,7 @@ exports.handleStripeWebhook = async (req, res) => {
         return res.status(404).send("Draft not found");
       }
 
-      console.log("Draft found:", draft);
+      console.log("Draft found for checkout completion", { draftId });
 
       // Set subscription start and end dates
       const startDate = new Date();
@@ -116,7 +116,10 @@ exports.handleStripeWebhook = async (req, res) => {
         status: "active",
       });
 
-      console.log("New Subscription created:", newSubscription);
+      console.log("New subscription created", {
+        subscriptionId: newSubscription._id.toString(),
+        stripeSubscriptionId,
+      });
 
       // Check for business name conflict
       let businessName = draft.businessName;
@@ -134,7 +137,6 @@ exports.handleStripeWebhook = async (req, res) => {
       }
 
       // Create the business
-      console.log(draft.formData.zipCode);
       business = new Business({
         owner: ownerId,
         businessName,
@@ -170,7 +172,10 @@ exports.handleStripeWebhook = async (req, res) => {
       // Save the business
       await business.save();
 
-      console.log("Business created:", business);
+      console.log("Business created from draft", {
+        businessId: business._id.toString(),
+        ownerId: String(ownerId),
+      });
 
       // Update subscription with business ID
       newSubscription.businessId = business._id;
@@ -211,7 +216,11 @@ exports.handleStripeWebhook = async (req, res) => {
   }
   if (event.type === "account.updated") {
     const account = event.data.object;
-    console.log(account);
+    console.log("Processing Stripe account update", {
+      accountId: account.id,
+      chargesEnabled: !!account.charges_enabled,
+      payoutsEnabled: !!account.payouts_enabled,
+    });
 
     try {
       const business = await Business.findOne({

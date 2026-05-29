@@ -117,7 +117,7 @@ exports.sendWelcomeEmail = async (to, firstName, role) => {
       html,
     };
 
-    console.log(`Sending ${role || 'customer'} welcome email to ${to}`);
+    console.log(`Sending ${role || 'customer'} welcome email`);
 
     await transporter.sendMail(mailOptions);
 

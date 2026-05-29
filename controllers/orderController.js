@@ -975,7 +975,6 @@ exports.acceptOrder = async (req, res) => {
     await order.save();
 
     try {
-      console.log("sending email", order.userId.email)
       const customerEmail = order.userId.email; // use whichever you store
       if (customerEmail) {
         await sendOrderStatusEmail(customerEmail, order._id.toString(), "accepted");
@@ -1042,7 +1041,10 @@ exports.rejectOrder = async (req, res) => {
         order.paymentStatus = "refunded";
         order.statusHistory.push({ status: "refunded" });
 
-        console.log(`💸 Refund initiated for order ${orderId}: $${order.totalAmount}`);
+        console.log("Refund initiated for order", {
+          orderId,
+          paymentIntentId: order.paymentId,
+        });
       } catch (err) {
         console.error("Error processing refund via Stripe Connect:", err);
         return res.status(500).json({ success: false, message: "Refund failed" });
@@ -1051,7 +1053,6 @@ exports.rejectOrder = async (req, res) => {
 
     await order.save();
     try {
-      console.log("sending email", order.userId.email)
       const customerEmail = order.userId.email; // use whichever you store
       if (customerEmail) {
         await sendOrderStatusEmail(customerEmail, order._id.toString(), "rejected");
@@ -1136,8 +1137,6 @@ exports.deliverOrder = async (req, res) => {
 
     const order = await Order.findOne({ _id: orderId, vendorId })
       .populate("userId", "email"); // ✅ IMPORTANT FIX
-
-    console.log("deliverOrder found order:", order);
 
     if (!order) {
       return res.status(404).json({
@@ -1254,7 +1253,10 @@ exports.acceptReturn = async (req, res) => {
 
         // Step 3: After successful refund, update order status to 'refunded'
         order.paymentStatus = "refunded";  // Update payment status to refunded
-        console.log(`💸 Refund initiated for order ${orderId}: $${order.totalAmount}`);
+        console.log("Refund initiated for order", {
+          orderId,
+          paymentIntentId: order.paymentId,
+        });
       } catch (err) {
         console.error("Error processing refund via Stripe Connect:", err);
         return res.status(500).json({ success: false, message: "Refund failed" });

@@ -11,7 +11,12 @@ const s3 = new S3Client({
 });
 
 exports.uploadFile = async (file, folder = "business") => {
-  console.log("Uploading file to S3:", file);
+  console.log("Uploading file to S3", {
+    folder,
+    originalName: file?.originalname || null,
+    mimeType: file?.mimetype || null,
+    size: file?.size || null,
+  });
   
   if (!file) throw new Error("No file provided");
 

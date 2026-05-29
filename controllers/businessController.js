@@ -95,7 +95,7 @@ exports.createBusiness = async (req, res) => {
     let logoUrl, coverUrl;
     if (req.files?.logo?.[0]) {
       logoUrl = await uploadFile(req.files.logo[0], "business/logos");
-      console.log(logoUrl, "✅ Logo uploaded successfully");
+      console.log("Business logo uploaded successfully");
     }
     if (req.files?.coverImage?.[0]) {
       coverUrl = await uploadFile(req.files.coverImage[0], "business/covers");
@@ -621,8 +621,6 @@ exports.retryCreateBusiness = async (req, res) => {
   const { subscriptionId, businessName, formData } = req.body; // Get subscriptionId and business data from the request
 
   try {
-    console.log(formData);
-
     // Find the subscription using the provided subscriptionId
     const subscription = await Subscription.findById(subscriptionId).populate(
       "userId"
@@ -860,8 +858,6 @@ exports.getBusinessBySlug = async (req, res) => {
 exports.getBusinessBySlugPublic = async (req, res) => {
   try {
     const { slug } = req.params;
-    console.log(`Fetching public business by slug: ${slug}`);
-
     const business = await Business.findOne({
       slug,
       isActive: true,

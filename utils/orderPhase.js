@@ -279,7 +279,7 @@ async function sendOrderStatusEmail(to, orderId, status) {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Order status email sent to ${to} (${status})`);
+    console.log("Order status email sent", { status });
   } catch (err) {
     console.error("Error sending email:", err);
     throw err;
