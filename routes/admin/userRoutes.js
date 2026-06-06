@@ -18,7 +18,7 @@ router.post(
   '/admins',
   [
     body('name').notEmpty().trim().withMessage('Name is required'),
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('email').isEmail().normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }).withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('mobile').trim().notEmpty().withMessage('Mobile number is required').isMobilePhone('any').withMessage('Enter a valid mobile number'),
   ],

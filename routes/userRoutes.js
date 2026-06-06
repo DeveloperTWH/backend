@@ -46,6 +46,7 @@ router.post(
   registerLimiter,
   [
     body('name').notEmpty().trim().withMessage('Name is required'),
+    body('email').isEmail().normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }).withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('mobile').trim().notEmpty().withMessage('Mobile number is required').isMobilePhone('any').withMessage('Enter a valid mobile number'),
     body('role').optional().isIn(['customer', 'business_owner']).withMessage('Invalid role'),
@@ -58,7 +59,7 @@ router.post(
   '/login',
   loginLimiter,
   [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('email').isEmail().normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }).withMessage('Valid email is required'),
     body('password').notEmpty().withMessage('Password is required'),
   ],
   userController.loginUser
@@ -70,7 +71,7 @@ router.post(
   '/verify-otp',
   otpVerifyLimiter,
   [
-    body('email').isEmail().withMessage('Valid email is required'),
+    body('email').isEmail().normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }).withMessage('Valid email is required'),
     body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
   ],
   userController.verifyOtp
@@ -79,32 +80,28 @@ router.post(
 router.post(
   '/resend-otp',
   otpResendLimiter,
-  [body('email').isEmail().withMessage('Valid email is required')],
+  [body('email').isEmail().normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }).withMessage('Valid email is required')],
   userController.resendOtp
 );
 
 router.post(
   '/forgot-password',
-  [body('email').isEmail().normalizeEmail().withMessage('Valid email is required')],
+  [body('email').isEmail().normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }).withMessage('Valid email is required')],
   userController.forgotPassword
 );
 
 router.post(
   '/reset-password',
   [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('email').isEmail().normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }).withMessage('Valid email is required'),
     body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
     body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   ],
   userController.resetPassword
 );
 
-
 router.get('/auth/check', authenticate, (req, res) => {
   res.json({ loggedIn: true, user: req.user });
 });
 
-
-
 module.exports = router;
- 
