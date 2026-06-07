@@ -3,35 +3,93 @@ const Order = require('../models/Order');
 const Subscription = require('../models/Subscription'); // ← ADD THIS LINE
 
 
+const toStripePayloadBuffer = (body) => {
+  if (Buffer.isBuffer(body)) {
+    return body;
+  }
+
+  if (body instanceof Uint8Array) {
+    return Buffer.from(body);
+  }
+
+  if (typeof body === 'string') {
+    return Buffer.from(body, 'utf8');
+  }
+
+  return null;
+};
+
 // Webhook to handle Stripe events (like successful payments)
 const handleStripeWebhook = async (req, res) => {
   const sig = req.headers['stripe-signature'];
-  const payload = req.body;
-  const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
+  const payload = toStripePayloadBuffer(req.body);
+  const endpointSecret = process.env.STRIPE_ORDER_WEBHOOK_SECRET;
 
   let event;
 
   try {
+    if (!sig) {
+      return res.status(400).send('Webhook Error: stripe-signature header is required');
+    }
+
+    if (!endpointSecret) {
+      console.error('Stripe webhook secret is missing for /api/webhooks/stripe');
+      return res.status(500).send('Stripe webhook secret is not configured');
+    }
+
+    if (!payload) {
+      console.error('Stripe webhook received a non-raw body', {
+        bodyType: typeof req.body,
+        isBuffer: Buffer.isBuffer(req.body),
+        contentType: req.headers['content-type'],
+      });
+      return res.status(400).send('Webhook Error: expected raw request body');
+    }
+
     // Verify the webhook signature to ensure the event is from Stripe
     event = stripe.webhooks.constructEvent(payload, sig, endpointSecret);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err);
+    console.error('Webhook signature verification failed:', {
+      message: err.message,
+      contentType: req.headers['content-type'],
+      payloadLength: payload ? payload.length : 0,
+      signaturePresent: Boolean(sig),
+      endpointSecretPresent: Boolean(endpointSecret),
+    });
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
+
+  console.log('Order webhook received', {
+    type: event.type,
+    endpointSecretPresent: Boolean(endpointSecret),
+  });
 
   // Handle the event based on its type
   switch (event.type) {
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object;
       const orderId = paymentIntent.metadata.orderId;
+      console.log('Order payment succeeded event', {
+        paymentIntentId: paymentIntent.id,
+        orderId,
+      });
 
       // Update order status to 'paid' and 'completed'
       try {
-        await Order.findByIdAndUpdate(orderId, { 
+        const updatedOrder = await Order.findByIdAndUpdate(orderId, { 
           paymentStatus: 'paid', 
-          orderStatus: 'completed' 
-        });
-        console.log(`Order ${orderId} payment succeeded.`);
+          status: 'ordered' 
+        }, { new: true });
+
+        if (!updatedOrder) {
+          console.warn(`Order webhook could not find order ${orderId} for payment intent ${paymentIntent.id}.`);
+        } else {
+          console.log('Order marked paid from webhook', {
+            orderId: updatedOrder._id.toString(),
+            paymentStatus: updatedOrder.paymentStatus,
+            status: updatedOrder.status,
+          });
+        }
       } catch (error) {
         console.error(`Failed to update order ${orderId} after payment success:`, error);
         return res.status(500).send('Failed to update order status');
@@ -43,14 +101,27 @@ const handleStripeWebhook = async (req, res) => {
     case 'payment_intent.payment_failed':
       const failedPaymentIntent = event.data.object;
       const failedOrderId = failedPaymentIntent.metadata.orderId;
+      console.log('Order payment failed event', {
+        paymentIntentId: failedPaymentIntent.id,
+        orderId: failedOrderId,
+      });
 
       // Update order status to 'failed'
       try {
-        await Order.findByIdAndUpdate(failedOrderId, { 
+        const failedOrder = await Order.findByIdAndUpdate(failedOrderId, { 
           paymentStatus: 'failed', 
-          orderStatus: 'failed' 
-        });
-        console.log(`Order ${failedOrderId} payment failed.`);
+          status: 'cancelled' 
+        }, { new: true });
+
+        if (!failedOrder) {
+          console.warn(`Order webhook could not find failed order ${failedOrderId} for payment intent ${failedPaymentIntent.id}.`);
+        } else {
+          console.log('Order marked failed from webhook', {
+            orderId: failedOrder._id.toString(),
+            paymentStatus: failedOrder.paymentStatus,
+            status: failedOrder.status,
+          });
+        }
       } catch (error) {
         console.error(`Failed to update order ${failedOrderId} after payment failure:`, error);
         return res.status(500).send('Failed to update order status');
@@ -72,14 +143,27 @@ const handleStripeWebhook = async (req, res) => {
     case 'charge.refunded':
       const chargeRefunded = event.data.object;
       const refundedOrderId = chargeRefunded.metadata.orderId;
+      console.log('Order refund event', {
+        chargeId: chargeRefunded.id,
+        orderId: refundedOrderId,
+      });
 
       // Update order status to refunded
       try {
-        await Order.findByIdAndUpdate(refundedOrderId, { 
+        const refundedOrder = await Order.findByIdAndUpdate(refundedOrderId, { 
           paymentStatus: 'refunded', 
-          orderStatus: 'refunded' 
-        });
-        console.log(`Order ${refundedOrderId} refunded.`);
+          status: 'refunded' 
+        }, { new: true });
+
+        if (!refundedOrder) {
+          console.warn(`Order webhook could not find refunded order ${refundedOrderId} for charge ${chargeRefunded.id}.`);
+        } else {
+          console.log('Order marked refunded from webhook', {
+            orderId: refundedOrder._id.toString(),
+            paymentStatus: refundedOrder.paymentStatus,
+            status: refundedOrder.status,
+          });
+        }
       } catch (error) {
         console.error(`Failed to update order ${refundedOrderId} after refund:`, error);
         return res.status(500).send('Failed to update order status');
@@ -98,11 +182,20 @@ const handleStripeWebhook = async (req, res) => {
 const handleSubscriptionWebhook = async (req, res) => {
   const sig = req.headers['stripe-signature'];
   const payload = req.body;
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const endpointSecret = process.env.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET;
 
   let event;
 
   try {
+    if (!sig) {
+      return res.status(400).send('Webhook Error: stripe-signature header is required');
+    }
+
+    if (!endpointSecret) {
+      console.error('Stripe webhook secret is missing for /api/subscription/webhook');
+      return res.status(500).send('Stripe webhook secret is not configured');
+    }
+
     event = stripe.webhooks.constructEvent(payload, sig, endpointSecret);
   } catch (err) {
     console.error('Webhook error:', err);
@@ -110,9 +203,11 @@ const handleSubscriptionWebhook = async (req, res) => {
   }
 
   console.log('🔹 Received Stripe event type:', event.type);
-  console.log('🔹 Event data object:', event.data.object);
-
   switch (event.type) {
+    case 'customer.created':
+      console.log(`Ignoring Stripe event type: ${event.type}`);
+      break;
+
     case 'invoice.payment_succeeded':
       const invoice = event.data.object;
       console.log('🔹 Stripe subscription ID:', invoice.subscription);

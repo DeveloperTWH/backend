@@ -11,7 +11,7 @@ exports.stripePaymentWebhook = async (req, res) => {
     event = stripe.webhooks.constructEvent(
       req.body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET_TWO
+      process.env.STRIPE_ORDER_POST_PAYMENT_WEBHOOK_SECRET
     );
   } catch (err) {
     console.error("❌ Stripe webhook signature invalid:", err.message);

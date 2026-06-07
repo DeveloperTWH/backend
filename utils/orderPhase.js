@@ -40,10 +40,6 @@ function wrapHtml({ title, bodyHtml }) {
             </tr>
             <tr>
               <td style="padding:8px 24px 28px 24px">
-                <a href="${ORDERS_URL}"
-                   style="display:inline-block;text-decoration:none;padding:12px 18px;border-radius:10px;background:#111827;color:#ffffff;font-weight:600;font-size:14px;">
-                  View My Orders
-                </a>
               </td>
             </tr>
             <tr>
@@ -283,7 +279,7 @@ async function sendOrderStatusEmail(to, orderId, status) {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Order status email sent to ${to} (${status})`);
+    console.log("Order status email sent", { status });
   } catch (err) {
     console.error("Error sending email:", err);
     throw err;

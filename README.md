@@ -85,6 +85,13 @@ npm run dev
 | `npm start` | Start the API with `node index.js` |
 | `npm test` | Placeholder script, currently exits with an error |
 
+## Operational docs
+
+- [SETUP.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/SETUP.md:1)
+- [STAGING.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/STAGING.md:1)
+- [DEPLOYMENT.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/DEPLOYMENT.md:1)
+- [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/security-remediation-notes.md:1)
+
 ## Environment variables
 
 Add only the values needed for the features you plan to run locally. Some flows are optional, but core app startup still needs database access and any integrations exercised by your route usage.
@@ -107,9 +114,11 @@ Add only the values needed for the features you plan to run locally. Some flows 
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `STRIPE_SECRET_KEY` | Yes for payment features | Stripe API secret used across payment, checkout, subscription, refund, and Connect flows |
-| `STRIPE_ENDPOINT_SECRET` | Yes for canonical order-payment webhook | Signature verification for `/api/webhooks/stripe` |
-| `STRIPE_WEBHOOK_SECRET` | Yes for some webhook flows | Shared by subscription, vendor onboarding payment, and business draft Stripe webhook flows in the current implementation |
-| `STRIPE_WEBHOOK_SECRET_TWO` | Yes for `/api/stripe/payment/webhook` | Signature verification for order email/post-payment webhook flow |
+| `STRIPE_ORDER_WEBHOOK_SECRET` | Yes for `/api/webhooks/stripe` | Signature verification for the canonical order-payment webhook |
+| `STRIPE_BUSINESS_DRAFT_WEBHOOK_SECRET` | Yes for `/api/stripe/webhook` | Signature verification for business draft checkout completion and Connect account sync |
+| `STRIPE_SUBSCRIPTION_WEBHOOK_SECRET` | Yes for `/api/subscription/webhook` | Signature verification for subscription billing webhook |
+| `STRIPE_VENDOR_VERIFICATION_WEBHOOK_SECRET` | Yes for `/api/vendor-onboarding/webhook/payment` | Signature verification for vendor onboarding verification payment webhook |
+| `STRIPE_ORDER_POST_PAYMENT_WEBHOOK_SECRET` | Yes for `/api/stripe/payment/webhook` | Signature verification for order email/post-payment webhook flow |
 | `PLATFORM_FEE_CENTS` | Optional but recommended for order flow | Platform fee used in Stripe payment calculations |
 | `BILLING_PORTAL_RETURN_URL` | Optional | Explicit billing portal return URL; falls back to frontend-based behavior where applicable |
 | `CONNECT_RETURN_PATH` | Optional | Relative return path for Stripe Connect onboarding |

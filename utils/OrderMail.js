@@ -322,7 +322,13 @@ function vendorIntro({ order, businessName }) {
  * Expects order populated with: userId{name,email}, vendorId{name,email}, businessId{businessName,slug,email,owner{email}}, items.productId{name|title}
  */
 exports.sendOrderPaidEmails = async ({ order, currency, customerEmails = [], vendorEmails = [] }) => {
-  console.log({ order, currency, customerEmails, vendorEmails });
+  console.log("Preparing order-paid emails", {
+    orderId: order?._id?.toString?.() || null,
+    groupOrderId: order?.groupOrderId || null,
+    currency,
+    customerRecipientCount: customerEmails.length,
+    vendorRecipientCount: vendorEmails.length,
+  });
 
   const businessName = order.businessId?.businessName || "Vendor";
   const businessSlug = order.businessId?.slug || "";

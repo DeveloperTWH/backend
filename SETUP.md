@@ -47,9 +47,11 @@ npm run dev
 ### Stripe
 
 - Set `STRIPE_SECRET_KEY`.
-- Set `STRIPE_ENDPOINT_SECRET` for the canonical order-payment webhook at `/api/webhooks/stripe`.
-- Set `STRIPE_WEBHOOK_SECRET` for the currently shared subscription/vendor-onboarding/business-draft webhook flows.
-- Set `STRIPE_WEBHOOK_SECRET_TWO` for `/api/stripe/payment/webhook`.
+- Set `STRIPE_ORDER_WEBHOOK_SECRET` for the canonical order-payment webhook at `/api/webhooks/stripe`.
+- Set `STRIPE_BUSINESS_DRAFT_WEBHOOK_SECRET` for `/api/stripe/webhook`.
+- Set `STRIPE_SUBSCRIPTION_WEBHOOK_SECRET` for `/api/subscription/webhook`.
+- Set `STRIPE_VENDOR_VERIFICATION_WEBHOOK_SECRET` for `/api/vendor-onboarding/webhook/payment`.
+- Set `STRIPE_ORDER_POST_PAYMENT_WEBHOOK_SECRET` for `/api/stripe/payment/webhook`.
 - Set `PLATFORM_FEE_CENTS` if your order/payment flow uses platform fees.
 - Set Connect return/refresh URLs or paths if Stripe Connect onboarding is used.
 
@@ -101,6 +103,8 @@ npm run dev
 ## Related docs
 
 - [README.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/README.md:1)
+- [STAGING.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/STAGING.md:1)
+- [DEPLOYMENT.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/DEPLOYMENT.md:1)
 - [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/security-remediation-notes.md:1)
 
 ## Deployment notes

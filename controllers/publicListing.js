@@ -256,8 +256,6 @@ exports.getServiceById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log("Incoming ID:", id);
-
     const service = await Service.findById(id)
       .populate('categoryId', 'name')
       .populate('subcategoryId', 'name')
@@ -277,8 +275,6 @@ exports.getServiceById = async (req, res) => {
           badge
         `,
       });
-
-    console.log("Found Service:", service);
 
     if (!service) {
       return res.status(404).json({
@@ -531,8 +527,6 @@ exports.getFoodById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log("Incoming Food ID:", id);
-
     const food = await Food.findById(id)
       .populate('categoryId', 'name')
       .populate('subcategoryId', 'name')
@@ -552,8 +546,6 @@ exports.getFoodById = async (req, res) => {
           badge
         `,
       });
-
-    console.log("Found Food:", food);
 
     if (!food) {
       return res.status(404).json({
@@ -1133,7 +1125,6 @@ if (price) {
 
 
 exports.getProductsByFilters = async (req, res) => {
-  console.log('Received query parameters:', req.query);
   try {
     const {
       categorySlug,

@@ -926,7 +926,7 @@ exports.createVerificationPayment = async (req, res) => {
 exports.handleVendorPaymentWebhook = async (req, res) => {
   const sig = req.headers['stripe-signature'];
   const payload = req.body;
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const endpointSecret = process.env.STRIPE_VENDOR_VERIFICATION_WEBHOOK_SECRET;
 
   let event;
 
@@ -938,6 +938,11 @@ exports.handleVendorPaymentWebhook = async (req, res) => {
       console.log('No signature provided - using payload directly for local development testing');
       event = JSON.parse(payload.toString());
     } else {
+      if (!endpointSecret) {
+        console.error('Stripe webhook secret is missing for /api/vendor-onboarding/webhook/payment');
+        return res.status(500).send('Stripe webhook secret is not configured');
+      }
+
       event = stripe.webhooks.constructEvent(payload, sig, endpointSecret);
     }
   } catch (err) {

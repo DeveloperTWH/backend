@@ -20,10 +20,6 @@ async function geocodeAddress(address) {
 
   if (!location) throw new Error('Could not geocode address');
 
-  console.log('Geocoded address:', result.formatted_address);
-  console.log("lat:" , location.lat, "lng:" , location.lng,);
-  
-
   return {
     lat: location.lat,
     lng: location.lng,

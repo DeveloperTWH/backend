@@ -742,6 +742,17 @@ exports.initiateOrder = async (req, res) => {
       process.env.PLATFORM_FEE_CENTS || "0"
     );
 
+    console.log("Initiating order payment intent", {
+      orderId: order._id.toString(),
+      groupOrderId,
+      businessId: business?._id?.toString?.() || String(businessId),
+      vendorId: vendorId?.toString?.() || String(vendorId),
+      stripeConnectAccountId: business?.stripeConnectAccountId || null,
+      amountCents: Math.round(totalAmount * 100),
+      currency: "usd",
+      platformFeeCents,
+    });
+
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount: Math.round(totalAmount * 100),
@@ -759,6 +770,13 @@ exports.initiateOrder = async (req, res) => {
         idempotencyKey: `pi:${order._id.toString()}`,
       }
     );
+
+    console.log("Order payment intent created", {
+      orderId: order._id.toString(),
+      paymentIntentId: paymentIntent.id,
+      clientSecretPresent: Boolean(paymentIntent.client_secret),
+      stripeConnectAccountId: business?.stripeConnectAccountId || null,
+    });
 
     order.paymentId = paymentIntent.id;
     await order.save();
@@ -823,6 +841,13 @@ exports.initiateOrder = async (req, res) => {
     });
   } catch (err) {
     console.error("Order initiation failed:", err);
+    console.error("Order initiation Stripe details:", {
+      type: err?.type,
+      code: err?.code,
+      message: err?.message,
+      statusCode: err?.statusCode,
+      requestId: err?.requestId,
+    });
 
     if (err?.statusCode === 400) {
       return res.status(400).json({
@@ -950,7 +975,6 @@ exports.acceptOrder = async (req, res) => {
     await order.save();
 
     try {
-      console.log("sending email", order.userId.email)
       const customerEmail = order.userId.email; // use whichever you store
       if (customerEmail) {
         await sendOrderStatusEmail(customerEmail, order._id.toString(), "accepted");
@@ -1017,7 +1041,10 @@ exports.rejectOrder = async (req, res) => {
         order.paymentStatus = "refunded";
         order.statusHistory.push({ status: "refunded" });
 
-        console.log(`💸 Refund initiated for order ${orderId}: $${order.totalAmount}`);
+        console.log("Refund initiated for order", {
+          orderId,
+          paymentIntentId: order.paymentId,
+        });
       } catch (err) {
         console.error("Error processing refund via Stripe Connect:", err);
         return res.status(500).json({ success: false, message: "Refund failed" });
@@ -1026,7 +1053,6 @@ exports.rejectOrder = async (req, res) => {
 
     await order.save();
     try {
-      console.log("sending email", order.userId.email)
       const customerEmail = order.userId.email; // use whichever you store
       if (customerEmail) {
         await sendOrderStatusEmail(customerEmail, order._id.toString(), "rejected");
@@ -1111,8 +1137,6 @@ exports.deliverOrder = async (req, res) => {
 
     const order = await Order.findOne({ _id: orderId, vendorId })
       .populate("userId", "email"); // ✅ IMPORTANT FIX
-
-    console.log("deliverOrder found order:", order);
 
     if (!order) {
       return res.status(404).json({
@@ -1229,7 +1253,10 @@ exports.acceptReturn = async (req, res) => {
 
         // Step 3: After successful refund, update order status to 'refunded'
         order.paymentStatus = "refunded";  // Update payment status to refunded
-        console.log(`💸 Refund initiated for order ${orderId}: $${order.totalAmount}`);
+        console.log("Refund initiated for order", {
+          orderId,
+          paymentIntentId: order.paymentId,
+        });
       } catch (err) {
         console.error("Error processing refund via Stripe Connect:", err);
         return res.status(500).json({ success: false, message: "Refund failed" });
