@@ -43,8 +43,8 @@ function getServerAssignedOAuthRole(existingUser) {
 }
 
 function mintSessionJWT(user) {
-    // short-lived session token (1h)
-    return jwt.sign({ sub: user._id.toString(), role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+    // session token — 7 days (matches standard login / OTP verify)
+    return jwt.sign({ sub: user._id.toString(), role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 }
 
 function setAuthCookies(res, user, sessionJwt, ttlSeconds = 7 * 24 * 60 * 60) {
