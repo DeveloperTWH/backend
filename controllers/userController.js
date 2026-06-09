@@ -18,6 +18,18 @@ function getSafePublicRole(role) {
     return role === 'business_owner' ? 'business_owner' : 'customer';
 }
 
+function buildSessionToken(user) {
+    return jwt.sign(
+        {
+            userId: user._id,
+            role: user.role,
+            sessionVersion: user.sessionVersion || 0,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+    );
+}
+
 exports.registerUser = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -115,11 +127,7 @@ exports.verifyOtp = async (req, res) => {
             console.error('Failed to send welcome email:', emailError);
         }
 
-        const token = jwt.sign(
-            { userId: user._id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
+        const token = buildSessionToken(user);
 
         setAuthCookies(res, token, user, 7 * 24 * 60 * 60 * 1000);
         clearCookie(res, 'otpPending');
@@ -280,6 +288,7 @@ exports.resetPassword = async (req, res) => {
         user.passwordHash = await bcrypt.hash(newPassword, 12);
         user.resetPasswordOtp = undefined;
         user.resetPasswordOtpExpiry = undefined;
+        user.sessionVersion = (user.sessionVersion || 0) + 1;
         await user.save();
 
         return res.status(200).json({
@@ -342,11 +351,7 @@ exports.loginUser = async (req, res) => {
             });
         }
 
-        const token = jwt.sign(
-            { userId: user._id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
+        const token = buildSessionToken(user);
 
         setAuthCookies(res, token, user, 7 * 24 * 60 * 60 * 1000);
 

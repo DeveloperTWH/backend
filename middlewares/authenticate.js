@@ -1,5 +1,17 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { clearAuthCookies } = require('../utils/cookieHelper');
+
+function deny(res, message, { clearCookies = false } = {}) {
+  if (clearCookies) {
+    clearAuthCookies(res);
+  }
+
+  return res.status(401).json({
+    success: false,
+    message,
+  });
+}
 
 module.exports = async (req, res, next) => {
   const bearerToken = req.headers.authorization?.startsWith('Bearer ')
@@ -9,10 +21,7 @@ module.exports = async (req, res, next) => {
   const token = bearerToken || cookieToken;
 
   if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: 'Authentication required',
-    });
+    return deny(res, 'Authentication required');
   }
 
   try {
@@ -20,26 +29,26 @@ module.exports = async (req, res, next) => {
     const userId = decoded.userId || decoded.sub;
 
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid authentication token',
-      });
+      return deny(res, 'Invalid authentication token', { clearCookies: Boolean(cookieToken) });
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authenticated user not found',
-      });
+      return deny(res, 'Authenticated user not found', { clearCookies: Boolean(cookieToken) });
+    }
+
+    const tokenSessionVersion = Number.isInteger(decoded.sessionVersion)
+      ? decoded.sessionVersion
+      : 0;
+    const currentSessionVersion = user.sessionVersion || 0;
+
+    if (tokenSessionVersion !== currentSessionVersion) {
+      return deny(res, 'Session expired. Please log in again.', { clearCookies: Boolean(cookieToken) });
     }
 
     req.user = user;
     next();
   } catch (err) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid or expired authentication token',
-    });
+    return deny(res, 'Invalid or expired authentication token', { clearCookies: Boolean(cookieToken) });
   }
 };
