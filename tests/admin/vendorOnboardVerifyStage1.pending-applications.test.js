@@ -1,0 +1,164 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const Module = require('node:module');
+
+const controllerPath = path.resolve(
+  __dirname,
+  '../../controllers/admin/vendorOnboardVerifyStage1.js'
+);
+
+const buildApplication = (status, overrides = {}) => ({
+  applicationId: `${status}-app`,
+  status,
+  userId: { _id: `${status}-user`, name: `${status} vendor`, email: `${status}@example.com` },
+  minorityProofDocuments: [{ url: 'https://example.com/proof.pdf', verified: false }],
+  verificationChecklist: { minorityDocs: true },
+  totalVerificationPoints: 15,
+  save: async () => {},
+  ...overrides,
+});
+
+const createResponse = () => ({
+  statusCode: null,
+  body: null,
+  status(code) {
+    this.statusCode = code;
+    return this;
+  },
+  json(payload) {
+    this.body = payload;
+    return this;
+  },
+});
+
+const loadControllerWithMocks = (applications) => {
+  const queryLog = {};
+
+  const vendorOnboardingMock = {
+    find(query) {
+      queryLog.query = query;
+
+      const filteredApplications = applications.filter((application) => {
+        const allowedStatuses = query?.status?.$in;
+
+        if (Array.isArray(allowedStatuses)) {
+          return allowedStatuses.includes(application.status);
+        }
+
+        if (query?.status) {
+          return application.status === query.status;
+        }
+
+        return true;
+      });
+
+      return {
+        populate(pathArg, selectArg) {
+          queryLog.populate = { path: pathArg, select: selectArg };
+          return this;
+        },
+        sort(sortArg) {
+          queryLog.sort = sortArg;
+          return Promise.resolve(filteredApplications);
+        },
+      };
+    },
+  };
+
+  const businessMock = {
+    findOneAndUpdate: async () => {},
+  };
+
+  const userMock = {};
+
+  const mailerMock = {
+    sendVendorApprovedEmail: async () => {},
+    sendVendorRejectionEmail: async () => {},
+    sendVendorTrustBadgeAssignedEmail: async () => {},
+  };
+
+  const originalLoad = Module._load;
+
+  Module._load = function mockLoad(request, parent, isMain) {
+    if (request === '../../models/VendorOnboardingStage1') {
+      return vendorOnboardingMock;
+    }
+
+    if (request === '../../models/User') {
+      return userMock;
+    }
+
+    if (request === '../../models/Business') {
+      return businessMock;
+    }
+
+    if (request === '../../utils/WellcomeMailer') {
+      return mailerMock;
+    }
+
+    return originalLoad.call(this, request, parent, isMain);
+  };
+
+  delete require.cache[controllerPath];
+  const controller = require(controllerPath);
+  Module._load = originalLoad;
+
+  return { controller, queryLog };
+};
+
+test('getPendingApplications returns only submitted applications for admin review', async () => {
+  const applications = [
+    buildApplication('draft'),
+    buildApplication('payment_pending'),
+    buildApplication('submitted'),
+    buildApplication('rejected'),
+    buildApplication('verified'),
+  ];
+  const { controller, queryLog } = loadControllerWithMocks(applications);
+  const res = createResponse();
+
+  await controller.getPendingApplications({}, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.success, true);
+  assert.deepEqual(queryLog.query, { status: { $in: ['submitted'] } });
+  assert.deepEqual(queryLog.populate, { path: 'userId', select: 'name email' });
+  assert.deepEqual(queryLog.sort, { submittedAt: -1, createdAt: -1 });
+  assert.deepEqual(
+    res.body.data.map((application) => application.status),
+    ['submitted']
+  );
+});
+
+test('getPendingApplications includes resubmitted applications once they return to submitted status', async () => {
+  const applications = [
+    buildApplication('submitted', {
+      applicationId: 'resubmitted-app',
+      resubmittedFrom: 'rejected',
+    }),
+    buildApplication('rejected', {
+      applicationId: 'rejected-app',
+    }),
+  ];
+  const { controller } = loadControllerWithMocks(applications);
+  const res = createResponse();
+
+  await controller.getPendingApplications({}, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(
+    res.body.data.map((application) => ({
+      applicationId: application.applicationId,
+      status: application.status,
+      resubmittedFrom: application.resubmittedFrom || null,
+    })),
+    [
+      {
+        applicationId: 'resubmitted-app',
+        status: 'submitted',
+        resubmittedFrom: 'rejected',
+      },
+    ]
+  );
+});

@@ -7,6 +7,11 @@ const {
   sendVendorTrustBadgeAssignedEmail
 } = require('../../utils/WellcomeMailer');
 
+// Admin pending queue contains only applications that have completed vendor
+// submission and are waiting for stage-1 review. Rejected resubmissions re-enter
+// the queue by transitioning back to `submitted` in vendorOnboarding.controller.
+const PENDING_REVIEW_STATUSES = Object.freeze(['submitted']);
+
 const syncBusinessPoints = async (application, badge) => {
   const ownerId = application.userId?._id || application.userId;
   const update = {
@@ -46,7 +51,9 @@ const autoVerifyMinorityDocsIfMissing = async (application) => {
 
 exports.getPendingApplications = async (req, res) => {
   try {
-    const applications = await VendorOnboarding.find({})
+    const applications = await VendorOnboarding.find({
+      status: { $in: PENDING_REVIEW_STATUSES }
+    })
       .populate('userId', 'name email')
       .sort({ submittedAt: -1, createdAt: -1 });
 
