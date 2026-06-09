@@ -31,6 +31,9 @@ const oauth = new OAuth2Client(
     GOOGLE_CLIENT_SECRET,
     `${API_BASE_URL}/api/auth/google/callback`
 );
+const SESSION_TTL_SEC = 7 * 24 * 60 * 60;
+const TEMP_PROFILE_TTL_SEC = Math.max(60, Number(TEMP_COOKIE_TTL_SEC) || 900);
+const TEMP_PROFILE_TTL_MS = TEMP_PROFILE_TTL_SEC * 1000;
 
 function getServerAssignedOAuthRole(existingUser) {
     if (!existingUser) return 'customer';
@@ -51,11 +54,11 @@ function mintSessionJWT(user) {
             sessionVersion: user.sessionVersion || 0,
         },
         JWT_SECRET,
-        { expiresIn: '7d' }
+        { expiresIn: SESSION_TTL_SEC }
     );
 }
 
-function setAuthCookies(res, user, sessionJwt, ttlSeconds = 7 * 24 * 60 * 60) {
+function setAuthCookies(res, user, sessionJwt, ttlSeconds = SESSION_TTL_SEC) {
     setSharedAuthCookies(res, sessionJwt, user, ttlSeconds * 1000);
 }
 
@@ -134,11 +137,11 @@ exports.handleGoogleCallback = async (req, res) => {
             const tmp = jwt.sign(
                 { sub: user._id.toString(), email: user.email, role: user.role },
                 JWT_SECRET,
-                { expiresIn: Math.max(60, Number(TEMP_COOKIE_TTL_SEC) || 900) }
+                { expiresIn: TEMP_PROFILE_TTL_SEC }
             );
             setCookie(res, TEMP_COOKIE_NAME, tmp, {
                 httpOnly: true,
-                maxAge: Number(TEMP_COOKIE_TTL_SEC) || 900,
+                maxAge: TEMP_PROFILE_TTL_MS,
             });
             return res.redirect(`${FRONTEND_URL}/complete-profile`);
         }

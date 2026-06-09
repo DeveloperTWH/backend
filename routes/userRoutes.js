@@ -40,6 +40,16 @@ const otpResendLimiter = buildAuthLimiter(
   'Too many OTP resend attempts. Please try again later.'
 );
 
+const forgotPasswordLimiter = buildAuthLimiter(
+  5,
+  'Too many password reset requests. Please try again later.'
+);
+
+const resetPasswordLimiter = buildAuthLimiter(
+  10,
+  'Too many password reset attempts. Please try again later.'
+);
+
 // Register route
 router.post(
   '/register',
@@ -86,12 +96,14 @@ router.post(
 
 router.post(
   '/forgot-password',
+  forgotPasswordLimiter,
   [body('email').isEmail().normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }).withMessage('Valid email is required')],
   userController.forgotPassword
 );
 
 router.post(
   '/reset-password',
+  resetPasswordLimiter,
   [
     body('email').isEmail().normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }).withMessage('Valid email is required'),
     body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
