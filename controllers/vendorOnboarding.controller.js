@@ -226,13 +226,12 @@ exports.saveDraft = async (req, res) => {
       }
     });
 
-    // 8️⃣ Smart status handling
-if (onboarding.status === "rejected") {
-  // 🔥 Auto resubmit when user edits after rejection
-  onboarding.status = "submitted";
-} else if (!onboarding.status) {
-  onboarding.status = "draft";
-}
+    // 8️⃣ Status handling — draft save never auto-resubmits for admin review
+    if (onboarding.status === 'rejected') {
+      onboarding.status = 'draft';
+    } else if (!onboarding.status) {
+      onboarding.status = 'draft';
+    }
     // 8️⃣ Save
     await onboarding.save();
 
@@ -1077,10 +1076,11 @@ if (onboarding.status === "submitted") {
   });
 }
 
-// ❌ Only block invalid states
+// ❌ Only block invalid states (explicit submit handles resubmission)
 if (
-  onboarding.status !== "draft" &&
-  onboarding.status !== "payment_pending"
+  onboarding.status !== 'draft' &&
+  onboarding.status !== 'payment_pending' &&
+  onboarding.status !== 'rejected'
 ) {
   return res.status(400).json({
     success: false,
