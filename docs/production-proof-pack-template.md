@@ -52,6 +52,38 @@ See [deploy-verification.md](deploy-verification.md) § Integration gate — 202
 
 ---
 
+## Release — PR #9 post-merge gate 2026-06-14
+
+PR [#9](https://github.com/DeveloperTWH/backend/pull/9) merged to `main`. Controlled production smoke **blocked** until EB deploy commit confirmed.
+
+### Release metadata
+
+- Merge commit (`main`): `efbf0fb`
+- Previous known-good commit (EB rollback target): `2dd52c4`
+- Deploy timestamp: _pending infra — merge does not auto-deploy_
+- PR link: https://github.com/DeveloperTWH/backend/pull/9 (merged)
+- EB deployed commit: _pending infra_
+- Controlled smoke approved: _pending infra_
+
+### Baseline probes only (2026-06-14T21:42:14Z)
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| `GET https://api.mosaicbizhub.com/` | **PASS** — HTTP 200 | Baseline only — does not prove PR #9 live |
+| Unauth `GET /api/users/auth/check` | **PASS** — HTTP 401 | Baseline only |
+
+### Post-deploy smoke (BLOCKED)
+
+| ID | PASS/FAIL | Notes |
+|----|-----------|-------|
+| P0.1 | BASELINE | 200 at probe time — EB commit unconfirmed |
+| P0.2 | BLOCKED | Pending infra EB deploy confirmation |
+| P0.3–P6 | BLOCKED | Run after infra confirms `efbf0fb` live + smoke approval |
+
+See [integration-gate-asana-evidence.md](integration-gate-asana-evidence.md) § Post-merge deploy gate.
+
+---
+
 ## Release — 2026-06-07 (historical template)
 
 ## Release metadata
