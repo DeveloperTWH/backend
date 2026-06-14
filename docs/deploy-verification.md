@@ -115,7 +115,8 @@ PR [#9](https://github.com/DeveloperTWH/backend/pull/9) merged to `main` at `202
 | Item | Value |
 |------|-------|
 | Merge commit | `efbf0fb` — Merge pull request #9 from DeveloperTWH/staging |
-| Local `main` synced | **PASS** — reset to `origin/main` @ `efbf0fb`; `645a282` contained |
+| `origin/main` HEAD | `2e41cd6` — post-merge evidence docs (docs-only vs `efbf0fb`) |
+| Local `main` synced | **PASS** @ `2e41cd6`; `645a282` contained |
 | `npm test` on `main` | **57/57 pass** |
 | Auto-deploy on merge | **No** — manual EB deploy per [DEPLOYMENT.md](../DEPLOYMENT.md); no CI workflows |
 | EB deployed commit | **UNKNOWN** — pending infra owner confirmation |
@@ -134,6 +135,6 @@ Probed `2026-06-14T21:42:14Z`:
 
 ### Controlled production smoke
 
-**BLOCKED** until infra confirms PR #9 / `efbf0fb` is live on EB and approves smoke window.
+**BLOCKED** until infra confirms Wave 2 (`efbf0fb` or newer) is live on EB and approves smoke (Q9).
 
-See [integration-gate-asana-evidence.md](integration-gate-asana-evidence.md) § Post-merge deploy gate.
+Infra confirmation request: see [integration-gate-asana-evidence.md](integration-gate-asana-evidence.md) § Infra owner request (post-merge).

@@ -58,11 +58,12 @@ Local boot verification passed. Production deployment verification (main → EB 
 |------|-------|
 | PR #9 status | **MERGED** @ `2026-06-14T21:38:12Z` |
 | Merge commit | `efbf0fb` |
-| Local `main` synced | **PASS** @ `efbf0fb`; contains `645a282` |
+| `origin/main` HEAD | `2e41cd6` (docs-only evidence; Wave 2 runtime code in `efbf0fb`) |
+| Local `main` synced | **PASS** @ `2e41cd6`; contains `645a282` |
 | `npm test` on `main` | **57/57 pass** |
 | Auto-deploy on merge | **No** — manual EB deploy per DEPLOYMENT.md |
-| EB deployed commit | _pending infra_ |
-| PR #9 live on production? | _pending infra_ |
+| EB deployed commit | **UNKNOWN** — _pending infra_ |
+| Latest `main` live on EB? | **UNKNOWN** — _pending infra_ |
 | Rollback target | `2dd52c4` (documented pre-PR #9 baseline) |
 | Controlled smoke approved? | _pending infra_ |
 
@@ -81,32 +82,49 @@ Does **not** prove PR #9 is deployed — EB commit confirmation required.
 
 ## Infra owner request (post-merge — send now, PENDING)
 
-PR #9 has been merged into `main`. **Do not start controlled production smoke until infra responds.**
+PR #9 has been merged into `main`. **Do not start controlled production smoke until infra responds in writing.**
 
 ```text
 PR #9 has been merged into main.
 
-Please confirm whether AWS Elastic Beanstalk production has deployed the merged main commit.
+Please confirm whether AWS Elastic Beanstalk production has deployed the latest main commit.
+
+Current commit references:
+- PR #9 merge commit: efbf0fb
+- Latest origin/main commit after evidence docs: 2e41cd6
 
 Needed before post-deploy smoke:
 1. EB application/environment name
-2. Deployed version label or commit
-3. Whether PR #9 / latest main (efbf0fb) is currently live
-4. Rollback target/version
-5. Who can execute rollback
-6. Confirmation production env vars/secrets are configured
-7. Approval to begin controlled production smoke
+2. Currently deployed version label or commit
+3. Whether latest main (2e41cd6) is currently live on EB
+4. If not live, please deploy latest main or confirm the deploy window
+5. Rollback target/version
+6. Who has permission to execute rollback
+7. Estimated rollback time
+8. Confirmation production env vars/secrets are configured
+9. Approval to begin controlled production smoke after deploy
+
+Current status:
+- PR #9 merged and closed
+- Wave 2 code promoted to main
+- Local main synced and tested: 57/57 passing
+- Baseline production probes passed, but baseline only
+- Controlled production smoke is blocked until EB deployed commit is confirmed
 ```
 
-| Question | Response |
-|----------|----------|
-| EB application/environment name | _pending_ |
-| Deployed version label/commit | _pending_ |
-| PR #9 / `efbf0fb` live on production? | _pending_ |
-| Rollback target/version | _pending_ |
-| Rollback executor | _pending_ |
-| Production env vars configured | _pending_ |
-| Controlled smoke approved | _pending_ |
+| # | Question | Response |
+|---|----------|----------|
+| 1 | EB application/environment name | _pending_ |
+| 2 | Currently deployed version label or commit | _pending_ |
+| 3 | Latest `main` (`2e41cd6`) live on EB? | _pending_ |
+| 4 | Deploy latest `main` or deploy window | _pending_ |
+| 5 | Rollback target/version | _pending_ |
+| 6 | Who can execute rollback | _pending_ |
+| 7 | Estimated rollback time | _pending_ |
+| 8 | Production env vars/secrets configured | _pending_ |
+| 9 | Approval to begin controlled production smoke | _pending_ |
+
+**Smoke gate:** Wave 2 runtime requires at minimum `efbf0fb` live; `2e41cd6` is documentation-only.
 
 ---
 
@@ -160,12 +178,12 @@ Run after `main` merge + EB deploy of merged SHA. Record in [production-proof-pa
 |-------|-------|
 | URL | `GET https://api.mosaicbizhub.com/` |
 | Expected | HTTP 200 + health JSON |
-| Commit deployed | _pending infra — merge is `efbf0fb`; EB commit unconfirmed_ |
+| Commit deployed | _pending infra — merge `efbf0fb`; HEAD `2e41cd6`; EB commit unknown_ |
 | Environment | production (EB) |
 | Timestamp | baseline probe `2026-06-14T21:42:14Z` only |
 | Tester | automated baseline probe |
 | Screenshot/log | _pending post-deploy smoke_ |
 
-**Controlled production smoke:** **BLOCKED** until infra confirms PR #9 / `efbf0fb` is live on EB.
+**Controlled production smoke:** **BLOCKED** until infra confirms Wave 2 (`efbf0fb` or newer) is live on EB and approves smoke (Q9).
 
 Current EB baseline (pre-PR #9 deploy confirmation): prod health probe **PASS** at `2026-06-14T21:42:14Z` — see deploy-verification.md § Post-merge gate.

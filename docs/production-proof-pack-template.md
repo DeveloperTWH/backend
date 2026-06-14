@@ -59,6 +59,7 @@ PR [#9](https://github.com/DeveloperTWH/backend/pull/9) merged to `main`. Contro
 ### Release metadata
 
 - Merge commit (`main`): `efbf0fb`
+- Latest `origin/main` HEAD: `2e41cd6` (evidence docs only)
 - Previous known-good commit (EB rollback target): `2dd52c4`
 - Deploy timestamp: _pending infra — merge does not auto-deploy_
 - PR link: https://github.com/DeveloperTWH/backend/pull/9 (merged)
@@ -78,7 +79,7 @@ PR [#9](https://github.com/DeveloperTWH/backend/pull/9) merged to `main`. Contro
 |----|-----------|-------|
 | P0.1 | BASELINE | 200 at probe time — EB commit unconfirmed |
 | P0.2 | BLOCKED | Pending infra EB deploy confirmation |
-| P0.3–P6 | BLOCKED | Run after infra confirms `efbf0fb` live + smoke approval |
+| P0.3–P6 | BLOCKED | Run after infra confirms `efbf0fb`+ live + Q9 smoke approval |
 
 See [integration-gate-asana-evidence.md](integration-gate-asana-evidence.md) § Post-merge deploy gate.
 
