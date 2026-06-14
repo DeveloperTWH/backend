@@ -50,6 +50,18 @@ const resetPasswordLimiter = buildAuthLimiter(
   'Too many password reset attempts. Please try again later.'
 );
 
+function toAuthCheckUser(user) {
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    gender: user.gender,
+    mobile: user.mobile,
+    isOtpVerified: user.isOtpVerified,
+  };
+}
+
 // Register route
 router.post(
   '/register',
@@ -113,7 +125,7 @@ router.post(
 );
 
 router.get('/auth/check', authenticate, (req, res) => {
-  res.json({ loggedIn: true, user: req.user });
+  res.json({ loggedIn: true, user: toAuthCheckUser(req.user) });
 });
 
 module.exports = router;
