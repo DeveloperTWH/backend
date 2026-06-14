@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const userController = require('../controllers/userController');
 const authenticate = require('../middlewares/authenticate')
+const toPublicAuthUser = require('../utils/toPublicAuthUser');
 
 const router = express.Router();
 
@@ -51,15 +52,7 @@ const resetPasswordLimiter = buildAuthLimiter(
 );
 
 function toAuthCheckUser(user) {
-  return {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    gender: user.gender,
-    mobile: user.mobile,
-    isOtpVerified: user.isOtpVerified,
-  };
+  return toPublicAuthUser(user);
 }
 
 // Register route
