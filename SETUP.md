@@ -16,6 +16,8 @@ npm install
 copy .env.example .env
 ```
 
+The application loads **`.env` only** (not `.env.local`). On Windows, if `mongodb+srv://` fails with `querySrv ECONNREFUSED`, change system DNS to `8.8.8.8` / `1.1.1.1` or use a standard (non-SRV) MongoDB URI.
+
 If you are on macOS or Linux, use:
 
 ```bash
@@ -71,6 +73,7 @@ npm run dev
 
 ### Optional integrations
 
+- Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `API_BASE_URL` — **required for server boot** (see README).
 - Set `GOOGLE_GEOCODING_API_KEY` for Google geocoding/place flows.
 - Set `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET` only if PayPal verification utilities are used.
 - Set `PUPPETEER_EXECUTABLE_PATH` only when your environment needs a custom Chromium path.
@@ -102,10 +105,11 @@ npm run dev
 
 ## Related docs
 
-- [README.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/README.md:1)
-- [STAGING.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/STAGING.md:1)
-- [DEPLOYMENT.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/DEPLOYMENT.md:1)
-- [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/security-remediation-notes.md:1)
+- [README.md](README.md)
+- [STAGING.md](STAGING.md)
+- [DEPLOYMENT.md](DEPLOYMENT.md)
+- [docs/launch-readiness-report.md](docs/launch-readiness-report.md)
+- [docs/security-remediation-notes.md](docs/security-remediation-notes.md)
 
 ## Deployment notes
 
