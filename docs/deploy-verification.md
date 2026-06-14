@@ -43,3 +43,65 @@ The `staging` branch is **not deployed** to a host in MVP workflow. Verification
 - Integration checklist in [STAGING.md](../STAGING.md)
 
 Runtime webhook and payment proof happens only after `main` → EB deploy.
+
+---
+
+## Integration gate — 2026-06-14 (`staging` @ `28510cf`)
+
+Pre-PR verification before `staging` → `main`. Staging is **8 commits ahead** of `origin/main` (`2dd52c4`).
+
+### Rollback readiness (pre-merge)
+
+| Item | Value |
+|------|-------|
+| Last known good `main` SHA (current EB baseline) | `2dd52c4` — Merge pull request #8 from DeveloperTWH/staging |
+| Staging HEAD (candidate release) | `28510cf` — Add launch readiness and production verification docs |
+| EB rollback path | Manual — infra owner per [DEPLOYMENT.md](../DEPLOYMENT.md) |
+
+### STAGING.md integration checklist
+
+| Item | Status |
+|------|--------|
+| PR reviewed; security-sensitive diffs called out | Pending reviewer (Wave 2 hardening in 8 commits) |
+| App boots locally with `.env` | **PASS** — `npm start`, Mongo connected, port 3001 |
+| No secrets committed; `.env.example` updated | **PASS** — working tree clean at audit time |
+| Docs updated (README, SETUP, DEPLOYMENT, security) | **PASS** — launch docs commit `28510cf` |
+| P0 blockers tracked in launch-readiness-report | **PASS** — reviewed; deploy does not close them |
+
+### Automated / local commands executed
+
+| Command | Result |
+|---------|--------|
+| `npm test` | **57/57 pass** |
+| `GET http://localhost:3001/` | **200** — `{"message":"Mosaic Biz Hub API is working 9 feb "}` |
+| `node scripts/verify-auth-check-smoke.js` | **PASS** — unauth 401; customer/vendor/admin auth/check 200 with safe keys; frontend pages 200 |
+| `.env` boot-critical vars | **PASS** — `PORT=3001`, `API_BASE_URL` port 3001 aligned; all 5 `STRIPE_*_WEBHOOK_SECRET` set |
+| `.env.local` | Exists but **not loaded** by app (`dotenv.config()` in `index.js`) |
+
+### Local boot probe evidence
+
+Local boot probe passed:
+
+- `GET http://localhost:3001/` returned **200** with expected health JSON.
+- Server process was intentionally stopped after the probe.
+- Windows process termination exit code observed: **4294967295** (normal for intentional stop on Windows).
+
+### Release path note
+
+Hosted staging smoke test is **not applicable** for this release — hosted staging is deferred and no staging deploy target exists ([hosted-staging-decision.md](hosted-staging-decision.md)).
+
+Current release path: validate on `staging` branch → merge to `main` → deploy `main` to AWS Elastic Beanstalk → controlled production smoke.
+
+### Production probes (current `main` on EB — not staging candidate yet)
+
+| Check | Result |
+|-------|--------|
+| `GET https://api.mosaicbizhub.com/` (P0.1) | **PASS** — HTTP 200 |
+| `GET https://api.mosaicbizhub.com/api/users/auth/check` (unauth) | **PASS** — HTTP 401 |
+| P0.2 EB boot logs | Not captured — infra owner |
+| P1–P6 full manual smoke | **PENDING** — run after `staging` → `main` merge + EB deploy of `28510cf` |
+| P4 Stripe webhook deliveries | Not captured — Stripe Dashboard |
+
+**Integration verdict:** **GO** for opening PR `staging` → `main` (automated tests + local boot + auth smoke pass).
+
+**Production deploy verdict:** **NO-GO** for unrestricted launch until post-merge EB deploy smoke (P1–P6) and P0 blocker sign-off.

@@ -1,6 +1,58 @@
-# Production Soft-Launch Proof Pack — 2026-06-07
+# Production Soft-Launch Proof Pack
 
 > Template: copy this file per release, fill in fields, attach redacted screenshots. Do not commit secrets.
+
+---
+
+## Release — staging integration gate 2026-06-14 (pre-merge)
+
+Candidate not yet on EB. Records integration gate before PR `staging` → `main`.
+
+### Release metadata
+
+- Candidate commit (`staging`): `28510cf`
+- Previous known-good commit (`main` / current EB): `2dd52c4`
+- Deploy timestamp: not deployed yet
+- PR link (`staging` → `main`): pending
+- Approvers: pending
+- Executor: automated integration gate run
+
+### Pre-deploy rollback confirmation
+
+- [x] Last good SHA recorded on EB — `2dd52c4`
+- [ ] EB rollback path confirmed with infra owner
+- [x] Production env vars documented ([production-env-checklist.md](production-env-checklist.md))
+
+### Smoke results (partial — pre-merge)
+
+| ID | PASS/FAIL | Notes |
+|----|-----------|-------|
+| P0.1 | PASS | Prod probe 2026-06-14 — `GET https://api.mosaicbizhub.com/` HTTP 200 |
+| P0.2 | PENDING | EB logs — infra owner |
+| P0.3 | PENDING | After post-deploy auth smoke + log review |
+| P1.5 (unauth) | PASS | Prod `GET /api/users/auth/check` → 401 |
+| P1.1–P1.8 (full) | PARTIAL | Local `verify-auth-check-smoke.js` PASS; prod login flow pending post-deploy |
+| P2.1–P2.6 | PENDING | Post-deploy vendor test account |
+| P3.1–P3.5 | PENDING | Post-deploy admin test account |
+| P4.1–P4.5 | PENDING | Stripe Dashboard after deploy |
+| P5.1–P5.5 | PENDING | Connect + order flow |
+| P6.1–P6.5 | PENDING | Public API probes |
+
+Local integration: `npm test` 57/57 pass; `GET http://localhost:3001/` 200; auth smoke script PASS.
+
+Local boot probe evidence:
+
+- `GET http://localhost:3001/` returned **200** with expected health JSON.
+- Server process was intentionally stopped after the probe.
+- Windows process termination exit code observed: **4294967295** (normal for intentional stop on Windows).
+
+Hosted staging smoke test is **not applicable** for this release — hosted staging is deferred and no staging deploy target exists ([hosted-staging-decision.md](hosted-staging-decision.md)). Current release path: validate on `staging` branch → merge to `main` → deploy `main` to AWS Elastic Beanstalk → controlled production smoke.
+
+See [deploy-verification.md](deploy-verification.md) § Integration gate — 2026-06-14.
+
+---
+
+## Release — 2026-06-07 (historical template)
 
 ## Release metadata
 
