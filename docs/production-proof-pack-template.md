@@ -85,6 +85,52 @@ See [integration-gate-asana-evidence.md](integration-gate-asana-evidence.md) § 
 
 ---
 
+## Provisional Production Smoke — Commit Unconfirmed
+
+**Mode:** Provisional verification — assumption that `main` may be deployed; EB deployed commit **unconfirmed**.
+
+**Probe timestamp:** `2026-06-14T21:56:27Z` (local run `2026-06-14T17:56:27-04:00`)
+
+**Commit references (not verified on EB):**
+
+- PR #9 merge: `efbf0fb`
+- `origin/main` HEAD at probe time: `9e0685e`
+
+### Safe public probes
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| `GET https://api.mosaicbizhub.com/` | **200** | `{"message":"Mosaic Biz Hub API is working 9 feb "}` |
+| Unauth `GET /api/users/auth/check` | **401** | `{"success":false,"message":"Authentication required"}` |
+
+### Stripe webhook unsigned-request rejection (negative tests)
+
+POST `{}` with `Content-Type: application/json`, no `stripe-signature` header:
+
+| Route | HTTP | Response snippet |
+|-------|------|------------------|
+| `/api/webhooks/stripe` | **400** | `Webhook Error: stripe-signature header is required` |
+| `/api/stripe/webhook` | **400** | `Webhook Error: No stripe-signature header value was provided.` |
+| `/api/subscription/webhook` | **400** | `Webhook Error: stripe-signature header is required` |
+| `/api/vendor-onboarding/webhook/payment` | **400** | `Webhook Error: stripe-signature header is required` |
+| `/api/stripe/payment/webhook` | **400** | `Webhook Error: No stripe-signature header value was provided.` |
+
+### Provisional status statement
+
+Production smoke probes were run under provisional deployment assumption.
+
+Important limitation:
+The deployed EB version/commit has not yet been confirmed by the deployment owner. These probes confirm production behavior at https://api.mosaicbizhub.com, but they do not prove that latest origin/main is live.
+
+Status:
+
+- Production API is responding.
+- Safe unauthenticated/auth-negative checks completed.
+- Stripe webhook unsigned-request rejection checks completed.
+- Final post-deploy verification remains blocked pending EB deployed commit confirmation.
+
+---
+
 ## Release — 2026-06-07 (historical template)
 
 ## Release metadata

@@ -137,4 +137,6 @@ Probed `2026-06-14T21:42:14Z`:
 
 **BLOCKED** until infra confirms Wave 2 (`efbf0fb` or newer) is live on EB and approves smoke (Q9).
 
+**Provisional safe probes recorded** — see [production-proof-pack-template.md](production-proof-pack-template.md) § Provisional Production Smoke — Commit Unconfirmed (`2026-06-14T21:56:27Z`). Does not prove deployed commit.
+
 Infra confirmation request: see [integration-gate-asana-evidence.md](integration-gate-asana-evidence.md) § Infra owner request (post-merge).
