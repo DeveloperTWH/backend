@@ -87,10 +87,24 @@ npm run dev
 
 ## Operational docs
 
-- [SETUP.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/SETUP.md:1)
-- [STAGING.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/STAGING.md:1)
-- [DEPLOYMENT.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/DEPLOYMENT.md:1)
-- [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/security-remediation-notes.md:1)
+- [SETUP.md](SETUP.md)
+- [STAGING.md](STAGING.md)
+- [DEPLOYMENT.md](DEPLOYMENT.md)
+- [docs/launch-readiness-report.md](docs/launch-readiness-report.md)
+- [docs/production-env-checklist.md](docs/production-env-checklist.md)
+- [docs/production-smoke-checklist.md](docs/production-smoke-checklist.md)
+- [docs/stripe-webhook-registration.md](docs/stripe-webhook-registration.md)
+- [docs/security-remediation-notes.md](docs/security-remediation-notes.md)
+
+## Release workflow (MVP)
+
+1. Work on a feature branch; open PR to `staging`.
+2. Complete integration checklist in [STAGING.md](STAGING.md) (code review, local boot — no hosted staging).
+3. Open PR `staging` → `main`; required reviewers approve.
+4. Deploy `main` to AWS Elastic Beanstalk; smoke `https://api.mosaicbizhub.com` per [DEPLOYMENT.md](DEPLOYMENT.md).
+5. Record proof in [docs/production-proof-pack-template.md](docs/production-proof-pack-template.md).
+
+Hosted staging is deferred — see [docs/hosted-staging-decision.md](docs/hosted-staging-decision.md).
 
 ## Environment variables
 
@@ -126,7 +140,7 @@ Add only the values needed for the features you plan to run locally. Some flows 
 | `CONNECT_RETURN_URL` | Optional | Absolute return URL override for Stripe Connect |
 | `CONNECT_REFRESH_URL` | Optional | Absolute refresh URL override for Stripe Connect |
 
-See [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/security-remediation-notes.md:1) for current remediation status, including Stripe route, handler, and secret ownership.
+See [docs/security-remediation-notes.md](docs/security-remediation-notes.md) for current remediation status, including Stripe route, handler, and secret ownership.
 
 ### AWS S3
 
@@ -148,10 +162,13 @@ See [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-proj
 | `APP_NAME` | Optional | Branding label used in some email content |
 | `APP_URL` | Optional | Base URL used in order-related email links |
 
-### Google integrations
+### Google OAuth (required at boot)
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
+| `GOOGLE_CLIENT_ID` | Yes | OAuth; `authController.js` throws if missing at module load |
+| `GOOGLE_CLIENT_SECRET` | Yes | OAuth client secret |
+| `API_BASE_URL` | Yes | Public API base for OAuth callback (e.g. `http://localhost:3001` locally) |
 | `GOOGLE_GEOCODING_API_KEY` | Optional | Geocoding and Google place-related lookups |
 
 ### PayPal
@@ -178,7 +195,8 @@ See [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-proj
 - `express.json()` is mounted after raw Stripe webhook endpoints in `app.js`. Keep that ordering intact so Stripe signature verification continues to work.
 - The root health-style route is `GET /` and returns a simple JSON message.
 - The codebase uses a flat JavaScript Express structure, not TypeScript and not a formal service container.
-- `npm test` is not implemented yet, so validation is currently done through targeted runtime checks and manual flow testing.
+- Create a `.env` file in the project root (the app loads `.env` only — not `.env.local`).
+- `npm test` is not implemented yet; validation is done through manual flow testing and [production-smoke-checklist.md](docs/production-smoke-checklist.md).
 
 ## Key route groups
 
@@ -201,7 +219,7 @@ See [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-proj
 
 ## Related documentation
 
-- [docs/security-remediation-notes.md](C:/Users/Asus/OneDrive/Desktop/TWH-projects/mosiac-backend/docs/security-remediation-notes.md:1)
+- [docs/security-remediation-notes.md](docs/security-remediation-notes.md)
 
 ## Deployment notes
 
