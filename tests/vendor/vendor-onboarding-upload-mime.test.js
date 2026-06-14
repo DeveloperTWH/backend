@@ -154,13 +154,13 @@ test('vendor onboarding upload route remains blocked without authentication', as
   assert.equal(res.body.message, 'Authentication required');
 });
 
-test('vendor onboarding upload route blocks non-vendor roles', () => {
+test('vendor onboarding upload route blocks non-vendor roles', async () => {
   const requireVerifiedVendor = require(requireVerifiedVendorPath);
   const req = { user: { role: 'customer', isOtpVerified: true } };
   const res = mockResponse();
   let calledNext = false;
 
-  requireVerifiedVendor(req, res, () => {
+  await requireVerifiedVendor(req, res, () => {
     calledNext = true;
   });
 

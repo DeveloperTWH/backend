@@ -7,6 +7,11 @@ const {
 } = require("../utils/WellcomeMailer");
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const {
+  stripProtectedVendorFields,
+  applyVendorBusinessProfileFields,
+  applyVendorDraftField,
+} = require('../utils/vendorOnboardingProfileFields');
 
 /* =====================================================
    COMMON VALIDATION HELPERS
@@ -142,46 +147,45 @@ exports.saveDraft = async (req, res) => {
       });
     }
 
-    // 4️⃣ Remove forbidden fields
-    const forbiddenFields = ["verificationPayment", "status", "applicationId"];
-    forbiddenFields.forEach((field) => delete payload[field]);
+    // 4️⃣ Remove protected admin/system fields
+    const sanitizedPayload = stripProtectedVendorFields(payload);
 
     // 5️⃣ Map frontend fields
-    if (payload.businessOwnershipType !== undefined) {
-      payload.ownershipType = payload.businessOwnershipType;
-      delete payload.businessOwnershipType;
+    if (sanitizedPayload.businessOwnershipType !== undefined) {
+      sanitizedPayload.ownershipType = sanitizedPayload.businessOwnershipType;
+      delete sanitizedPayload.businessOwnershipType;
     }
 
-    if (payload.numberOfEmployees !== undefined) {
-      payload.employeesCount = payload.numberOfEmployees;
-      delete payload.numberOfEmployees;
+    if (sanitizedPayload.numberOfEmployees !== undefined) {
+      sanitizedPayload.employeesCount = sanitizedPayload.numberOfEmployees;
+      delete sanitizedPayload.numberOfEmployees;
     }
 
-    if (payload.contactPhone !== undefined) {
-      payload.primaryContactPhone = payload.contactPhone;
-      payload.primaryPhone = payload.contactPhone;
-      delete payload.contactPhone;
+    if (sanitizedPayload.contactPhone !== undefined) {
+      sanitizedPayload.primaryContactPhone = sanitizedPayload.contactPhone;
+      sanitizedPayload.primaryPhone = sanitizedPayload.contactPhone;
+      delete sanitizedPayload.contactPhone;
     }
 
-    if (payload.contactEmail !== undefined) {
-      payload.secondaryBusinessEmail = payload.contactEmail;
-      delete payload.contactEmail;
+    if (sanitizedPayload.contactEmail !== undefined) {
+      sanitizedPayload.secondaryBusinessEmail = sanitizedPayload.contactEmail;
+      delete sanitizedPayload.contactEmail;
     }
 
     // Social links mapping
     const urlFields = ["websiteUrl", "facebookUrl", "instagramUrl", "linkedinUrl", "tiktokUrl"];
     urlFields.forEach((field) => {
-      if (payload[field] !== undefined) {
+      if (sanitizedPayload[field] !== undefined) {
         const key = field.replace("Url", "");
-        payload[key] = payload[field];
-        delete payload[field];
+        sanitizedPayload[key] = sanitizedPayload[field];
+        delete sanitizedPayload[field];
       }
     });
 
     // 6️⃣ Apply payload
-    Object.keys(payload).forEach((key) => {
-      if (payload[key] !== undefined) {
-        onboarding[key] = payload[key];
+    Object.keys(sanitizedPayload).forEach((key) => {
+      if (sanitizedPayload[key] !== undefined) {
+        applyVendorDraftField(onboarding, key, sanitizedPayload[key]);
       }
     });
 
@@ -584,12 +588,8 @@ exports.updateBusinessProfile = async (req, res) => {
       });
     }
 
-    // 2️⃣ Update onboarding with payload
-    Object.keys(payload).forEach(key => {
-      if (payload[key] !== undefined) {
-        onboarding[key] = payload[key];
-      }
-    });
+    // 2️⃣ Update onboarding with allowlisted profile fields only
+    applyVendorBusinessProfileFields(onboarding, payload);
 
     const readyForTrustBadgeVerification =
       isVendorProfileReadyForTrustBadgeVerification(onboarding);
@@ -812,21 +812,8 @@ exports.patchBusinessProfile = async (req, res) => {
 
     // ✅ NO STATUS CHECKS - Always allow updates
 
-    // 3️⃣ Allowed fields for PATCH update
-    const allowedFields = [
-      'firstName', 'lastName', 'primaryEmail', 'primaryPhone', 'language',
-      'licenseNumber', 'businessBio', 'characterLimit', 'businessProfileImage',
-      'businessEmail', 'businessPhone', 'alternatePhone',
-      'website', 'facebook', 'instagram', 'twitter', 'linkedin', 'tiktok',
-      'refundPolicyDocument', 'termsDocument', 'googleReviewLink', 'communityServiceLink'
-    ];
-
-    // 4️⃣ Only update allowed fields that exist in payload
-    allowedFields.forEach(field => {
-      if (payload[field] !== undefined) {
-        onboarding[field] = payload[field];
-      }
-    });
+    // 3️⃣ Only update allowlisted profile fields
+    applyVendorBusinessProfileFields(onboarding, payload);
 
     // 5️⃣ Keep EXISTING status - DON'T change it
     // onboarding.status = "draft"; // ❌ REMOVED
